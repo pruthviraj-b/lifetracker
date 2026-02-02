@@ -26,8 +26,26 @@ export const NotificationService = {
         return false;
     },
 
-    sendNotification: (title: string, body?: string, data?: any) => {
+    sendNotification: async (title: string, body?: string, data?: any) => {
         if (Notification.permission === 'granted') {
+            // Try Service Worker first (Better for PWA/Mobile)
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.ready;
+                    if (registration) {
+                        return registration.showNotification(title, {
+                            body,
+                            icon: '/vite.svg',
+                            requireInteraction: true,
+                            data
+                        });
+                    }
+                } catch (e) {
+                    // Fallback
+                }
+            }
+
+            // Standard fallback
             const n = new Notification(title, {
                 body,
                 icon: '/vite.svg',

@@ -36,6 +36,14 @@ export default defineConfig({
                         purpose: 'any maskable'
                     }
                 ]
+            },
+            devOptions: {
+                enabled: true
+            },
+            workbox: {
+                cleanupOutdatedCaches: true,
+                clientsClaim: true,
+                skipWaiting: true
             }
         })
     ],

@@ -8,3 +8,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <App />
     </React.StrictMode>,
 )
+// PWA Auto-update
+import { registerSW } from 'virtual:pwa-register'
+
+const updateSW = registerSW({
+    onNeedRefresh() {
+        if (confirm('New update available. Reload?')) {
+            updateSW(true)
+        }
+    },
+})
