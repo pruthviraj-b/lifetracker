@@ -1,0 +1,164 @@
+import { supabase } from '../lib/supabase';
+import { YouTubeVideo, VideoNote, AddVideoInput } from '../types/youtube';
+
+export const YouTubeService = {
+    parseVideoId(url: string): string | null {
+        const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[7].length === 11) ? match[7] : null;
+    },
+
+    async fetchMetadata(videoId: string) {
+        try {
+            // Using oEmbed for basic metadata without needing a YouTube Data API Key
+            const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+            if (!response.ok) throw new Error('Failed to fetch video metadata');
+            const data = await response.json();
+            return {
+                title: data.title || 'Untitled Video',
+                thumbnailUrl: data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                author: data.author_name
+            };
+        } catch (error) {
+            console.error('Metadata fetch error:', error);
+            return {
+                title: 'Untitled Video',
+                thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                author: 'Unknown'
+            };
+        }
+    },
+
+    async addVideo(input: AddVideoInput): Promise<YouTubeVideo> {
+        const videoId = this.parseVideoId(input.url);
+        if (!videoId) throw new Error('Invalid YouTube URL');
+
+        const metadata = await this.fetchMetadata(videoId);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        const { data, error } = await supabase
+            .from('youtube_videos')
+            .insert({
+                user_id: user.id,
+                url: input.url,
+                video_id: videoId,
+                title: metadata.title,
+                thumbnail_url: metadata.thumbnailUrl,
+                habit_id: input.habitId,
+                folder_id: input.folderId,
+                difficulty: input.difficulty || 'beginner',
+                status: 'unwatched'
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return this.mapVideo(data);
+    },
+
+    async getVideos(habitId?: string): Promise<YouTubeVideo[]> {
+        let query = supabase.from('youtube_videos').select('*').eq('is_archived', false);
+        if (habitId) query = query.eq('habit_id', habitId);
+
+        const { data, error } = await query.order('created_at', { ascending: false });
+        if (error) throw error;
+        return (data || []).map(v => this.mapVideo(v));
+    },
+
+    async updateProgress(id: string, progress: number, status: string, duration?: number): Promise<void> {
+        const updateData: any = {
+            watch_progress: progress,
+            status: status,
+            updated_at: new Date().toISOString()
+        };
+        if (duration) updateData.duration_seconds = duration;
+
+        const { error } = await supabase
+            .from('youtube_videos')
+            .update(updateData)
+            .eq('id', id);
+        if (error) throw error;
+    },
+
+    async addNote(videoId: string, timestamp: number, content: string): Promise<VideoNote> {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        const { data, error } = await supabase
+            .from('video_notes')
+            .insert({
+                video_id: videoId,
+                user_id: user.id,
+                timestamp_seconds: timestamp,
+                content: content
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return this.mapNote(data);
+    },
+
+    async getNotes(videoId: string): Promise<VideoNote[]> {
+        const { data, error } = await supabase
+            .from('video_notes')
+            .select('*')
+            .eq('video_id', videoId)
+            .order('timestamp_seconds', { ascending: true });
+        if (error) throw error;
+        return (data || []).map(n => this.mapNote(n));
+    },
+
+    async deleteVideo(id: string): Promise<void> {
+        const { error } = await supabase
+            .from('youtube_videos')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+    },
+
+    async moveVideoToFolder(id: string, folderId: string | null): Promise<void> {
+        const { error } = await supabase
+            .from('youtube_videos')
+            .update({ folder_id: folderId, updated_at: new Date().toISOString() })
+            .eq('id', id);
+        if (error) throw error;
+    },
+
+    mapVideo(v: any): YouTubeVideo {
+        return {
+            id: v.id,
+            userId: v.user_id,
+            url: v.url,
+            videoId: v.video_id,
+            title: v.title,
+            durationSeconds: v.duration_seconds,
+            thumbnailUrl: v.thumbnail_url,
+            habitId: v.habit_id,
+            folderId: v.folder_id,
+            courseId: v.course_id,
+            taskId: v.task_id,
+            status: v.status,
+            watchProgress: v.watch_progress,
+            sortOrder: v.sort_order || 0,
+            difficulty: v.difficulty,
+            rating: v.rating,
+            isArchived: v.is_archived,
+            createdAt: v.created_at,
+            updatedAt: v.updated_at
+        };
+    },
+
+    mapNote(n: any): VideoNote {
+        return {
+            id: n.id,
+            videoId: n.video_id,
+            userId: n.user_id,
+            timestampSeconds: n.timestamp_seconds,
+            content: n.content,
+            tags: n.tags || [],
+            createdAt: n.created_at
+        };
+    }
+};
