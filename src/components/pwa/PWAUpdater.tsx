@@ -15,9 +15,18 @@ export const PWAUpdater: React.FC = () => {
 
             // Check for waiting workers on load
             navigator.serviceWorker.ready.then((registration) => {
+                // Check if we recently showed an update prompt (within last 5 minutes)
+                const lastPrompt = localStorage.getItem('pwa_last_update_prompt');
+                const now = Date.now();
+                if (lastPrompt && (now - parseInt(lastPrompt)) < 5 * 60 * 1000) {
+                    console.log('PWA: Update prompt shown recently, skipping');
+                    return;
+                }
+
                 if (registration.waiting) {
                     setWaitingServiceWorker(registration.waiting);
                     setUpdateAvailable(true);
+                    localStorage.setItem('pwa_last_update_prompt', now.toString());
                 }
 
                 // Listen for new installing workers
@@ -26,9 +35,17 @@ export const PWAUpdater: React.FC = () => {
                     if (newWorker) {
                         newWorker.addEventListener('statechange', () => {
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // Check cooldown again
+                                const lastPrompt = localStorage.getItem('pwa_last_update_prompt');
+                                const now = Date.now();
+                                if (lastPrompt && (now - parseInt(lastPrompt)) < 5 * 60 * 1000) {
+                                    return;
+                                }
+
                                 // New content is available; please refresh.
                                 setWaitingServiceWorker(newWorker);
                                 setUpdateAvailable(true);
+                                localStorage.setItem('pwa_last_update_prompt', now.toString());
                             }
                         });
                     }
@@ -66,7 +83,10 @@ export const PWAUpdater: React.FC = () => {
                     </button>
                     <button
                         className="pwa-btn-later"
-                        onClick={() => setUpdateAvailable(false)}
+                        onClick={() => {
+                            setUpdateAvailable(false);
+                            localStorage.setItem('pwa_last_update_prompt', (Date.now() + 25 * 60 * 1000).toString());
+                        }}
                     >
                         Later
                     </button>
