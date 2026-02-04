@@ -9,8 +9,17 @@ class NotificationManager {
 
     // Initialize Service Worker
     async init(): Promise<ServiceWorkerRegistration | boolean> {
+        if (this.serviceWorkerRegistration) return this.serviceWorkerRegistration;
+
         try {
             if ('serviceWorker' in navigator) {
+                // Check if already registered to avoid redundant prompts
+                const existing = await navigator.serviceWorker.getRegistration('/');
+                if (existing) {
+                    this.serviceWorkerRegistration = existing;
+                    console.log('Using existing Service Worker registration');
+                }
+
                 const registration = await navigator.serviceWorker.register(
                     '/service-worker.js',
                     {
@@ -127,34 +136,45 @@ class NotificationManager {
         this.notificationSchedules.set(habitName, timerId);
     }
 
-    // Show notification immediately
+    // Show notification immediately (with background fallback)
     async showNotification(title: string, options: NotificationOptions = {}) {
         try {
-            // Request permission if not granted
+            // 1. Check Permission
             if (Notification.permission === 'default') {
                 await this.requestPermission();
             }
 
             if (Notification.permission === 'granted') {
-                // Use browser Notification API directly (SW is disabled)
-                const notification = new Notification(title, {
-                    icon: options.icon || '/icons/icon-192x192.png',
-                    badge: options.badge || '/icons/icon-192x192.png',
-                    body: options.body || 'Time for your habit!',
-                    tag: options.tag || title,
-                    requireInteraction: true,
-                    ...options
-                });
+                // Feature detection for service worker notification
+                if (this.serviceWorkerRegistration && this.serviceWorkerRegistration.active) {
+                    // ✅ Prefer SW notification as it handles background better on some systems
+                    this.serviceWorkerRegistration.showNotification(title, {
+                        icon: options.icon || '/pwa-192x192.png',
+                        badge: options.badge || '/pwa-192x192.png',
+                        body: options.body || 'Time for your ritual.',
+                        tag: options.tag || title,
+                        requireInteraction: true,
+                        ...options
+                    } as any);
+                } else {
+                    // ✅ Fallback to browser Notification API directly
+                    new Notification(title, {
+                        icon: options.icon || '/pwa-192x192.png',
+                        body: options.body || 'Time for your ritual.',
+                        tag: options.tag || title,
+                        ...options
+                    });
+                }
 
-                // Auto-close after 10 seconds
-                setTimeout(() => notification.close(), 10000);
-
-                console.log('Notification shown:', title);
+                console.log('✅ Notification triggered:', title);
+                return true;
             } else {
-                console.warn('Notification permission not granted');
+                console.warn('❌ Notification permission denied');
+                return false;
             }
         } catch (error) {
-            console.error('Error showing notification:', error);
+            console.error('❌ Error showing notification:', error);
+            return false;
         }
     }
 

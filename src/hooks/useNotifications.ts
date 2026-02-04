@@ -5,18 +5,15 @@ export const useNotifications = () => {
     const [permissionGranted, setPermissionGranted] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
 
-    // Initialize on mount
+    // Simplified on mount - Assume global init already happened in App.tsx
     useEffect(() => {
-        const initializeNotifications = async () => {
-            // Initialize service worker
-            const workerReady = await NotificationManagerInstance.init();
+        const checkStatus = async () => {
+            if ('Notification' in window) {
+                setPermissionGranted(Notification.permission === 'granted');
+            }
 
-            if (workerReady) {
-                // Request permission
-                const hasPermission = await NotificationManagerInstance.requestPermission();
-                setPermissionGranted(hasPermission);
-
-                // Restore previous schedules from IndexedDB
+            // Sync local timers from DB once
+            try {
                 const scheduled = await NotificationManagerInstance.getScheduledNotifications();
                 scheduled.forEach(notification => {
                     const now = new Date().getTime();
@@ -31,12 +28,13 @@ export const useNotifications = () => {
                         );
                     }
                 });
+            } catch (err) {
+                console.warn('Sync failed:', err);
             }
-
             setIsInitialized(true);
         };
 
-        initializeNotifications();
+        checkStatus();
     }, []);
 
     const scheduleReminder = async (habitName: string, time: Date | string, options: NotificationOptions = {}) => {

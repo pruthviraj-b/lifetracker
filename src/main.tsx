@@ -4,6 +4,8 @@ import App from './App.tsx'
 import './index.css'
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
+// Clean Main Entry
+// Unified PWA registration handled in NotificationManager via App.tsx
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
         <ErrorBoundary>
@@ -11,19 +13,3 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         </ErrorBoundary>
     </React.StrictMode>,
 )
-// PWA Auto-update
-import { registerSW } from 'virtual:pwa-register'
-
-const updateSW = registerSW({
-    onNeedRefresh() {
-        if (confirm('New update available. Reload?')) {
-            updateSW(true)
-        }
-    },
-    onOfflineReady() {
-        console.log('App ready for offline use');
-    },
-    onRegisterError(error) {
-        console.error('SW registration error', error);
-    }
-})
