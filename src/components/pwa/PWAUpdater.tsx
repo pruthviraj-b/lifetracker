@@ -8,62 +8,65 @@ export const PWAUpdater: React.FC = () => {
     const updateCheckRef = useRef(false);
 
     useEffect(() => {
-        // ❌ PREVENT DOUBLE-CHECKING
-        if (updateCheckRef.current) {
-            return;
-        }
+        if (updateCheckRef.current) return;
         updateCheckRef.current = true;
 
-        if (!('serviceWorker' in navigator)) {
-            console.warn('Service Worker not supported');
-            return;
-        }
+        if (!('serviceWorker' in navigator)) return;
+
+        // Capture initial controller state to distinguish between first-load claim and true update
+        const hadControllerOnLoad = !!navigator.serviceWorker.controller;
+        console.log('PWA: Initial controller state:', hadControllerOnLoad);
 
         navigator.serviceWorker.ready.then((registration) => {
-            console.log('✓ Service Worker ready');
+            // Check for waiting SW
+            const checkWaiting = () => {
+                const dismissedTime = localStorage.getItem('pwa_update_dismissed');
+                const isRecentlyDismissed = dismissedTime && (Date.now() - parseInt(dismissedTime) < 3600000);
 
-            // ✅ Check if we recently dismissed the update
-            const dismissedTime = localStorage.getItem('pwa_update_dismissed');
-            const isRecentlyDismissed = dismissedTime && (Date.now() - parseInt(dismissedTime) < 3600000);
+                if (registration.waiting && !isRecentlyDismissed) {
+                    console.log('🔄 Found waiting Service Worker');
+                    setWaitingServiceWorker(registration.waiting);
+                    setUpdateAvailable(true);
+                }
+            };
 
-            // ✅ Check for waiting SW ONLY ONCE on load
-            if (registration.waiting && !isRecentlyDismissed) {
-                console.log('🔄 Found waiting Service Worker - prompting update');
-                setWaitingServiceWorker(registration.waiting);
-                setUpdateAvailable(true);
-            }
+            checkWaiting();
 
-            // ✅ Listen for new SW installations
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
                 if (!newWorker) return;
 
                 newWorker.addEventListener('statechange', () => {
-                    // ✅ ONLY show update prompt if there's an active controller
-                    // This means the app is already running (not first install)
-                    if (
-                        newWorker.state === 'installed' &&
-                        navigator.serviceWorker.controller &&
-                        !updateAvailable && // ✅ Don't show twice
-                        !isRecentlyDismissed
-                    ) {
-                        console.log('🔄 New Service Worker installed - prompting user');
-                        setWaitingServiceWorker(newWorker);
-                        setUpdateAvailable(true);
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        checkWaiting();
                     }
                 });
             });
 
-            // ✅ Listen for controller change (SW update applied)
             const handleControllerChange = () => {
-                console.log('✓ Service Worker updated - reloading app');
-                if (!hasReloadedRef.current) {
-                    hasReloadedRef.current = true;
-                    // ✅ Add small delay to ensure new SW is active
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
+                // 🛑 CRITICAL: Only reload if we were ALREADY being controlled by an old SW.
+                // If hadControllerOnLoad is false, this is just the first-time installation claiming the page.
+                if (!hadControllerOnLoad) {
+                    console.log('PWA: Controller acquired for the first time, skipping reload.');
+                    return;
                 }
+
+                if (hasReloadedRef.current) return;
+
+                // Extra throttle via sessionStorage to survive page reloads
+                const lastReload = sessionStorage.getItem('pwa_reload_gate');
+                if (lastReload && Date.now() - parseInt(lastReload) < 5000) {
+                    console.warn('PWA: Suppressing rapid reload loop');
+                    return;
+                }
+
+                hasReloadedRef.current = true;
+                sessionStorage.setItem('pwa_reload_gate', Date.now().toString());
+
+                console.log('✓ Service Worker updated - triggering one-time reload');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             };
 
             navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
@@ -71,52 +74,34 @@ export const PWAUpdater: React.FC = () => {
             return () => {
                 navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
             };
-        }).catch((error) => {
-            console.error('✗ Service Worker error:', error);
         });
-    }, [updateAvailable]);
+    }, []);
 
     const handleUpdate = () => {
-        if (!waitingServiceWorker) {
-            console.error('No waiting Service Worker available');
-            return;
+        if (waitingServiceWorker) {
+            console.log('📲 User accepted update');
+            setUpdateAvailable(false);
+            waitingServiceWorker.postMessage({ type: 'SKIP_WAITING' });
         }
-
-        console.log('📲 User accepted update - activating new Service Worker');
-        setUpdateAvailable(false);
-        waitingServiceWorker.postMessage({ type: 'SKIP_WAITING' });
     };
 
     const handleLater = () => {
-        console.log('⏭️ User dismissed update');
         setUpdateAvailable(false);
         localStorage.setItem('pwa_update_dismissed', Date.now().toString());
     };
 
-    if (!updateAvailable || !waitingServiceWorker) {
-        return null;
-    }
+    if (!updateAvailable || !waitingServiceWorker) return null;
 
     return (
         <div className="pwa-updater-container">
             <div className="pwa-updater-banner">
                 <div className="pwa-updater-content">
-                    <h3>🎉 Update Available</h3>
-                    <p>A new version of RITU OS is ready to install</p>
+                    <h3>🎉 System Update</h3>
+                    <p>New version ready. Refresh to apply latest protocols.</p>
                 </div>
                 <div className="pwa-updater-actions">
-                    <button
-                        className="pwa-btn-update"
-                        onClick={handleUpdate}
-                    >
-                        Update Now
-                    </button>
-                    <button
-                        className="pwa-btn-later"
-                        onClick={handleLater}
-                    >
-                        Later
-                    </button>
+                    <button className="pwa-btn-update" onClick={handleUpdate}>Refresh Now</button>
+                    <button className="pwa-btn-later" onClick={handleLater}>Later</button>
                 </div>
             </div>
         </div>

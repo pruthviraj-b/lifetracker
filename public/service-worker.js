@@ -1,6 +1,6 @@
-// ✅ FIXED Service Worker - No Infinite Update Loop
+// Loop-Proof Service Worker
 
-const CACHE_NAME = 'habit-tracker-v1';
+const CACHE_NAME = 'habit-tracker-v2'; // Incremented to force fresh install
 const RUNTIME_CACHE = 'habit-tracker-runtime-v1';
 
 const urlsToCache = [
@@ -13,20 +13,13 @@ const urlsToCache = [
 
 // Install Event
 self.addEventListener('install', (event) => {
-    console.log('🔧 Service Worker: Installing...');
-
+    console.log('🔧 Service Worker: Installing Version 2...');
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('✓ Service Worker: Essential files cached');
-                return cache.addAll(urlsToCache);
-            })
-            .catch((error) => {
-                console.error('✗ Service Worker: Cache failed', error);
-            })
+            .then((cache) => cache.addAll(urlsToCache))
+            .catch((error) => console.error('✗ Service Worker: Cache failed', error))
     );
-
-    // self.skipWaiting(); // Removed to allow manual user update via prompt
+    // We explicitly NOT call skipWaiting here. We wait for the message from the UI.
 });
 
 // Activate Event
@@ -46,61 +39,36 @@ self.addEventListener('activate', (event) => {
         })
     );
 
-    self.clients.claim();
+    // 🛑 Removed self.clients.claim() - This is the primary driver of auto-reload loops
+    // By not claiming, the SW only takes over on the next manual reload.
+    console.log('✓ Service Worker: Active. (No claim to avoid loops)');
 });
 
-// Fetch Event - Smart Caching
+// Fetch Event
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    if (request.method !== 'GET') {
-        return;
-    }
+    if (request.method !== 'GET') return;
 
-    // API & Navigation - Network First
-    if (url.pathname.startsWith('/api/') || request.mode === 'navigate') {
-        event.respondWith(
-            fetch(request)
-                .then((response) => {
-                    if (response.status === 200) {
-                        const clonedResponse = response.clone();
-                        caches.open(RUNTIME_CACHE).then((cache) => {
-                            cache.put(request, clonedResponse);
-                        });
-                    }
-                    return response;
-                })
-                .catch(() => caches.match(request) || (request.mode === 'navigate' ? caches.match('/index.html') : null))
-        );
-    }
-
-    // Static Assets (Images, CSS, JS) - Cache First
-    else {
-        event.respondWith(
-            caches.match(request).then((cachedResponse) => {
-                if (cachedResponse) {
-                    return cachedResponse;
+    // Faster strategy for dev: Network first for everything, cache fallback
+    event.respondWith(
+        fetch(request)
+            .then((response) => {
+                if (response.status === 200) {
+                    const clonedResponse = response.clone();
+                    caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, clonedResponse));
                 }
-
-                return fetch(request).then((response) => {
-                    if (response.status === 200) {
-                        const clonedResponse = response.clone();
-                        caches.open(RUNTIME_CACHE).then((cache) => {
-                            cache.put(request, clonedResponse);
-                        });
-                    }
-                    return response;
-                });
+                return response;
             })
-        );
-    }
+            .catch(() => caches.match(request) || (request.mode === 'navigate' ? caches.match('/index.html') : null))
+    );
 });
 
 // Message Handler
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SKIP_WAITING') {
-        console.log('⚡ Service Worker: Skipping waiting and activating...');
+        console.log('⚡ Service Worker: Skip Waiting requested. Activating...');
         self.skipWaiting();
     }
 
@@ -110,7 +78,7 @@ self.addEventListener('message', (event) => {
     }
 });
 
-// Push & Click Handlers
+// Push & Click
 self.addEventListener('push', (event) => {
     const options = {
         body: event.data ? event.data.text() : 'Temporal Notification',
@@ -134,4 +102,4 @@ self.addEventListener('notificationclick', (event) => {
     );
 });
 
-console.log('✅ Service Worker: Loaded successfully (Fixed Loop-Proof Version)');
+console.log('✅ Service Worker: Loaded successfully (Loop-Proof Version 2.0)');
