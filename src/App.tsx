@@ -11,7 +11,6 @@ import { FocusOverlay } from './components/intelligence/FocusOverlay';
 import { NeuralGraph } from './components/intelligence/NeuralGraph';
 import { SharedLayout } from './components/layout/SharedLayout';
 import { PWAInstaller } from './components/pwa/PWAInstaller';
-import { PWAUpdater } from './components/pwa/PWAUpdater';
 
 // Layout Helper
 const ProtectedLayout = () => (
@@ -71,10 +70,11 @@ function App() {
                     const registration = await navigator.serviceWorker.register('/service-worker.js');
                     console.log('SW Registered:', registration.scope);
 
-                    // Periodic update check
-                    setInterval(() => {
-                        registration.update();
-                    }, 60 * 60 * 1000); // Check every hour
+
+                    // NOTE: Automatic update checks disabled to prevent reload loops
+                    // setInterval(() => {
+                    //     registration.update();
+                    // }, 60 * 60 * 1000);
                 } catch (err) {
                     console.error("SW Registration failed:", err);
                 }
@@ -91,7 +91,6 @@ function App() {
                         <NotificationProvider>
                             <Suspense fallback={<PageLoader />}>
                                 <PWAInstaller />
-                                <PWAUpdater />
                                 <CommandPalette />
                                 <FocusOverlay />
                                 {isGraphOpen && <NeuralGraph onClose={() => setIsGraphOpen(false)} />}
