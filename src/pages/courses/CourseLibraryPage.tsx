@@ -69,7 +69,7 @@ const NeuralInstaller = ({ onInstallComplete }: { onInstallComplete: () => void 
 
             // 2. Create Note
             addLog("COMPILING SYLLABUS...");
-            await NoteService.createNote(mod.data.note);
+            await NoteService.createNote(mod.data.note as any);
             await new Promise(r => setTimeout(r, 400));
             addLog("SYLLABUS DECRYPTED.");
 

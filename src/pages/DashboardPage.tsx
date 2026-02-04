@@ -82,12 +82,14 @@ export default function DashboardPage() {
             // Mock triggering an achievement for course completion
             setNewAchievement({
                 id: 'course-complete-' + Date.now(),
-                title: 'Neural Upgrade Complete',
+                name: 'Neural Upgrade Complete',
                 description: 'Course Protocol Assimilated. Knowledge base expanded.',
-                xp: 500,
                 icon: 'book-open',
-                unlockedAt: new Date().toISOString(),
-                type: 'milestone'
+                points: 500,
+                category: 'learning',
+                criteria_type: 'course_completion',
+                criteria_value: 1,
+                unlocked_at: new Date().toISOString()
             });
             window.history.replaceState({}, '', '/dashboard');
         }

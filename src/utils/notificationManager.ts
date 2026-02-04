@@ -135,18 +135,6 @@ class NotificationManager {
                         body: options.body || 'Time for your habit!',
                         tag: options.tag || title,
                         requireInteraction: true,
-                        actions: [ // Note: actions require explicit interaction and may not show on all OS/browsers
-                            /*
-                              {
-                                action: 'complete',
-                                title: '✓ Done',
-                              },
-                              {
-                                action: 'dismiss',
-                                title: '✕ Dismiss',
-                              }
-                            */
-                        ],
                         ...options
                     });
                 } else {

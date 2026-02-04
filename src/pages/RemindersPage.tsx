@@ -244,8 +244,7 @@ export default function RemindersPage() {
             targetDate,
             {
                 body: reminder.customMessage || "Time to complete your habit!",
-                icon: '/vite.svg',
-                section: reminder.title // using section or tag? scheduleNotification takes title, time, options
+                icon: '/vite.svg'
             }
         );
     };
