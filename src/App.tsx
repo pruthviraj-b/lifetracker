@@ -10,6 +10,8 @@ import { CommandPalette } from './components/intelligence/CommandPalette';
 import { FocusOverlay } from './components/intelligence/FocusOverlay';
 import { NeuralGraph } from './components/intelligence/NeuralGraph';
 import { SharedLayout } from './components/layout/SharedLayout';
+import { PWAInstaller } from './components/pwa/PWAInstaller';
+import { PWAUpdater } from './components/pwa/PWAUpdater';
 
 // Layout Helper
 const ProtectedLayout = () => (
@@ -33,6 +35,7 @@ const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const YouTubePage = lazy(() => import('./pages/YouTubePage'));
 const NetworkPage = lazy(() => import('./pages/NetworkPage'));
+const RecallPage = lazy(() => import('./pages/RecallPage'));
 const AchievementsPage = lazy(() => import('./pages/AchievementsPage'));
 const CourseLibraryPage = lazy(() => import('./pages/courses/CourseLibraryPage').then(m => ({ default: m.CourseLibraryPage })));
 const CourseDetailsPage = lazy(() => import('./pages/courses/CourseDetailsPage').then(m => ({ default: m.CourseDetailsPage })));
@@ -46,6 +49,8 @@ const PageLoader = () => (
     </div>
 );
 
+import { NotificationManagerInstance } from './utils/notificationManager';
+
 function App() {
     const [isGraphOpen, setIsGraphOpen] = useState(false);
 
@@ -55,6 +60,29 @@ function App() {
         return () => window.removeEventListener('toggle-graph', toggle);
     }, []);
 
+    // Initialize Service Worker & Advanced Notification System
+    useEffect(() => {
+        const initSystem = async () => {
+            await NotificationManagerInstance.init();
+
+            // Register Service Worker if not already done by NotificationManager (explicit check)
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.register('/service-worker.js');
+                    console.log('SW Registered:', registration.scope);
+
+                    // Periodic update check
+                    setInterval(() => {
+                        registration.update();
+                    }, 60 * 60 * 1000); // Check every hour
+                } catch (err) {
+                    console.error("SW Registration failed:", err);
+                }
+            }
+        };
+        initSystem();
+    }, []);
+
     return (
         <Router>
             <AuthProvider>
@@ -62,6 +90,8 @@ function App() {
                     <ToastProvider>
                         <NotificationProvider>
                             <Suspense fallback={<PageLoader />}>
+                                <PWAInstaller />
+                                <PWAUpdater />
                                 <CommandPalette />
                                 <FocusOverlay />
                                 {isGraphOpen && <NeuralGraph onClose={() => setIsGraphOpen(false)} />}
@@ -76,6 +106,7 @@ function App() {
                                         <Route path="/dashboard" element={<HomePage />} />
                                         <Route path="/protocols" element={<DashboardPage />} />
                                         <Route path="/notes" element={<NotesPage />} />
+                                        <Route path="/recall" element={<RecallPage />} />
                                         <Route path="/analytics" element={<AnalyticsPage />} />
                                         <Route path="/network" element={<NetworkPage />} />
                                         <Route path="/achievements" element={<AchievementsPage />} />

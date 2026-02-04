@@ -8,6 +8,8 @@ import { CourseService } from '../../services/course.service';
 import { AIService } from '../../services/ai.service';
 import { useToast } from '../../context/ToastContext';
 import { useTheme } from '../../context/ThemeContext';
+import { AddFlashcardModal } from '../../components/flashcards/AddFlashcardModal';
+import { FlashcardService } from '../../services/flashcard.service';
 
 
 export const CourseDetailsPage: React.FC = () => {
@@ -34,6 +36,7 @@ export const CourseDetailsPage: React.FC = () => {
     const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | 'idle'>('idle');
     const [isExtracting, setIsExtracting] = useState(false);
     const [extractedProtocol, setExtractedProtocol] = useState<{ tasks: string[], flashcards: any[] } | null>(null);
+    const [isFlashcardModalOpen, setIsFlashcardModalOpen] = useState(false);
 
     const handleAddResource = () => {
         if (!resourceInput.trim()) return;
@@ -190,6 +193,36 @@ export const CourseDetailsPage: React.FC = () => {
             showToast('Enrolled', `Welcome to ${course.title}`, { type: 'success' });
         } catch (e) {
             showToast('Error', 'Failed to enroll', { type: 'error' });
+        }
+    };
+
+    const handleSaveExtracted = async () => {
+        if (!extractedProtocol || extractedProtocol.flashcards.length === 0) return;
+
+        try {
+            setIsSaving(true);
+            setSaveStatus('saving');
+            // Batch create
+            await Promise.all(extractedProtocol.flashcards.map(card =>
+                FlashcardService.createFlashcard({
+                    front: card.q,
+                    back: card.a,
+                    noteId: undefined // Could link to lesson ID if we update schema, for now standalone
+                })
+            ));
+
+            setSaveStatus('saved');
+            showToast('Neural Uplink Complete', `${extractedProtocol.flashcards.length} protocols injected.`, { type: 'success' });
+            setTimeout(() => setSaveStatus('idle'), 2000);
+
+            // Clear extracted after save to prevent dupes? Or keep for reference?
+            // Keep for reference, but maybe disable button
+        } catch (e: any) {
+            console.error(e);
+            setSaveStatus('error');
+            showToast('Uplink Failed', e.message, { type: 'error' });
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -530,6 +563,13 @@ export const CourseDetailsPage: React.FC = () => {
                                             {isExtracting ? <Zap className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                                             Extract Protocol
                                         </button>
+                                        <button
+                                            onClick={() => setIsFlashcardModalOpen(true)}
+                                            className="w-14 bg-secondary/20 text-secondary border border-secondary/20 font-bold uppercase tracking-wider py-3 rounded-xl hover:bg-secondary/30 transition-colors flex items-center justify-center"
+                                            title="Inject Flashcard"
+                                        >
+                                            <Zap className="w-5 h-5 fill-current" />
+                                        </button>
                                     </div>
                                 </div>
 
@@ -558,10 +598,19 @@ export const CourseDetailsPage: React.FC = () => {
                                         </div>
 
                                         <div className="space-y-4">
-                                            <h4 className="text-lg font-bold flex items-center gap-3">
-                                                <Activity className="w-5 h-5 text-blue-500" />
-                                                Active Recall
-                                            </h4>
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="text-lg font-bold flex items-center gap-3">
+                                                    <Activity className="w-5 h-5 text-blue-500" />
+                                                    Active Recall
+                                                </h4>
+                                                {/* AUTO-SAVE BUTTON FOR EXTRACTED CARDS */}
+                                                <button
+                                                    onClick={handleSaveExtracted}
+                                                    className="text-xs bg-blue-500/20 text-blue-500 border border-blue-500/50 px-3 py-1.5 rounded-lg font-bold uppercase tracking-wide hover:bg-blue-500/30 transition-colors"
+                                                >
+                                                    Sync to Neural Net
+                                                </button>
+                                            </div>
                                             <div className="space-y-2">
                                                 {extractedProtocol.flashcards.map((card, i) => (
                                                     <div key={i} className="p-4 bg-primary/5 rounded-xl border border-primary/10 space-y-2">
@@ -581,6 +630,11 @@ export const CourseDetailsPage: React.FC = () => {
                     </>
                 )}
             </AnimatePresence>
+
+            <AddFlashcardModal
+                isOpen={isFlashcardModalOpen}
+                onClose={() => setIsFlashcardModalOpen(false)}
+            />
         </div>
     );
 };

@@ -12,13 +12,15 @@ import {
     Play,
     FolderPlus,
     Folder as FolderIcon,
-    Home
+    Home,
+    Zap
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { NoteService } from '../services/note.service';
 import { Note, CreateNoteInput, NoteFolder } from '../types/note';
 import { NoteModal } from '../components/notes/NoteModal';
+import { AddFlashcardModal } from '../components/flashcards/AddFlashcardModal';
 import { SyllabusRoadmap } from '../components/notes/SyllabusRoadmap';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
@@ -47,6 +49,7 @@ export default function NotesPage() {
     const [editingNote, setEditingNote] = useState<Note | null>(null);
     const [newFolderName, setNewFolderName] = useState('');
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+    const [isFlashcardModalOpen, setIsFlashcardModalOpen] = useState(false);
 
     useEffect(() => {
         fetchNotes();
@@ -255,6 +258,15 @@ export default function NotesPage() {
                                 <Plus className="w-5 h-5 mr-2" />
                                 Initialize Note
                             </Button>
+
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsFlashcardModalOpen(true)}
+                                className={`h-12 w-12 p-0 flex items-center justify-center ${isWild ? 'rounded-none border-2' : 'rounded-2xl'}`}
+                                title="Create Flashcard"
+                            >
+                                <Zap className="w-5 h-5" />
+                            </Button>
                         </div>
 
                         <div className="relative group">
@@ -454,6 +466,11 @@ export default function NotesPage() {
                 }}
                 onSave={handleSaveNote}
                 initialNote={editingNote}
+            />
+
+            <AddFlashcardModal
+                isOpen={isFlashcardModalOpen}
+                onClose={() => setIsFlashcardModalOpen(false)}
             />
         </div>
     );

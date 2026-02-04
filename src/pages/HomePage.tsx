@@ -10,6 +10,7 @@ import {
     Eye, Fingerprint, Compass, Zap, Layers, Boxes, Hexagon,
     LayoutDashboard, Library, GraduationCap, Network
 } from 'lucide-react';
+import { NotificationTestPanel } from '../components/NotificationTestPanel';
 
 // --- Standard Naming & Icons (Red Theme) ---
 const HUB_MODULES = [

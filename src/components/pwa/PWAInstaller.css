@@ -1,0 +1,152 @@
+.pwa-installer-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.pwa-installer-banner {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    color: white;
+    padding: 16px;
+    border-top: 3px solid #FFD700;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.pwa-installer-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.pwa-installer-icon {
+    flex-shrink: 0;
+}
+
+.pwa-installer-icon img {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.pwa-installer-text h3 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.pwa-installer-text p {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.pwa-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    font-size: 12px;
+    opacity: 0.85;
+}
+
+.pwa-features li {
+    margin: 0;
+}
+
+.pwa-installer-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.pwa-btn-install,
+.pwa-btn-dismiss {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.pwa-btn-install {
+    background-color: #FFD700;
+    color: #1a1a1a;
+}
+
+.pwa-btn-install:hover {
+    background-color: #FFC700;
+    transform: scale(1.05);
+}
+
+.pwa-btn-install:active {
+    transform: scale(0.98);
+}
+
+.pwa-btn-dismiss {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.pwa-btn-dismiss:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.pwa-btn-dismiss:active {
+    transform: scale(0.98);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+    .pwa-installer-banner {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 12px;
+    }
+
+    .pwa-installer-content {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .pwa-features {
+        grid-template-columns: 1fr;
+        margin-top: 8px;
+    }
+
+    .pwa-installer-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .pwa-btn-install,
+    .pwa-btn-dismiss {
+        width: 100%;
+    }
+}

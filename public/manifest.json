@@ -1,0 +1,45 @@
+{
+    "name": "Habit Tracker - Conscious Living",
+    "short_name": "Habits",
+    "description": "Transform your life through conscious habits. Track, understand, and integrate your daily practices with AI-powered insights.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#ffffff",
+    "theme_color": "#1a1a1a",
+    "categories": [
+        "productivity",
+        "lifestyle",
+        "health"
+    ],
+    "icons": [
+        {
+            "src": "/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Log Habit",
+            "short_name": "Log",
+            "description": "Quickly log a completed habit",
+            "url": "/protocols",
+            "icons": [
+                {
+                    "src": "/icons/icon-192x192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        }
+    ]
+}

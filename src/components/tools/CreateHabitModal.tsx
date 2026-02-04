@@ -8,7 +8,7 @@ import { useTheme } from '@/context/ThemeContext';
 interface CreateHabitModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (habit: Partial<Habit>) => void;
+    onSave: (habit: Partial<Habit> & { reminderTime?: string }) => void;
     initialData?: Habit;
     mode?: 'create' | 'edit';
 }
@@ -21,6 +21,7 @@ export function CreateHabitModal({ isOpen, onClose, onSave, initialData, mode = 
     const [time, setTime] = useState<TimeOfDay>(initialData?.timeOfDay || 'morning');
     const [days, setDays] = useState<DayOfWeek[]>(initialData?.frequency || [0, 1, 2, 3, 4, 5, 6]);
     const [priority, setPriority] = useState<'high' | 'medium' | 'low'>(initialData?.priority || 'medium');
+    const [reminderTime, setReminderTime] = useState('');
 
     // Goal Config
     const [type, setType] = useState<'habit' | 'goal'>(initialData?.type || 'habit');
@@ -45,6 +46,7 @@ export function CreateHabitModal({ isOpen, onClose, onSave, initialData, mode = 
             setType('habit');
             setDuration(30);
             setLinks([]);
+            setReminderTime('');
             setActiveTab('config');
         } else if (isOpen && initialData) {
             setTitle(initialData.title);
@@ -96,13 +98,15 @@ export function CreateHabitModal({ isOpen, onClose, onSave, initialData, mode = 
             goalDuration: type === 'goal' ? duration : undefined,
             goalProgress: type === 'goal' ? (mode === 'create' ? 0 : initialData?.goalProgress) : undefined,
             id: initialData?.id,
-            links: links as HabitLink[]
+            links: links as HabitLink[],
+            reminderTime: reminderTime || undefined // Pass custom field
         });
         // Reset and close
         setTitle('');
         setDays([0, 1, 2, 3, 4, 5, 6]);
         setType('habit');
         setDuration(30);
+        setReminderTime('');
         onClose();
     };
 
@@ -227,19 +231,33 @@ export function CreateHabitModal({ isOpen, onClose, onSave, initialData, mode = 
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Priority</label>
-                                    <div className="flex gap-2">
-                                        {['low', 'medium', 'high'].map(p => (
-                                            <button
-                                                key={p}
-                                                type="button"
-                                                onClick={() => setPriority(p as any)}
-                                                className={`flex-1 py-1.5 text-xs font-medium rounded-md border capitalize transition-all ${priority === p ? 'bg-primary text-primary-foreground' : 'bg-transparent text-muted-foreground hover:bg-muted'}`}
-                                            >
-                                                {p}
-                                            </button>
-                                        ))}
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Priority</label>
+                                        <div className="flex gap-2">
+                                            {['low', 'medium', 'high'].map(p => (
+                                                <button
+                                                    key={p}
+                                                    type="button"
+                                                    onClick={() => setPriority(p as any)}
+                                                    className={`flex-1 py-1.5 text-xs font-medium rounded-md border capitalize transition-all ${priority === p ? 'bg-primary text-primary-foreground' : 'bg-transparent text-muted-foreground hover:bg-muted'}`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium flex items-center justify-between">
+                                            Reminder (Optional)
+                                            {reminderTime && <span className="text-[10px] text-primary cursor-pointer hover:underline" onClick={() => setReminderTime('')}>Clear</span>}
+                                        </label>
+                                        <input
+                                            type="time"
+                                            className={`w-full p-2 rounded-lg border border-input bg-background focus:ring-2 focus:ring-primary/20 ${!reminderTime && 'text-muted-foreground'}`}
+                                            value={reminderTime}
+                                            onChange={(e) => setReminderTime(e.target.value)}
+                                        />
                                     </div>
                                 </div>
 

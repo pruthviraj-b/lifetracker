@@ -22,6 +22,7 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, category: 'Main' },
     { label: 'Protocols', path: '/protocols', icon: <Activity className="w-5 h-5" />, category: 'Main' },
     { label: 'Neural Notes', path: '/notes', icon: <StickyNote className="w-5 h-5" />, category: 'Main' },
+    { label: 'Neural Recall', path: '/recall', icon: <Zap className="w-5 h-5" />, category: 'Main' },
     { label: 'Academy', path: '/courses', icon: <BookOpen className="w-5 h-5" />, category: 'Growth' },
     { label: 'Video Tracker', path: '/youtube', icon: <Youtube className="w-5 h-5" />, category: 'Growth' },
     { label: 'Analytics', path: '/analytics', icon: <TrendingUp className="w-5 h-5" />, category: 'Growth' },
