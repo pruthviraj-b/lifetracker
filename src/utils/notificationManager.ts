@@ -13,7 +13,10 @@ class NotificationManager {
             if ('serviceWorker' in navigator) {
                 const registration = await navigator.serviceWorker.register(
                     '/service-worker.js',
-                    { scope: '/' }
+                    {
+                        scope: '/',
+                        updateViaCache: 'none' // Essential for preventing update loops
+                    }
                 );
                 this.serviceWorkerRegistration = registration;
                 console.log('Service Worker registered successfully');

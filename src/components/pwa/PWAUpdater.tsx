@@ -1,52 +1,82 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './PWAUpdater.css';
 
 export const PWAUpdater: React.FC = () => {
     const [updateAvailable, setUpdateAvailable] = useState(false);
     const [waitingServiceWorker, setWaitingServiceWorker] = useState<ServiceWorker | null>(null);
+    const hasReloadedRef = useRef(false);
+    const updateCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        if ('serviceWorker' in navigator) {
-            // Check for waiting workers on load
-            navigator.serviceWorker.ready.then((registration) => {
-                if (registration.waiting) {
+        if (!('serviceWorker' in navigator)) return;
+
+        // Check if we recently dismissed the update
+        const checkDismissal = () => {
+            const dismissedTime = localStorage.getItem('pwa_update_dismissed');
+            if (dismissedTime) {
+                const timeDiff = Date.now() - parseInt(dismissedTime);
+                if (timeDiff < 3600000) { // 1 hour cooldown
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        const handleUpdateFound = (registration: ServiceWorkerRegistration) => {
+            if (registration.waiting) {
+                if (!checkDismissal()) {
                     setWaitingServiceWorker(registration.waiting);
                     setUpdateAvailable(true);
                 }
+            }
 
-                // Listen for new installing workers
-                registration.addEventListener('updatefound', () => {
-                    const newWorker = registration.installing;
-                    if (newWorker) {
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                // New content is available; please refresh.
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            if (!checkDismissal()) {
                                 setWaitingServiceWorker(newWorker);
                                 setUpdateAvailable(true);
                             }
-                        });
-                    }
-                });
+                        }
+                    });
+                }
             });
+        };
 
-            // Handle controller change (reload on update)
-            // CRITICAL: We only reload if we were the ones who triggered the skipWaiting
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (refreshing) return;
-                refreshing = true;
+        // Initial check
+        navigator.serviceWorker.ready.then(handleUpdateFound);
+
+        // Handle controller change (one-time reload)
+        const handleControllerChange = () => {
+            if (hasReloadedRef.current) return;
+            hasReloadedRef.current = true;
+            console.log('PWA: Controller changed, reloading...');
+            setTimeout(() => {
                 window.location.reload();
-            });
-        }
+            }, 1000);
+        };
+
+        navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+
+        return () => {
+            navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+        };
     }, []);
 
     const handleUpdate = () => {
         if (waitingServiceWorker) {
+            console.log('PWA: Skipping waiting and activating new SW...');
             waitingServiceWorker.postMessage({ type: 'SKIP_WAITING' });
         } else {
-            // Fallback
             window.location.reload();
         }
+    };
+
+    const handleLater = () => {
+        setUpdateAvailable(false);
+        localStorage.setItem('pwa_update_dismissed', Date.now().toString());
     };
 
     if (!updateAvailable) {
@@ -57,19 +87,19 @@ export const PWAUpdater: React.FC = () => {
         <div className="pwa-updater-container">
             <div className="pwa-updater-banner">
                 <div className="pwa-updater-content">
-                    <h3>🎉 Update Available</h3>
-                    <p>A new version of Habit Tracker is ready to install</p>
+                    <h3>🚀 System Update Available</h3>
+                    <p>New protocols and security patches are ready for installation.</p>
                 </div>
                 <div className="pwa-updater-actions">
                     <button
                         className="pwa-btn-update"
                         onClick={handleUpdate}
                     >
-                        Update Now
+                        Apply Now
                     </button>
                     <button
                         className="pwa-btn-later"
-                        onClick={() => setUpdateAvailable(false)}
+                        onClick={handleLater}
                     >
                         Later
                     </button>

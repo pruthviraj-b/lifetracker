@@ -46,8 +46,6 @@ self.addEventListener('activate', (event) => {
             );
         })
     );
-
-    self.clients.claim(); // Take control immediately
 });
 
 // Fetch Event - Smart caching strategies

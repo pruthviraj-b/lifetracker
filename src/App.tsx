@@ -62,26 +62,27 @@ function App() {
 
     // Initialize Service Worker & Advanced Notification System
     useEffect(() => {
+        let updateCheckInterval: NodeJS.Timeout;
+
         const initSystem = async () => {
-            await NotificationManagerInstance.init();
+            // Initialize system (NotificationManager will handle the core registration)
+            const registration = await NotificationManagerInstance.init();
 
-            // Register Service Worker if not already done by NotificationManager (explicit check)
-            if ('serviceWorker' in navigator) {
-                try {
-                    const registration = await navigator.serviceWorker.register('/service-worker.js');
-                    console.log('SW Registered:', registration.scope);
-
-
-                    // NOTE: Automatic update checks disabled to prevent reload loops
-                    // setInterval(() => {
-                    //     registration.update();
-                    // }, 60 * 60 * 1000);
-                } catch (err) {
-                    console.error("SW Registration failed:", err);
-                }
+            if (registration && 'serviceWorker' in navigator) {
+                // Check for updates every 6 hours
+                updateCheckInterval = setInterval(() => {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.update();
+                    });
+                }, 6 * 60 * 60 * 1000);
             }
         };
+
         initSystem();
+
+        return () => {
+            if (updateCheckInterval) clearInterval(updateCheckInterval);
+        };
     }, []);
 
     return (
