@@ -444,7 +444,7 @@ export default function DashboardPage() {
                             <SmartFeed />
 
                             {getUncategorized().length > 0 && (
-                                <HabitSection title="Uncategorized Protocols" icon={<AlertCircle className="w-5 h-5 text-gray-500" />} habits={getUncategorized()} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} />
+                                <HabitSection title="Uncategorized Protocols" icon={<AlertCircle className="w-5 h-5 text-gray-500" />} habits={getUncategorized()} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
                             )}
 
                             {/* ZERO STATE - Only show if absolutely no habits */}
@@ -499,7 +499,7 @@ export default function DashboardPage() {
                         <div className="p-8 border-4 border-dashed border-primary/20 bg-primary/5">
                             <h2 className="text-xl font-black uppercase mb-4">Master Protocol List (Debug)</h2>
                             <p className="text-xs mb-4 opacity-70">If your habit is here but not above, it's a categorization error.</p>
-                            <HabitSection title="All Detected Protocols" icon={<Activity className="w-5 h-5" />} habits={habits} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} />
+                            <HabitSection title="All Detected Protocols" icon={<Activity className="w-5 h-5" />} habits={habits} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
                         </div>
                     )}
 
