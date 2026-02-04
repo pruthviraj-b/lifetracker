@@ -39,9 +39,35 @@ export const HabitReminder: React.FC<HabitReminderProps> = ({ habit, onClose }) 
 
         if (success) {
             setIsScheduled(true);
-            if (onClose) setTimeout(onClose, 1500); // Auto close after success
+            // Show success briefly or handle via local state
         }
     };
+
+    const handleBack = () => {
+        if (onClose) onClose();
+    };
+
+    if (isScheduled) {
+        return (
+            <div className="p-8 text-center space-y-6 animate-in zoom-in duration-300">
+                <div className="w-16 h-16 mx-auto bg-green-500/10 rounded-full flex items-center justify-center text-green-500 border border-green-500/20 shadow-[0_0_30px_rgba(34,197,94,0.1)]">
+                    <Check className="w-8 h-8" />
+                </div>
+                <div className="space-y-2">
+                    <h2 className="text-xl font-black uppercase text-green-500">Temporal Sync Verified</h2>
+                    <p className="text-[10px] font-mono opacity-50 uppercase tracking-widest text-white">Reminder established for {reminderTime}</p>
+                </div>
+                <div className="flex flex-col gap-3 pt-4">
+                    <Button onClick={() => setIsScheduled(false)} variant="outline" className="w-full rounded-xl border-white/10 hover:bg-white/5 uppercase text-[10px] font-black tracking-widest">
+                        Modify Protocol
+                    </Button>
+                    <Button onClick={handleBack} className="w-full bg-white text-black hover:bg-red-600 hover:text-white rounded-xl uppercase text-[10px] font-black tracking-widest transition-colors">
+                        Return to Hub
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     const handleCancelReminder = () => {
         cancelReminder(habit.name);

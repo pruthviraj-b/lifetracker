@@ -5,10 +5,14 @@ export const PWAUpdater: React.FC = () => {
     const [updateAvailable, setUpdateAvailable] = useState(false);
     const [waitingServiceWorker, setWaitingServiceWorker] = useState<ServiceWorker | null>(null);
     const hasReloadedRef = useRef(false);
-    const updateCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const updateCheckRef = useRef(false);
 
     useEffect(() => {
         if (!('serviceWorker' in navigator)) return;
+
+        // ❌ PREVENT DOUBLE-CHECKING
+        if (updateCheckRef.current) return;
+        updateCheckRef.current = true;
 
         // Check if we recently dismissed the update
         const checkDismissal = () => {
