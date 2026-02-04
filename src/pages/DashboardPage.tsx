@@ -10,6 +10,7 @@ import { DayDetailModal } from '../components/tools/DayDetailModal';
 import { LevelUpModal } from '../components/gamification/LevelUpModal';
 import { NoteModal } from '../components/tools/NoteModal';
 import { Habit, DayLog, TimeOfDay, Mood } from '../types/habit';
+import { Reminder } from '../types/reminder';
 import { useNavigate } from 'react-router-dom';
 import { HabitService } from '../services/habit.service';
 import {
@@ -58,6 +59,7 @@ export default function DashboardPage() {
     const [todayNotes, setTodayNotes] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [reminders, setReminders] = useState<Reminder[]>([]);
 
     // XP & Gamification
     const [xpStats, setXpStats] = useState({ level: 1, currentXP: 0, nextLevelXP: 100 });
@@ -107,12 +109,15 @@ export default function DashboardPage() {
             const todayStr = new Date().toISOString().split('T')[0];
             const lastYearStr = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-            const [fetchedHabits, fetchedLogs, fetchedReflections, profile] = await Promise.all([
+            const [fetchedHabits, fetchedLogs, fetchedReflections, profile, fetchedReminders] = await Promise.all([
                 HabitService.getHabits(),
                 HabitService.getLogs(lastYearStr, todayStr),
                 HabitService.getReflections(lastYearStr, todayStr),
-                HabitService.getProfile()
+                HabitService.getProfile(),
+                ReminderService.getReminders()
             ]);
+
+            setReminders(fetchedReminders);
 
             if (profile) {
                 setXpStats({
@@ -337,16 +342,17 @@ export default function DashboardPage() {
                 {skipModal && <SkipReasonModal isOpen={skipModal.isOpen} onClose={() => setSkipModal(null)} onConfirm={async (r) => { await HabitService.skipHabit(skipModal.habitId, new Date().toISOString().split('T')[0], r); loadData(); setSkipModal(null); }} habitTitle={skipModal.title} />}
 
                 {reminderModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                        <div className="relative w-full max-w-md bg-[#0A0A0A] border border-white/10 rounded-2xl p-6 shadow-2xl">
-                            <button
-                                onClick={() => setReminderModal(null)}
-                                className="absolute top-4 right-4 text-gray-500 hover:text-white"
-                            >
-                                <Trash2 className="w-5 h-5 rotate-45" /> {/* Using Trash2 as X for now or import X */}
-                            </button>
-                            <h2 className="text-xl font-bold mb-4">Set Reminder</h2>
-                            <HabitReminder habit={reminderModal.habit} />
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
+                        <div className="relative w-full max-w-lg overflow-hidden translate-z-0">
+                            <div className="p-8 md:p-10">
+                                <HabitReminder
+                                    habit={reminderModal.habit}
+                                    onClose={() => {
+                                        setReminderModal(null);
+                                        loadData(); // Refresh reminders list
+                                    }}
+                                />
+                            </div>
                         </div>
                     </div>
                 )}
@@ -407,6 +413,32 @@ export default function DashboardPage() {
                         <Heatmap logs={logs} onDayClick={setSelectedDate} />
                     </div>
 
+                    {/* Upcoming Reminders Quick View */}
+                    {reminders.filter(r => r.isEnabled).length > 0 && (
+                        <div className="space-y-4 animate-reveal">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-black uppercase tracking-tighter flex items-center gap-2">
+                                    <Bell className="w-4 h-4 text-red-500 animate-pulse" />
+                                    Active Reminders
+                                </h3>
+                                <Button variant="ghost" size="sm" onClick={() => navigate('/reminders')} className="text-[10px] font-black uppercase tracking-widest opacity-50 hover:opacity-100">
+                                    [ Manage All ]
+                                </Button>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {reminders.filter(r => r.isEnabled).slice(0, 3).map(reminder => (
+                                    <div key={reminder.id} className="p-4 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between group hover:border-red-500/50 transition-all">
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-black uppercase truncate">{reminder.title}</p>
+                                            <p className="text-[10px] font-mono text-red-500 mt-1">{reminder.time}</p>
+                                        </div>
+                                        <Bell className="w-3 h-3 opacity-20 group-hover:opacity-100 transition-opacity" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
                         <div className="xl:col-span-2 space-y-12">
                             <SmartFeed />
@@ -454,10 +486,10 @@ export default function DashboardPage() {
                             )}
 
                             <div className="space-y-16">
-                                <HabitSection title="Morning Flow" icon={<Sun className="w-5 h-5 text-orange-500" />} habits={getHabitsByTime('morning')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} />
-                                <HabitSection title="Afternoon High" icon={<CloudSun className="w-5 h-5 text-blue-500" />} habits={getHabitsByTime('afternoon')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} />
-                                <HabitSection title="Night Fall" icon={<Moon className="w-5 h-5 text-indigo-500" />} habits={getHabitsByTime('evening')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} />
-                                <HabitSection title="Anytime Protocols" icon={<Star className="w-5 h-5 text-purple-500" />} habits={getHabitsByTime('anytime')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} />
+                                <HabitSection title="Morning Flow" icon={<Sun className="w-5 h-5 text-orange-500" />} habits={getHabitsByTime('morning')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
+                                <HabitSection title="Afternoon High" icon={<CloudSun className="w-5 h-5 text-blue-500" />} habits={getHabitsByTime('afternoon')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
+                                <HabitSection title="Night Fall" icon={<Moon className="w-5 h-5 text-indigo-500" />} habits={getHabitsByTime('evening')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
+                                <HabitSection title="Anytime Protocols" icon={<Star className="w-5 h-5 text-purple-500" />} habits={getHabitsByTime('anytime')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
                             </div>
                         </div>
                     </div>
@@ -491,9 +523,10 @@ interface HabitSectionProps {
     onSkip: (habit: Habit) => void;
     onReminder: (habit: Habit) => void;
     isWild: boolean;
+    reminders: Reminder[];
 }
 
-function HabitSection({ title, icon, habits, onToggle, onDelete, onEdit, onNote, onSkip, onReminder, isWild }: HabitSectionProps) {
+function HabitSection({ title, icon, habits, onToggle, onDelete, onEdit, onNote, onSkip, onReminder, isWild, reminders }: HabitSectionProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     if (habits.length === 0) return null;
@@ -540,6 +573,12 @@ function HabitSection({ title, icon, habits, onToggle, onDelete, onEdit, onNote,
                                         <span>Streak: {habit.streak}D</span>
                                         <span>Priority: {habit.priority}</span>
                                         {habit.isLocked && <span className="text-primary animate-pulse">Locked</span>}
+                                        {reminders.find(r => r.habitId === habit.id && r.isEnabled) && (
+                                            <span className="text-red-500 flex items-center gap-1">
+                                                <Bell className="w-3 h-3" />
+                                                {reminders.find(r => r.habitId === habit.id && r.isEnabled)?.time}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
