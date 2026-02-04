@@ -134,20 +134,28 @@ class NotificationManager {
     // Show notification immediately
     async showNotification(title: string, options: NotificationOptions = {}) {
         try {
+            // Request permission if not granted
+            if (Notification.permission === 'default') {
+                await this.requestPermission();
+            }
+
             if (Notification.permission === 'granted') {
-                if (this.serviceWorkerRegistration) {
-                    await this.serviceWorkerRegistration.showNotification(title, {
-                        icon: options.icon || '/habit-icon.png',
-                        badge: options.badge || '/badge.png',
-                        body: options.body || 'Time for your habit!',
-                        tag: options.tag || title,
-                        requireInteraction: true,
-                        ...options
-                    });
-                } else {
-                    // Fallback for no SW (rare if init passed)
-                    new Notification(title, options);
-                }
+                // Use browser Notification API directly (SW is disabled)
+                const notification = new Notification(title, {
+                    icon: options.icon || '/icons/icon-192x192.png',
+                    badge: options.badge || '/icons/icon-192x192.png',
+                    body: options.body || 'Time for your habit!',
+                    tag: options.tag || title,
+                    requireInteraction: true,
+                    ...options
+                });
+
+                // Auto-close after 10 seconds
+                setTimeout(() => notification.close(), 10000);
+
+                console.log('Notification shown:', title);
+            } else {
+                console.warn('Notification permission not granted');
             }
         } catch (error) {
             console.error('Error showing notification:', error);
