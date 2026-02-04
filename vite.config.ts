@@ -8,8 +8,8 @@ export default defineConfig({
     plugins: [
         react(),
         VitePWA({
-            registerType: 'autoUpdate',
-            includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+            registerType: 'prompt',
+            includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
             manifest: {
                 name: 'Ritual OS - Habit Tracker',
                 short_name: 'Ritual OS',
@@ -18,6 +18,9 @@ export default defineConfig({
                 background_color: '#000000',
                 display: 'standalone',
                 orientation: 'portrait',
+                start_url: '/',
+                id: '/',
+                categories: ['productivity', 'education', 'lifestyle'],
                 icons: [
                     {
                         src: 'pwa-192x192.png',
@@ -37,13 +40,23 @@ export default defineConfig({
                     }
                 ]
             },
-            devOptions: {
-                enabled: true
-            },
             workbox: {
                 cleanupOutdatedCaches: true,
                 clientsClaim: true,
-                skipWaiting: true
+                skipWaiting: true,
+                runtimeCaching: [
+                    {
+                        urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+                        handler: 'NetworkFirst',
+                        options: {
+                            cacheName: 'supabase-data',
+                            expiration: {
+                                maxEntries: 100,
+                                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+                            }
+                        }
+                    }
+                ]
             }
         })
     ],

@@ -1,4 +1,4 @@
-export type NoteCategory = 'general' | 'work' | 'personal' | 'idea' | 'list';
+export type NoteCategory = 'general' | 'work' | 'personal' | 'idea' | 'list' | 'learning';
 
 export interface Note {
     id: string;

@@ -1,167 +1,218 @@
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
-import {
-    LogOut, Activity, StickyNote, Bell, AlertCircle,
-    Settings, Youtube, Trophy, Share2, TrendingUp, Home
-} from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import {
+    Activity, StickyNote, Bell, AlertCircle,
+    Youtube, Trophy, Share2, TrendingUp, BookOpen,
+    Eye, Fingerprint, Compass, Zap, Layers, Boxes, Hexagon,
+    LayoutDashboard, Library, GraduationCap, Network
+} from 'lucide-react';
+
+// --- Standard Naming & Icons (Red Theme) ---
+const HUB_MODULES = [
+    {
+        id: 'protocols',
+        label: 'Protocols',
+        sub: 'Daily Habits',
+        icon: Activity,
+        path: '/protocols',
+        color: 'text-red-500',
+        bg: 'bg-red-500/10',
+        border: 'group-hover:border-red-500/50'
+    },
+    {
+        id: 'notes',
+        label: 'Notes',
+        sub: 'Journal & Ideas',
+        icon: StickyNote,
+        path: '/notes',
+        color: 'text-red-500',
+        bg: 'bg-red-500/10',
+        border: 'group-hover:border-red-500/50'
+    },
+    {
+        id: 'courses',
+        label: 'Academy',
+        sub: 'Courses & Skills',
+        icon: GraduationCap,
+        path: '/courses',
+        color: 'text-red-500',
+        bg: 'bg-red-500/10',
+        border: 'group-hover:border-red-500/50'
+    },
+    {
+        id: 'analytics',
+        label: 'Analytics',
+        sub: 'Stats & Trends',
+        icon: TrendingUp,
+        path: '/analytics',
+        color: 'text-red-500',
+        bg: 'bg-red-500/10',
+        border: 'group-hover:border-red-500/50'
+    },
+    {
+        id: 'reminders',
+        label: 'Reminders',
+        sub: 'Alerts & Notifications',
+        icon: Bell,
+        path: '/reminders',
+        color: 'text-red-500',
+        bg: 'bg-red-500/10',
+        border: 'group-hover:border-red-500/50'
+    },
+    {
+        id: 'youtube',
+        label: 'Library',
+        sub: 'Saved Videos',
+        icon: Youtube,
+        path: '/youtube',
+        color: 'text-red-500',
+        bg: 'bg-red-500/10',
+        border: 'group-hover:border-red-500/50'
+    },
+    {
+        id: 'achievements',
+        label: 'Trophies',
+        sub: 'Milestones',
+        icon: Trophy,
+        path: '/achievements',
+        color: 'text-red-500',
+        bg: 'bg-red-500/10',
+        border: 'group-hover:border-red-500/50'
+    },
+    {
+        id: 'network',
+        label: 'Network',
+        sub: 'Connections',
+        icon: Network,
+        path: '/network',
+        color: 'text-red-500',
+        bg: 'bg-red-500/10',
+        border: 'group-hover:border-red-500/50'
+    }
+];
+
+// --- Kinetic Landing Components (Unauthenticated) ---
+
+const KineticLanding = ({ navigate, isWild }: { navigate: any, isWild: boolean }) => {
+    return (
+        <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0a0000] overflow-hidden relative selection:bg-red-500 selection:text-white">
+            {/* Background Grid - Dark Red */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)] pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col items-center">
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 1 }}
+                    className="relative"
+                >
+                    <h1 className="text-[12vw] md:text-[150px] font-black tracking-tighter leading-[0.8] text-red-600 select-none drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]">
+                        AWAKEN
+                    </h1>
+                </motion.div>
+
+                <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3, duration: 0.8 }}
+                    className="mt-8 flex flex-col items-center gap-6"
+                >
+                    <p className="text-sm md:text-base font-mono uppercase tracking-[0.5em] text-red-900/60 text-center max-w-md leading-relaxed">
+                        The Habit Is Not The Goal.<br />
+                        <span className="text-red-500">Consciousness Is.</span>
+                    </p>
+
+                    <Button
+                        onClick={() => navigate('/dashboard')}
+                        className="group relative px-8 py-3 bg-red-600 text-white font-bold uppercase tracking-widest hover:bg-red-700 transition-colors rounded-none overflow-hidden"
+                    >
+                        <span className="relative z-10">Initiate Sequence</span>
+                    </Button>
+                </motion.div>
+            </div>
+        </div>
+    );
+};
+
+// --- Central Hub Components (Authenticated) ---
+
+const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean, user: any }) => {
+    return (
+        <div className={`min-h-screen bg-[#0a0000] p-6 md:p-12 ${isWild ? 'wild' : ''}`}>
+            {isWild && <div className="vignette fixed inset-0 pointer-events-none z-50 opacity-50 bg-red-500/5 mix-blend-overlay" />}
+
+            <div className="max-w-6xl mx-auto space-y-12">
+                <header className="text-center space-y-4 pt-8">
+                    <motion.h1
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        className="text-4xl md:text-5xl font-black text-red-600 tracking-tight uppercase"
+                    >
+                        Central Hub
+                    </motion.h1>
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-sm font-mono text-red-900/60 uppercase tracking-widest"
+                    >
+                        Welcome Back, {user?.name || 'Operator'}
+                    </motion.p>
+                </header>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    {HUB_MODULES.map((mod, i) => {
+                        return (
+                            <motion.div
+                                key={mod.id}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.3, delay: i * 0.05 }}
+                                onClick={() => navigate(mod.path)}
+                                className={`
+                                    group relative aspect-square flex flex-col items-center justify-center gap-4
+                                    bg-[#110505] border border-red-900/20 rounded-3xl cursor-pointer
+                                    hover:border-red-500/50 hover:bg-[#1a0505] transition-all duration-300
+                                `}
+                            >
+                                <div className={`
+                                    w-16 h-16 rounded-2xl flex items-center justify-center
+                                    ${mod.bg} ${mod.color}
+                                    transition-transform duration-300 group-hover:scale-105
+                                `}>
+                                    <mod.icon strokeWidth={1.5} className="w-8 h-8" />
+                                </div>
+
+                                <div className="text-center space-y-1">
+                                    <h2 className="text-lg font-bold text-gray-200 group-hover:text-white transition-colors">
+                                        {mod.label}
+                                    </h2>
+                                    <p className="text-[10px] text-red-900/60 uppercase tracking-wider font-medium">
+                                        {mod.sub}
+                                    </p>
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export default function HomePage() {
-    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const { user } = useAuth();
     const { preferences } = useTheme();
     const isWild = preferences.wild_mode;
-    const navigate = useNavigate();
 
-    const modules = [
-        {
-            title: 'Ritual Dashboard',
-            description: 'Monitor your daily flow and maintain protocol streaks.',
-            icon: <Activity className={`w-8 h-8 ${isWild ? 'text-primary' : 'text-green-500'}`} />,
-            path: '/dashboard',
-            status: 'Operational',
-            meta: 'Day 12 Streak'
-        },
-        {
-            title: 'Neural Notes',
-            description: 'Capture thought sequences and daily cognitive reflections.',
-            icon: <StickyNote className={`w-8 h-8 ${isWild ? 'text-primary' : 'text-yellow-500'}`} />,
-            path: '/notes',
-            status: 'Indexed',
-            meta: '128 Entries'
-        },
-        {
-            title: 'System Alerts',
-            description: 'Stay synchronized with upcoming protocol deadlines.',
-            icon: <Bell className={`w-8 h-8 ${isWild ? 'text-primary' : 'text-blue-500'}`} />,
-            path: '/reminders',
-            status: 'Active',
-            meta: '3 Pending'
-        },
-        {
-            title: 'System Arrears',
-            description: 'Identify and acknowledge missed protocol check-ins.',
-            icon: <AlertCircle className={`w-8 h-8 ${isWild ? 'text-primary' : 'text-red-500'}`} />,
-            path: '/still-not-done',
-            status: 'Critical',
-            meta: '2 Unresolved'
-        },
-        {
-            title: 'Learning Lab',
-            description: 'Deep intelligence acquisition via visual protocols.',
-            icon: <Youtube className={`w-8 h-8 ${isWild ? 'text-primary' : 'text-red-600'}`} />,
-            path: '/youtube',
-            status: 'Syncing',
-            meta: '4 Courses'
-        },
-        {
-            title: 'Advanced Analytics',
-            description: 'Deep dive into habit patterns and mastery metrics.',
-            icon: <TrendingUp className={`w-8 h-8 ${isWild ? 'text-primary' : 'text-purple-500'}`} />,
-            path: '/analytics',
-            status: 'Optimal',
-            meta: '85% Efficacy'
-        },
-        {
-            title: 'Achievement Hub',
-            description: 'Review unlocked milestones and system badges.',
-            icon: <Trophy className={`w-8 h-8 ${isWild ? 'text-primary' : 'text-orange-500'}`} />,
-            path: '/achievements',
-            status: 'Verified',
-            meta: '12 Unlocked'
-        },
-        {
-            title: 'Ritual Network',
-            description: 'Visualize connections and synergy between protocols.',
-            icon: <Share2 className={`w-8 h-8 ${isWild ? 'text-primary' : 'text-indigo-500'}`} />,
-            path: '/network',
-            status: 'Stable',
-            meta: '5 Clusters'
-        }
-    ];
-
-    return (
-        <div className={`min-h-screen bg-background relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : 'font-sans'}`}>
-            {isWild && <div className="vignette pointer-events-none" />}
-
-            <div className="relative z-10 p-4 md:p-8 max-w-6xl mx-auto space-y-12">
-                {/* Header */}
-                <div className={`flex flex-col md:flex-row md:items-center justify-between gap-6 ${isWild ? 'animate-reveal' : ''}`}>
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <Home className={`w-6 h-6 ${isWild ? 'text-primary' : 'text-muted-foreground'}`} />
-                            <h1 className="text-4xl md:text-5xl font-black tracking-tight uppercase">Central Hub</h1>
-                        </div>
-                        <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest opacity-70">
-                            {isWild ? `Welcome, Auth_User: ${user?.name || 'UNKNOWN'} | System_Status: Nominal` : `Welcome back, ${user?.name || 'User'}`}
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm" onClick={() => navigate('/settings')} className={isWild ? 'rounded-none border-2' : ''}>
-                            <Settings className="w-4 h-4 mr-2" /> Settings
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => logout()} className={isWild ? 'rounded-none border-2 hover:bg-primary hover:text-black' : ''}>
-                            <LogOut className="w-4 h-4 mr-2" /> Sign out
-                        </Button>
-                    </div>
-                </div>
-
-                {/* Grid Overlay for Wild Mode */}
-                {isWild && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-0.5 bg-primary/10 border-2 border-primary/20">
-                        {modules.map((module) => (
-                            <div
-                                key={module.path}
-                                onClick={() => navigate(module.path)}
-                                className="group relative p-6 bg-black border border-primary/10 cursor-pointer overflow-hidden hover:bg-primary/5 transition-all"
-                            >
-                                <div className="absolute top-2 right-2 text-[8px] font-black text-primary/30 uppercase tracking-widest">{module.status}</div>
-                                <div className="space-y-4">
-                                    <div className="p-3 bg-white/5 border border-white/10 inline-block transition-transform group-hover:scale-110 group-hover:rotate-3">
-                                        {module.icon}
-                                    </div>
-                                    <div className="space-y-1">
-                                        <h3 className="text-sm font-black uppercase tracking-tight group-hover:text-primary transition-colors">{module.title}</h3>
-                                        <p className="text-[10px] text-muted-foreground leading-tight line-clamp-2 opacity-60">{module.description}</p>
-                                    </div>
-                                    <div className="pt-2 flex items-center justify-between">
-                                        <div className="text-[8px] font-black font-mono text-primary/50 tracking-widest">{module.meta}</div>
-                                        <div className="text-primary translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300">→</div>
-                                    </div>
-                                </div>
-                                {/* Glitch Bar */}
-                                <div className="absolute bottom-0 left-0 w-full h-[1px] bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Standard Grid for Non-Wild Mode */}
-                {!isWild && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {modules.map((module) => (
-                            <div
-                                key={module.path}
-                                onClick={() => navigate(module.path)}
-                                className="group p-8 rounded-3xl border bg-card cursor-pointer hover:shadow-2xl hover:border-primary/50 transition-all duration-500 hover:-translate-y-1"
-                            >
-                                <div className="flex flex-col gap-6">
-                                    <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                                        {module.icon}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <h2 className="text-2xl font-bold group-hover:text-primary transition-colors">{module.title}</h2>
-                                        <p className="text-muted-foreground leading-relaxed">{module.description}</p>
-                                    </div>
-                                    <div className="pt-4 flex items-center text-sm font-bold text-primary opacity-0 group-hover:opacity-100 transition-all">
-                                        Explore Protocol <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        </div >
-    );
+    if (user) {
+        return <CentralHub navigate={navigate} isWild={isWild} user={user} />;
+    } else {
+        return <KineticLanding navigate={navigate} isWild={isWild} />;
+    }
 }

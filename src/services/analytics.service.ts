@@ -1,4 +1,5 @@
 import { HabitService } from './habit.service';
+import { supabase } from '../lib/supabase';
 
 export interface AnalyticsSummary {
     completionRate: number; // Overall %
@@ -40,11 +41,13 @@ export const AnalyticsService = {
         habitStats: HabitStat[];
     }> {
         const { start, end } = this.getDateRange(rangeDays);
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id;
 
         // Parallel Fetch
         const [habits, logs] = await Promise.all([
-            HabitService.getHabits(),
-            HabitService.getLogs(start, end)
+            HabitService.getHabits(userId),
+            HabitService.getLogs(start, end, userId)
         ]);
 
         // Process Logs into Map: date -> completedIDs[]
@@ -113,9 +116,12 @@ export const AnalyticsService = {
 
     exportToCSV: async () => {
         const { start, end } = AnalyticsService.getDateRange(365); // 1 Year
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id;
+
         const [habits, logs] = await Promise.all([
-            HabitService.getHabits(),
-            HabitService.getLogs(start, end)
+            HabitService.getHabits(userId),
+            HabitService.getLogs(start, end, userId)
         ]);
 
         // Header

@@ -3,36 +3,33 @@ import { Habit, TimeOfDay, HabitCategory, DayOfWeek, HabitLink } from '../types/
 
 export const HabitService = {
     // --- Habits ---
-    async getHabits(): Promise<Habit[]> {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return [];
+    async getHabits(userId?: string): Promise<Habit[]> {
+        const uid = userId || (await supabase.auth.getUser()).data.user?.id;
+        if (!uid) return [];
 
-        // 1. Fetch habits
-        const { data: habitsData, error: habitsError } = await supabase
-            .from('habits')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: true });
+        const today = new Date().toISOString().split('T')[0];
 
-        if (habitsError) throw habitsError;
-
-        // 2. Fetch links
-        let linksData: any[] = [];
-        try {
-            const { data, error } = await supabase
+        // Parallel Fetch: Habits, Links, Logs
+        const [habitsResult, linksResult, logs] = await Promise.all([
+            supabase
+                .from('habits')
+                .select('*')
+                .eq('user_id', uid)
+                .order('created_at', { ascending: true }),
+            supabase
                 .from('habit_links')
                 .select('*')
-                .eq('user_id', user.id);
-            if (!error) linksData = data || [];
-        } catch (e) {
-            console.warn("Habit links table missing or inaccessible");
-        }
+                .eq('user_id', uid),
+            this.getLogs(today, today, uid)
+        ]);
 
-        // 3. Fetch today's logs to check prerequisites
-        const today = new Date().toISOString().split('T')[0];
-        const logs = await this.getLogs(today, today);
+        const habitsData = habitsResult.data || [];
+        if (habitsResult.error) throw habitsResult.error;
 
-        const links = (linksData || []).map((l: any) => ({
+        // Process Links (Handle missing table gracefully)
+        const linksData = linksResult.error ? [] : (linksResult.data || []);
+
+        const links = linksData.map((l: any) => ({
             id: l.id,
             sourceHabitId: l.source_habit_id,
             targetHabitId: l.target_habit_id,
@@ -41,7 +38,7 @@ export const HabitService = {
         }));
 
         // Map DB types to frontend types
-        const habits = (habitsData || []).map((h: any) => {
+        const habits = habitsData.map((h: any) => {
             const habitLinks = links.filter(l => l.sourceHabitId === h.id || l.targetHabitId === h.id);
 
             // Check prerequisites
@@ -169,13 +166,13 @@ export const HabitService = {
     },
 
     // --- Habit Links ---
-    async getHabitLinks(): Promise<HabitLink[]> {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return [];
+    async getHabitLinks(userId?: string): Promise<HabitLink[]> {
+        const uid = userId || (await supabase.auth.getUser()).data.user?.id;
+        if (!uid) return [];
         const { data, error } = await supabase
             .from('habit_links')
             .select('*')
-            .eq('user_id', user.id);
+            .eq('user_id', uid);
         if (error) throw error;
         return (data || []).map((l: any) => ({
             id: l.id,
@@ -234,16 +231,16 @@ export const HabitService = {
     },
 
     // --- Logs (Completions) ---
-    async getLogs(startDate: string, endDate: string) {
+    async getLogs(startDate: string, endDate: string, userId?: string) {
         // Fetch logs for heatmap & today
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return [];
+            const uid = userId || (await supabase.auth.getUser()).data.user?.id;
+            if (!uid) return [];
 
             const { data, error } = await supabase
                 .from('habit_logs')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('user_id', uid)
                 .gte('date', startDate)
                 .lte('date', endDate);
 
@@ -257,13 +254,13 @@ export const HabitService = {
         }
     },
 
-    async getSkips(startDate: string, endDate: string) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return [];
+    async getSkips(startDate: string, endDate: string, userId?: string) {
+        const uid = userId || (await supabase.auth.getUser()).data.user?.id;
+        if (!uid) return [];
         const { data, error } = await supabase
             .from('habit_skips')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', uid)
             .gte('date', startDate)
             .lte('date', endDate);
         // If error (table missing), return empty
@@ -292,7 +289,7 @@ export const HabitService = {
             let synergyBonus = false;
 
             // Phase 10: Synergy Bonus
-            const links = await this.getHabitLinks();
+            const links = await this.getHabitLinks(user.id);
             const habitLinks = links.filter(l => (l.sourceHabitId === habitId || l.targetHabitId === habitId) && l.type === 'synergy');
 
             if (habitLinks.length > 0) {
@@ -393,7 +390,9 @@ export const HabitService = {
 
     // --- Arrears ---
     async getArrears() {
-        const habits = await this.getHabits();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return [];
+        const uid = user.id;
 
         const now = new Date();
         const thirtyDaysAgo = new Date();
@@ -401,8 +400,12 @@ export const HabitService = {
         const startDate = thirtyDaysAgo.toISOString().split('T')[0];
         const endDate = now.toISOString().split('T')[0];
 
-        const logs = await this.getLogs(startDate, endDate);
-        const skips = await this.getSkips(startDate, endDate);
+        // Parallel fetch for calculation data
+        const [habits, logs, skips] = await Promise.all([
+            this.getHabits(uid),
+            this.getLogs(startDate, endDate, uid),
+            this.getSkips(startDate, endDate, uid)
+        ]);
 
         const arrears: any[] = [];
 
@@ -448,5 +451,43 @@ export const HabitService = {
 
         // Sort by date descending (newest arrears first)
         return arrears.sort((a, b) => b.date.localeCompare(a.date));
+    },
+
+    async resetAccount() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('No user');
+
+        // Delete all data for this user
+        // Note: The order matters if there are foreign key constraints, 
+        // but typically 'cascade' might handle it. 
+        // If not, delete children first.
+
+        const tables = [
+            'habit_logs',
+            'habit_skips',
+            'habit_links',
+            'daily_reflections',
+            'notes', // Assuming this table exists, if not it will just fail/ignore
+            'habits'
+        ];
+
+        for (const table of tables) {
+            try {
+                await supabase.from(table).delete().eq('user_id', user.id);
+            } catch (e) {
+                console.warn(`Failed to clear table ${table}`, e);
+            }
+        }
+
+        // Also clear profiles/XP if desired? 
+        // Usually "reset account" might imply keeping the login but clearing data.
+        // Let's reset XP too.
+        try {
+            await supabase.from('profiles').update({
+                level: 1,
+                current_xp: 0,
+                next_level_xp: 100
+            }).eq('id', user.id);
+        } catch (e) { /* ignore */ }
     }
 };

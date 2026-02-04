@@ -24,57 +24,68 @@ export function DailyCheckin({ onSave }: DailyCheckinProps) {
 
     if (submitted) {
         return (
-            <div className={`p-8 border-2 text-center space-y-4 ${isWild ? 'bg-black border-primary rounded-none' : 'bg-card border-border rounded-xl shadow-sm'}`}>
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${isWild ? 'bg-primary text-black' : 'bg-primary/10 text-primary'}`}>
-                    <CheckCircle className="w-8 h-8" />
+            <div className={`p-8 border-4 text-center space-y-6 ${isWild ? 'bg-black border-red-600 rounded-none' : 'bg-card border-border rounded-xl shadow-sm'}`}>
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto border-4 ${isWild ? 'bg-black text-red-600 border-red-600' : 'bg-primary/10 text-primary border-transparent'}`}>
+                    <CheckCircle className="w-10 h-10" />
                 </div>
-                <h3 className={`text-xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>Reflection Transmitted</h3>
-                <p className="text-sm text-muted-foreground uppercase font-bold opacity-70">Protocol sequence saved to deep intelligence.</p>
-                <Button variant="ghost" size="sm" onClick={() => setSubmitted(false)} className={isWild ? 'rounded-none hover:bg-primary hover:text-black uppercase font-black' : ''}>
-                    Modify
+                <div className="space-y-2">
+                    <h3 className={`text-2xl font-black uppercase tracking-tighter ${isWild ? 'text-white' : ''}`}>TRANSIMISSION COMPLETE</h3>
+                    <p className={`text-xs uppercase font-bold tracking-widest ${isWild ? 'text-red-600' : 'text-muted-foreground'}`}>Protocol sequence transmitted to neural core.</p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setSubmitted(false)} className={isWild ? 'rounded-none bg-red-900/10 text-red-500 hover:bg-red-600 hover:text-black uppercase font-black tracking-widest border border-red-900/50 w-full' : ''}>
+                    MODIFY LOG
                 </Button>
             </div>
         );
     }
 
     return (
-        <div className={`space-y-8 p-8 border-2 ${isWild ? 'bg-black border-primary rounded-none' : 'bg-card border-border rounded-xl shadow-lg'}`}>
-            <div className="space-y-1">
-                <h3 className="text-2xl font-black uppercase tracking-tighter">System Reflection</h3>
-                <p className="text-sm text-muted-foreground uppercase font-bold opacity-70 tracking-widest">Evaluate current mental state protocol.</p>
+        <div className={`space-y-8 p-8 border-4 ${isWild ? 'bg-black border-red-600 rounded-none' : 'bg-card border-border rounded-xl shadow-lg'}`}>
+            <div className="space-y-2 border-l-4 border-red-600 pl-4">
+                <h3 className={`text-2xl font-black uppercase tracking-tighter flex items-center gap-2 ${isWild ? 'text-red-600' : ''}`}>
+                    SYSTEM REFLECTION
+                </h3>
+                <p className={`text-[10px] uppercase font-bold tracking-[0.2em] ${isWild ? 'text-white/60' : 'text-muted-foreground'}`}>
+                    EVALUATE_NEURAL_STATE // DAILY_LOG
+                </p>
             </div>
 
-            <div className="flex justify-between gap-2">
+            <div className="grid grid-cols-5 gap-2">
                 {[
                     { val: 'great', icon: '😁', label: 'Great' },
                     { val: 'good', icon: '🙂', label: 'Good' },
                     { val: 'neutral', icon: '😐', label: 'Okay' },
                     { val: 'tired', icon: '😴', label: 'Tired' },
-                    { val: 'stressed', icon: '😫', label: 'Stressed' },
+                    { val: 'stressed', icon: '😫', label: 'Stress' },
                 ].map((item) => (
                     <button
                         key={item.val}
                         onClick={() => setMood(item.val as Mood)}
                         className={`
-                            flex-1 flex flex-col items-center gap-3 p-4 border-2 transition-all
+                            flex flex-col items-center gap-2 p-2 border-2 transition-all group
                             ${isWild ? 'rounded-none' : 'rounded-2xl'}
                             ${mood === item.val
-                                ? (isWild ? 'bg-primary text-black border-primary' : 'bg-primary/5 border-primary ring-1 ring-primary')
-                                : (isWild ? 'bg-black border-white/20 text-white/40 hover:border-primary/50' : 'bg-background border-input hover:border-primary/50')
+                                ? (isWild ? 'bg-red-600 text-black border-red-600 shadow-[0_0_20px_rgba(220,38,38,0.5)]' : 'bg-primary/5 border-primary ring-1 ring-primary')
+                                : (isWild ? 'bg-black border-white/10 text-white/30 hover:border-red-600 hover:text-red-500' : 'bg-background border-input hover:border-primary/50')
                             }
                         `}
                     >
-                        <span className={`text-3xl transition-all ${mood === item.val ? 'scale-125' : 'opacity-70 hover:opacity-100 hover:scale-110'}`}>{item.icon}</span>
-                        <span className="text-[10px] font-black uppercase tracking-tighter block md:hidden mt-1">{item.label}</span>
-                        <span className="text-[10px] font-black uppercase tracking-tighter hidden md:block">{item.label}</span>
+                        <span className={`text-xl transition-all ${mood === item.val ? 'scale-125' : 'grayscale group-hover:grayscale-0 group-hover:scale-110'}`}>{item.icon}</span>
+                        <span className="text-[8px] font-black uppercase tracking-tighter truncate w-full text-center">{item.label}</span>
                     </button>
                 ))}
             </div>
 
             <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Log Entry [Manual_Override]</label>
+                <div className="flex items-center justify-between">
+                    <label className={`text-[10px] font-black uppercase tracking-widest ${isWild ? 'text-red-600' : 'text-muted-foreground'}`}>Log Entry [Manual_Override]</label>
+                    <span className="text-[10px] font-mono text-white/20">TXT_INPUT_ACTIVE</span>
+                </div>
                 <textarea
-                    className={`w-full min-h-[120px] p-4 border-2 resize-none focus:outline-none transition-all ${isWild ? 'bg-black border-primary/50 text-white font-mono focus:border-primary rounded-none' : 'bg-background border-input rounded-xl focus:ring-2 focus:ring-primary/20'}`}
+                    className={`w-full min-h-[120px] p-4 border-2 resize-none focus:outline-none transition-all 
+                    ${isWild
+                            ? 'bg-[#050505] border-white/10 text-red-500 font-mono focus:border-red-600 rounded-none placeholder:text-red-900/30'
+                            : 'bg-background border-input rounded-xl focus:ring-2 focus:ring-primary/20'}`}
                     placeholder="Input thought sequence..."
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
@@ -85,9 +96,11 @@ export function DailyCheckin({ onSave }: DailyCheckinProps) {
                 <Button
                     onClick={handleSubmit}
                     disabled={!mood}
-                    className={isWild ? 'rounded-none font-black uppercase italic tracking-tighter' : ''}
+                    className={`w-full
+                        ${isWild ? 'rounded-none bg-red-600 text-black hover:bg-white font-black uppercase tracking-widest border-2 border-transparent hover:border-red-600 transition-all' : ''}
+                    `}
                 >
-                    Transmit Protocol
+                    TRANSMIT PROTOCOL
                 </Button>
             </div>
         </div>

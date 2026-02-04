@@ -1,0 +1,4 @@
+src/App.tsx(51,43): error TS2304: Cannot find name 'useState'.
+src/App.tsx(53,5): error TS2304: Cannot find name 'useEffect'.
+src/App.tsx(54,45): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/youtube/VideoPlayerModal.tsx(141,45): error TS2339: Property 'checkPrerequisitesMet' does not exist on type '{ getPublishedCourses(): Promise<Course[]>; getCourses(): Promise<any[]>; getCourseDetails(courseId: string): Promise<{ course: Course; modules: CourseModule[]; }>; ... 13 more ...; deleteCourse(id: string): Promise<...>; }'.

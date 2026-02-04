@@ -19,6 +19,7 @@ import remarkGfm from 'remark-gfm';
 import { NoteService } from '../services/note.service';
 import { Note, CreateNoteInput, NoteFolder } from '../types/note';
 import { NoteModal } from '../components/notes/NoteModal';
+import { SyllabusRoadmap } from '../components/notes/SyllabusRoadmap';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -274,77 +275,153 @@ export default function NotesPage() {
                             </div>
                         ) : filteredNotes.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredNotes.map(note => (
-                                    <div
-                                        key={note.id}
-                                        onClick={() => {
-                                            setEditingNote(note);
-                                            setIsModalOpen(true);
-                                        }}
-                                        className={`group relative bg-card border-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${isWild ? 'rounded-none border-primary/20 hover:border-primary hover:bg-primary/5' : 'hover:bg-muted/30 border-transparent hover:border-primary/10 rounded-[2rem] p-6'}`}
-                                    >
-                                        {note.isPinned && (
-                                            <div className="absolute top-4 right-4 text-primary animate-in zoom-in duration-300">
-                                                <Pin className="w-5 h-5 fill-current" />
-                                            </div>
-                                        )}
+                                {filteredNotes.map(note => {
+                                    // Calculate Progress
+                                    const totalTasks = (note.content.match(/\[[ x]\]/g) || []).length;
+                                    const completedTasks = (note.content.match(/\[x\]/g) || []).length;
+                                    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-                                        <div className="mb-6">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${COLOR_CLASSES[note.color]}`}>
-                                                    {note.category}
+                                    const handleCheckboxClick = async (lineIndex: number, currentChecked: boolean) => {
+                                        const lines = note.content.split('\n');
+                                        // ReactMarkdown line numbers are 1-based, array is 0-based.
+                                        // Often the position might be slightly off due to wrapping, but for simple lists it works.
+                                        // We need to find the line. Use the index passed from the renderer?
+                                        // Actually, let's toggle based on content match if line is tricky? 
+                                        // No, node.position.start.line is best.
+
+                                        const targetLine = lines[lineIndex - 1];
+                                        if (!targetLine) return; // Error safety
+
+                                        // Toggle [ ] <-> [x]
+                                        const newContent = lines.map((line, idx) => {
+                                            if (idx === lineIndex - 1) {
+                                                return line.includes('[x]') ? line.replace('[x]', '[ ]') : line.replace('[ ]', '[x]');
+                                            }
+                                            return line;
+                                        }).join('\n');
+
+                                        // Optimistic Update (optional, but UI needs it)
+                                        // For now, just save and let fetchNotes refresh. 
+                                        // To make it instant, we might need local state update or fast re-fetch.
+                                        // Let's do instant Fire-and-Forget update + Refresh
+
+                                        try {
+                                            await NoteService.updateNote(note.id, { content: newContent });
+                                            fetchNotes(); // Refresh UI
+                                        } catch (e) { console.error(e); }
+                                    };
+
+                                    return (
+                                        <div
+                                            key={note.id}
+                                            onClick={() => {
+                                                setEditingNote(note);
+                                                setIsModalOpen(true);
+                                            }}
+                                            className={`group relative bg-card border-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${isWild ? 'rounded-none border-primary/20 hover:border-primary hover:bg-primary/5' : 'hover:bg-muted/30 border-transparent hover:border-primary/10 rounded-[2rem] p-6'}`}
+                                        >
+                                            {note.isPinned && (
+                                                <div className="absolute top-4 right-4 text-primary animate-in zoom-in duration-300">
+                                                    <Pin className="w-5 h-5 fill-current" />
                                                 </div>
-                                                {note.type === 'youtube' && (
-                                                    <div className="flex items-center gap-1 text-red-500 bg-red-500/10 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">
-                                                        <Youtube className="w-3 h-3" />
-                                                        Video Note
+                                            )}
+
+                                            {/* Progress Bar */}
+                                            {totalTasks > 0 && (
+                                                <div className="absolute top-0 left-0 right-0 h-1.5 bg-muted/50 overflow-hidden rounded-t-[2rem]">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-blue-500 to-primary transition-all duration-500 ease-out"
+                                                        style={{ width: `${progress}%` }}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            <div className="mb-6">
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${COLOR_CLASSES[note.color]}`}>
+                                                        {note.category}
                                                     </div>
-                                                )}
+                                                    {totalTasks > 0 && (
+                                                        <div className="text-[10px] font-bold text-muted-foreground">
+                                                            {progress}% Done
+                                                        </div>
+                                                    )}
+                                                    {note.type === 'youtube' && (
+                                                        <div className="flex items-center gap-1 text-red-500 bg-red-500/10 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">
+                                                            <Youtube className="w-3 h-3" />
+                                                            Video Note
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <h3 className="text-xl font-bold mb-3 line-clamp-1">{note.title}</h3>
+                                                <div className="text-muted-foreground text-sm line-clamp-4 leading-relaxed whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none notes-markdown">
+                                                    <ReactMarkdown
+                                                        remarkPlugins={[remarkGfm]}
+                                                        components={{
+                                                            input: (props: any) => {
+                                                                if (props.type === 'checkbox') {
+                                                                    return (
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={props.checked}
+                                                                            onChange={(e) => {
+                                                                                e.stopPropagation(); // Prevent card click
+                                                                                // node.position.start.line
+                                                                                if (props.node && props.node.position) {
+                                                                                    handleCheckboxClick(props.node.position.start.line, props.checked);
+                                                                                }
+                                                                            }}
+                                                                            onClick={(e) => e.stopPropagation()} // Extra safety
+                                                                            className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer align-middle mr-2 mt-0.5"
+                                                                        />
+                                                                    );
+                                                                }
+                                                                return <input {...props} />;
+                                                            }
+                                                        }}
+                                                    >
+                                                        {note.content}
+                                                    </ReactMarkdown>
+                                                </div>
                                             </div>
 
-                                            <h3 className="text-xl font-bold mb-3 line-clamp-1">{note.title}</h3>
-                                            <div className="text-muted-foreground text-sm line-clamp-4 leading-relaxed whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none">
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                    {note.content}
-                                                </ReactMarkdown>
+                                            <div className="mt-6 pt-4 border-t flex items-center justify-between text-[11px] text-muted-foreground font-medium">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Clock className="w-3 h-3" />
+                                                    {new Date(note.updatedAt).toLocaleDateString()}
+                                                    {note.timestamp_seconds !== undefined && (
+                                                        <span className="ml-2 flex items-center gap-1 text-primary">
+                                                            <Play className="w-3 h-3" />
+                                                            {Math.floor(note.timestamp_seconds / 60)}:{(note.timestamp_seconds % 60).toString().padStart(2, '0')}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Prevent opening note modal
+                                                            togglePin(note, e);
+                                                        }}
+                                                        className="p-2 hover:bg-primary/10 hover:text-primary rounded-xl transition-colors"
+                                                    >
+                                                        {note.isPinned ? <Pin className="w-4 h-4" /> : <Pin className="w-4 h-4 opacity-40" />}
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Prevent opening note modal
+                                                            handleDeleteNote(note.id);
+                                                        }}
+                                                        className="p-2 hover:bg-destructive/10 hover:text-destructive rounded-xl transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-
-                                        <div className="mt-6 pt-4 border-t flex items-center justify-between text-[11px] text-muted-foreground font-medium">
-                                            <div className="flex items-center gap-1.5">
-                                                <Clock className="w-3 h-3" />
-                                                {new Date(note.updatedAt).toLocaleDateString()}
-                                                {note.timestamp_seconds !== undefined && (
-                                                    <span className="ml-2 flex items-center gap-1 text-primary">
-                                                        <Play className="w-3 h-3" />
-                                                        {Math.floor(note.timestamp_seconds / 60)}:{(note.timestamp_seconds % 60).toString().padStart(2, '0')}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation(); // Prevent opening note modal
-                                                        togglePin(note, e);
-                                                    }}
-                                                    className="p-2 hover:bg-primary/10 hover:text-primary rounded-xl transition-colors"
-                                                >
-                                                    {note.isPinned ? <Pin className="w-4 h-4" /> : <Pin className="w-4 h-4 opacity-40" />}
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation(); // Prevent opening note modal
-                                                        handleDeleteNote(note.id);
-                                                    }}
-                                                    className="p-2 hover:bg-destructive/10 hover:text-destructive rounded-xl transition-colors"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ) : (
                             <div className="text-center py-24 bg-muted/20 rounded-3xl border-2 border-dashed">

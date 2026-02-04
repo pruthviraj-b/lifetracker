@@ -1,9 +1,12 @@
 
+
 import { supabase } from '../lib/supabase';
 import { HabitService } from './habit.service';
 import { ReminderService } from './reminder.service';
+import { NoteService } from './note.service';
 import { Habit, DayLog } from '../types/habit';
 import { Reminder } from '../types/reminder';
+import { Note } from '../types/note';
 
 export interface BackupData {
     version: number;
@@ -11,6 +14,7 @@ export interface BackupData {
     habits: Habit[];
     logs: Record<string, DayLog>; // log keys (usually dates?) need to be careful with structure
     reminders: Reminder[];
+    notes: Note[];
 }
 
 export const DataService = {
@@ -34,12 +38,16 @@ export const DataService = {
         // 3. Fetch all reminders
         const reminders = await ReminderService.getReminders();
 
+        // 4. Fetch all notes
+        const notes = await NoteService.getNotes();
+
         return {
             version: 1,
             timestamp: new Date().toISOString(),
             habits: habits,
             logs: logsData as any, // casting for now, ideally Map
-            reminders: reminders
+            reminders: reminders,
+            notes: notes
         };
     },
 
@@ -128,20 +136,54 @@ export const DataService = {
         }
 
         // 3. Restore Logs (Critical for history)
-        // logsData was any array.
-        if (Array.isArray(data.logs)) {
-            for (const log of (data.logs as any[])) {
-                // Determine if 'log' is frontend shape or DB shape. 
-                // In exportData we grabbed raw DB rows. So it's DB shape.
-                // But we should strip ID maybe? Or keep it if we want exact clone.
-                // Let's strip ID to let DB generate new one if collision, OR keep if we want allow overwrite.
-                // Upsert with ID is safest for idempotent restore.
+        if (data.logs && Array.isArray(data.logs)) {
+            for (const log of data.logs) {
+                try {
+                    const dbLog = {
+                        user_id: user.id,
+                        habit_id: log.habit_id,
+                        date: log.date,
+                        note: log.note,
+                        // Ensure we don't pass ID if we want DB to auto-gen, or keep if we want exact
+                        // Let's rely on composite key (user, habit, date) if possible, or just insert
+                    };
+                    // Use simple insert or upsert
+                    await supabase.from('habit_logs').upsert(dbLog, { onConflict: 'user_id,habit_id,date' });
+                } catch (e) {
+                    console.warn("Failed to import log", e);
+                }
+            }
+        } else if (data.logs && typeof data.logs === 'object') {
+            // Handle if legacy format was Record<string, Log>
+            // Convert to array
+            const logArray = Object.values(data.logs);
+            for (const log of logArray) {
+                await supabase.from('habit_logs').upsert({ ...log, user_id: user.id });
+            }
+        }
 
-                const dbLog = {
-                    ...log,
-                    user_id: user.id // Ensure ownership
-                };
-                await supabase.from('habit_logs').upsert(dbLog);
+        // 4. Restore Notes (New Feature)
+        if ((data as any).notes && Array.isArray((data as any).notes)) {
+            for (const note of (data as any).notes) {
+                try {
+                    const dbNote = {
+                        id: note.id,
+                        user_id: user.id,
+                        title: note.title,
+                        content: note.content,
+                        category: note.category || 'general',
+                        color: note.color || '#ffffff',
+                        is_pinned: note.isPinned || false,
+                        created_at: note.createdAt || new Date().toISOString(),
+                        updated_at: note.updatedAt || new Date().toISOString(),
+                        type: note.type || 'standalone'
+                    };
+
+                    // Upsert note
+                    await supabase.from('notes').upsert(dbNote);
+                } catch (e) {
+                    console.warn("Failed to import note", e);
+                }
             }
         }
 

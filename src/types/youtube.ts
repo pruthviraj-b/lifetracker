@@ -53,6 +53,7 @@ export interface LearningResource {
     userId: string;
     folderId?: string;
     habitId?: string;
+    courseId?: string;
     type: ResourceType;
     title: string;
     url?: string;
@@ -66,6 +67,7 @@ export interface AddVideoInput {
     url: string;
     habitId?: string;
     folderId?: string;
+    courseId?: string;
     difficulty?: VideoDifficulty;
 }
 
@@ -83,6 +85,7 @@ export interface CreateResourceInput {
     type: ResourceType;
     folderId?: string;
     habitId?: string;
+    courseId?: string;
 }
 
 export interface LearningCourse {

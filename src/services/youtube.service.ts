@@ -47,6 +47,7 @@ export const YouTubeService = {
                 thumbnail_url: metadata.thumbnailUrl,
                 habit_id: input.habitId,
                 folder_id: input.folderId,
+                course_id: input.courseId,
                 difficulty: input.difficulty || 'beginner',
                 status: 'unwatched'
             })
@@ -55,6 +56,41 @@ export const YouTubeService = {
 
         if (error) throw error;
         return this.mapVideo(data);
+    },
+
+    async getFolders(): Promise<any[]> {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('learning_folders')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('name');
+
+        if (error) {
+            console.warn("Failed to fetch youtube folders:", error);
+            return [];
+        }
+        return data || [];
+    },
+
+    async createFolder(name: string): Promise<any> {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        const { data, error } = await supabase
+            .from('learning_folders')
+            .insert({
+                user_id: user.id,
+                name: name,
+                is_favorite: false
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
     },
 
     async getVideos(habitId?: string): Promise<YouTubeVideo[]> {

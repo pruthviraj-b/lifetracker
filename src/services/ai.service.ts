@@ -29,5 +29,35 @@ export const AIService = {
         const commonTags = ['important', 'idea', 'follow-up', 'review', 'research'];
         const contentLower = content.toLowerCase();
         return commonTags.filter(tag => contentLower.includes(tag));
+    },
+
+    async extractProtocol(content: string): Promise<{ tasks: string[], flashcards: { q: string, a: string }[] }> {
+        // Simulated AI extraction logic
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        const tasks: string[] = [];
+        const flashcards: { q: string, a: string }[] = [];
+
+        if (!content) return { tasks, flashcards };
+
+        // Simple heuristic for mock: lines with "?" are flashcards, lines with "-" are tasks
+        const lines = content.split('\n');
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('-')) tasks.push(trimmed.slice(1).trim());
+            if (trimmed.includes('?')) {
+                const parts = trimmed.split('?');
+                flashcards.push({
+                    q: parts[0].trim() + '?',
+                    a: parts[1]?.trim() || "Refer to notes for detailed answer."
+                });
+            }
+        });
+
+        // Fallback if none found
+        if (tasks.length === 0) tasks.push("Complete in-depth review of lesson content");
+        if (flashcards.length === 0) flashcards.push({ q: "What is the core principle of this lesson?", a: "Analyze the notes to define the primary mental model." });
+
+        return { tasks, flashcards };
     }
 };

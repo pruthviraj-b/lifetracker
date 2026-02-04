@@ -378,7 +378,7 @@ export function VideoPlayerModal({ video, onClose, onProgressUpdate }: VideoPlay
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col bg-background animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-50 flex flex-col bg-background animate-in fade-in duration-300 overflow-hidden md:overflow-visible">
             {/* Top Bar */}
             {!isFocusMode && (
                 <div className="h-16 border-b flex items-center justify-between px-6 bg-card shrink-0">
@@ -448,7 +448,7 @@ export function VideoPlayerModal({ video, onClose, onProgressUpdate }: VideoPlay
             )}
 
             {/* Main Content Area */}
-            <div className={`flex-1 flex overflow-hidden ${isFocusMode ? 'bg-black' : ''}`}>
+            <div className={`flex-1 flex flex-col md:flex-row overflow-hidden ${isFocusMode ? 'bg-black' : ''}`}>
 
                 {/* Player Section */}
                 <div className={`flex-1 flex flex-col bg-black relative group ${isAudioOnly ? 'bg-primary/5' : ''}`}>
@@ -610,7 +610,7 @@ export function VideoPlayerModal({ video, onClose, onProgressUpdate }: VideoPlay
 
                 {/* Sidebar (Notes) */}
                 {isSidebarOpen && !isTheaterMode && (
-                    <div className="w-96 border-l bg-card flex flex-col animate-in slide-in-from-right duration-300 shrink-0">
+                    <div className="w-full md:w-96 border-t md:border-t-0 md:border-l bg-card flex flex-col animate-in slide-in-from-right md:slide-in-from-right slide-in-from-bottom md:shrink-0 max-h-[50vh] md:max-h-none overflow-hidden">
                         <div className="p-4 border-b flex items-center justify-between bg-muted/30">
                             <h3 className="font-bold flex items-center gap-2">
                                 <History className="w-4 h-4 text-primary" />

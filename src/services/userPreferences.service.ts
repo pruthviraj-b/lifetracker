@@ -75,7 +75,7 @@ export const UserPreferencesService = {
             return defaultPreferences;
         }
 
-        return data as UserPreferences;
+        return { ...defaultPreferences, ...data } as UserPreferences;
     },
 
     async updatePreferences(updates: Partial<UserPreferences>): Promise<UserPreferences> {

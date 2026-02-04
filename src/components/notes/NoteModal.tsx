@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { X, Pin, PinOff, Tag, Palette, Eye, Edit3, Sparkles, Wand2, Folder } from 'lucide-react';
+import { X, Pin, PinOff, Tag, Palette, Eye, Edit3, Sparkles, Wand2, Folder, MapPin } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Note, NoteCategory, CreateNoteInput, NoteFolder } from '../../types/note';
 import { AIService } from '../../services/ai.service';
 import { NoteService } from '../../services/note.service';
+import { SyllabusRoadmap } from './SyllabusRoadmap';
 import { useToast } from '../../context/ToastContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface NoteModalProps {
     isOpen: boolean;
@@ -129,10 +131,10 @@ export function NoteModal({ isOpen, onClose, onSave, initialNote }: NoteModalPro
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className={`w-full max-w-lg bg-card border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200`}>
-                <form onSubmit={handleSubmit}>
+            <div className={`w-full ${formData.title.toLowerCase().includes('syllabus') ? 'max-w-6xl h-[90vh]' : 'max-w-lg'} bg-card border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col`}>
+                <form onSubmit={handleSubmit} className="flex flex-col h-full">
                     {/* Header */}
-                    <div className="p-6 border-b flex items-center justify-between">
+                    <div className="p-6 border-b flex items-center justify-between shrink-0">
                         <h2 className="text-xl font-bold">{initialNote ? 'Edit Note' : 'Create New Note'}</h2>
                         <div className="flex items-center gap-2">
                             <button
@@ -153,7 +155,7 @@ export function NoteModal({ isOpen, onClose, onSave, initialNote }: NoteModalPro
                     </div>
 
                     {/* Content */}
-                    <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                    <div className={`p-6 space-y-6 overflow-y-auto ${formData.title.toLowerCase().includes('syllabus') ? 'flex-1' : 'max-h-[70vh]'}`}>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground flex items-center justify-between">
                                 Title
@@ -186,15 +188,15 @@ export function NoteModal({ isOpen, onClose, onSave, initialNote }: NoteModalPro
                                 className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-lg transition-all ${activeTab === 'edit' ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                             >
                                 <Edit3 className="w-4 h-4" />
-                                Write
+                                Editor
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('preview')}
                                 className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-lg transition-all ${activeTab === 'preview' ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                             >
-                                <Eye className="w-4 h-4" />
-                                Preview
+                                {formData.title.toLowerCase().includes('syllabus') ? <MapPin className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                {formData.title.toLowerCase().includes('syllabus') ? 'Roadmap' : 'Preview'}
                             </button>
                         </div>
 
@@ -236,12 +238,23 @@ export function NoteModal({ isOpen, onClose, onSave, initialNote }: NoteModalPro
                             </div>
                         ) : (
                             <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                                <label className="text-sm font-medium text-muted-foreground">Preview</label>
-                                <div className="w-full min-h-[250px] p-6 rounded-xl bg-muted/50 border border-transparent overflow-y-auto prose prose-sm dark:prose-invert max-w-none">
+                                <label className="text-sm font-medium text-muted-foreground">
+                                    {formData.title.toLowerCase().includes('syllabus') ? 'Interactive Roadmap' : 'Preview'}
+                                </label>
+                                <div className={`w-full min-h-[250px] p-6 rounded-xl bg-muted/50 border border-transparent overflow-y-auto prose prose-sm dark:prose-invert max-w-none ${formData.title.toLowerCase().includes('syllabus') ? 'bg-background' : ''}`}>
                                     {formData.content ? (
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                            {formData.content}
-                                        </ReactMarkdown>
+                                        formData.title.toLowerCase().includes('syllabus') ? (
+                                            <SyllabusRoadmap
+                                                note={{ ...initialNote || {}, content: formData.content } as Note}
+                                                onUpdateContent={async (newContent) => {
+                                                    setFormData({ ...formData, content: newContent });
+                                                }}
+                                            />
+                                        ) : (
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                {formData.content}
+                                            </ReactMarkdown>
+                                        )
                                     ) : (
                                         <p className="text-muted-foreground italic mt-4 text-center">Nothing to preview yet...</p>
                                     )}

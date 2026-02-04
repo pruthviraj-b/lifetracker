@@ -185,7 +185,7 @@ export default function YouTubePage() {
         }
     };
 
-    const handleDelete = async (id: string, type: 'video' | 'resource' | 'folder') => {
+    const handleDelete = async (id: string, type: 'video' | 'resource' | 'folder' | 'course') => {
         if (!confirm(`Are you sure you want to delete this ${type}?`)) return;
 
         try {
@@ -194,6 +194,9 @@ export default function YouTubePage() {
             else if (type === 'folder') {
                 await LearningService.deleteFolder(id);
                 if (activeFolderId === id) setActiveFolderId(null);
+            } else if (type === 'course') {
+                await CourseService.deleteCourse(id);
+                if (activeCourseId === id) setActiveCourseId(null);
             }
             showToast('Deleted', `${type} removed from library`, { type: 'success' });
             loadData();
@@ -240,7 +243,8 @@ export default function YouTubePage() {
     const filteredResources = resources.filter(r => {
         const matchesSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesFolder = activeFolderId ? r.folderId === activeFolderId : true;
-        return matchesSearch && matchesFolder && !activeCourseId;
+        const matchesCourse = activeCourseId ? r.courseId === activeCourseId : true;
+        return matchesSearch && matchesFolder && matchesCourse;
     });
 
     const activeFolder = folders.find(f => f.id === activeFolderId);
@@ -345,7 +349,7 @@ export default function YouTubePage() {
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0 relative z-10">
                 {/* Header */}
-                <div className={`p-6 border-b bg-card/30 flex flex-col md:flex-row md:items-center justify-between gap-6 ${isWild ? 'border-primary/20 animate-reveal' : ''}`}>
+                <div className={`p-4 md:p-6 border-b bg-card/30 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 ${isWild ? 'border-primary/20 animate-reveal' : ''}`}>
                     <div className="flex items-center gap-4">
                         <Button variant="ghost" className={`rounded-full w-10 h-10 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
                             <Home className="w-5 h-5" />
@@ -361,12 +365,12 @@ export default function YouTubePage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className="relative">
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                        <div className="relative w-full sm:w-auto flex-1 md:flex-none">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 placeholder="Scan intelligence..."
-                                className={`pl-9 w-64 h-11 bg-muted/30 ${isWild ? 'rounded-none border-primary/20' : 'border rounded-xl'}`}
+                                className={`pl-9 w-full md:w-64 h-11 bg-muted/30 ${isWild ? 'rounded-none border-primary/20' : 'border rounded-xl'}`}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -374,9 +378,9 @@ export default function YouTubePage() {
                         <Button onClick={() => {
                             setAddType('video');
                             setIsAddModalOpen(true);
-                        }} className={`shadow-lg h-11 px-6 ${isWild ? 'rounded-none shadow-primary/20' : 'shadow-primary/20 rounded-xl'}`}>
+                        }} className={`w-full sm:w-auto shadow-lg h-11 px-4 md:px-6 shrink-0 ${isWild ? 'rounded-none shadow-primary/20' : 'shadow-primary/20 rounded-xl'}`}>
                             <Plus className="w-4 h-4 mr-2" />
-                            Add Asset
+                            <span>Add Asset</span>
                         </Button>
                     </div>
                 </div>
@@ -402,7 +406,7 @@ export default function YouTubePage() {
                                 <div className="text-lg font-bold">{formatWatchTime(activeCourseStats.remainingDurationSeconds)}</div>
                             </div>
                         </div>
-                        <div className="flex-1 max-w-xs space-y-2">
+                        <div className="flex-1 min-w-[200px] max-w-xs space-y-2">
                             <div className="flex justify-between text-[10px] font-bold text-muted-foreground">
                                 <span>{activeCourseStats.completedVideos} / {activeCourseStats.totalVideos} Lessons</span>
                             </div>
@@ -413,7 +417,7 @@ export default function YouTubePage() {
                         {activeCourseStats.completionPercentage === 100 && (
                             <Button
                                 onClick={() => setShowCertificate(true)}
-                                className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/20 rounded-xl px-6 h-12"
+                                className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/20 rounded-xl px-6 h-12"
                             >
                                 <Award className="w-5 h-5 mr-2" />
                                 Claim Certificate

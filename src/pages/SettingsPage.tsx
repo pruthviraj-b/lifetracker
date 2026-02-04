@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     User, Shield, Bell, CreditCard, Layout, Link as LinkIcon,
     PieChart, HelpCircle, Database, LogOut, Menu, X, Target, Settings
@@ -33,32 +34,31 @@ export default function SettingsPage() {
     const { logout } = useAuth();
     const { preferences } = useTheme();
     const isWild = preferences.wild_mode;
-    const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<SettingsTab | null>(null);
 
-    const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-
-    const menuItems: { id: SettingsTab; label: string; icon: React.ReactNode; group: string }[] = [
-        // Group 1: Account
-        { id: 'profile', label: 'My Profile', icon: <User className="w-4 h-4" />, group: 'Account' },
-        { id: 'account', label: 'Security & Login', icon: <Shield className="w-4 h-4" />, group: 'Account' },
-        { id: 'billing', label: 'Billing & Plan', icon: <CreditCard className="w-4 h-4" />, group: 'Account' },
-
-        // Group 2: App
-        { id: 'preferences', label: 'Appearance', icon: <Layout className="w-4 h-4" />, group: 'App Settings' },
-        { id: 'habits', label: 'Habit Config', icon: <Settings className="w-4 h-4" />, group: 'App Settings' },
-        { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" />, group: 'App Settings' },
-
-        // Group 3: Data & Integrations
-        { id: 'stats', label: 'Statistics', icon: <PieChart className="w-4 h-4" />, group: 'Data' },
-        { id: 'goals', label: 'Goals', icon: <Target className="w-4 h-4" />, group: 'Data' },
-        { id: 'connections', label: 'Integrations', icon: <LinkIcon className="w-4 h-4" />, group: 'Data' },
-        { id: 'data', label: 'Data & Export', icon: <Database className="w-4 h-4" />, group: 'Data' },
-
-        // Group 4: Other
-        { id: 'privacy', label: 'Privacy', icon: <Shield className="w-4 h-4" />, group: 'Legal' },
-        { id: 'help', label: 'Help & Support', icon: <HelpCircle className="w-4 h-4" />, group: 'Support' },
+    const menuItems: { id: SettingsTab; label: string; icon: React.ReactNode; group: string; description: string }[] = [
+        { id: 'profile', label: 'My Profile', icon: <User className="w-6 h-6" />, group: 'Account', description: 'Manage your biological identity and public presence.' },
+        { id: 'account', label: 'Security & Login', icon: <Shield className="w-6 h-6" />, group: 'Account', description: 'Update encryption keys and access protocols.' },
+        { id: 'billing', label: 'Billing & Plan', icon: <CreditCard className="w-6 h-6" />, group: 'Account', description: 'Manage credit allocation and subscription status.' },
+        { id: 'preferences', label: 'Appearance', icon: <Layout className="w-6 h-6" />, group: 'App Settings', description: 'Adjust visual interfaces and neuro-theming.' },
+        { id: 'habits', label: 'Habit Config', icon: <Settings className="w-6 h-6" />, group: 'App Settings', description: 'Configure behavioral tracking parameters.' },
+        { id: 'notifications', label: 'Notifications', icon: <Bell className="w-6 h-6" />, group: 'App Settings', description: 'Manage neural alerts and timing.' },
+        { id: 'stats', label: 'Statistics', icon: <PieChart className="w-6 h-6" />, group: 'Data', description: 'Review system performance and biometric data.' },
+        { id: 'goals', label: 'Goals', icon: <Target className="w-6 h-6" />, group: 'Data', description: 'Set long-term objective directives.' },
+        { id: 'connections', label: 'Integrations', icon: <LinkIcon className="w-6 h-6" />, group: 'Data', description: 'Sync with external data banks and tools.' },
+        { id: 'data', label: 'Data & Export', icon: <Database className="w-6 h-6" />, group: 'Data', description: 'Manage local data and cloud redundancy.' },
+        { id: 'privacy', label: 'Privacy', icon: <Shield className="w-6 h-6" />, group: 'Legal', description: 'View data protection protocols.' },
+        { id: 'help', label: 'Help & Support', icon: <HelpCircle className="w-6 h-6" />, group: 'Support', description: 'Access documentation and tech support.' },
     ];
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab') as SettingsTab;
+        if (tab && menuItems.some(item => item.id === tab)) {
+            setActiveTab(tab);
+        }
+    }, [window.location.search]);
+
 
     const renderContent = () => {
         switch (activeTab) {
@@ -74,105 +74,119 @@ export default function SettingsPage() {
             case 'data': return <DataSection />;
             case 'privacy': return <PrivacySection />;
             case 'help': return <HelpSection />;
-            default: return <ProfileSection />;
+            default: return null;
         }
     };
 
-    // Group items for sidebar
-    const groupedItems = menuItems.reduce((acc, item) => {
-        if (!acc[item.group]) acc[item.group] = [];
-        acc[item.group].push(item);
-        return acc;
-    }, {} as Record<string, typeof menuItems>);
-
     return (
-        <div className={`flex h-screen bg-background relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : 'font-sans'} overflow-hidden`}>
+        <div className={`min-h-screen bg-background text-foreground p-6 md:p-12 space-y-12 relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : ''}`}>
             {isWild && <div className="vignette pointer-events-none" />}
 
-
-            {/* Mobile Overlay */}
-            {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden animate-in fade-in"
-                    onClick={() => setIsSidebarOpen(false)}
-                />
-            )}
-
-            {/* Sidebar */}
-            <aside className={`
-                fixed md:static inset-y-0 left-0 z-50 w-64 bg-card border-r shadow-xl md:shadow-none
-                transform transition-transform duration-300 ease-in-out flex flex-col
-                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-            `}>
-                <div className="p-4 border-b flex items-center justify-between">
-                    <div className="flex items-center gap-2 font-bold text-lg">
-                        <Button variant="ghost" size="sm" className="p-0 h-auto md:hidden" onClick={() => setIsSidebarOpen(false)}>
-                            <X className="w-5 h-5" />
-                        </Button>
-                        <Button variant="ghost" className={`rounded-full w-10 h-10 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
-                            <Home className="w-5 h-5" />
-                        </Button>
-                        <span className={isWild ? 'animate-glitch uppercase tracking-tighter' : ''}>Settings</span>
-                    </div>
+            {/* Back Button & Header */}
+            <div className="flex flex-col items-center justify-center text-center space-y-6 max-w-4xl mx-auto">
+                <Button
+                    variant="ghost"
+                    className={`rounded-full w-12 h-12 p-0 bg-white/5 border border-white/10 ${isWild ? 'rounded-none border-2 border-primary' : ''}`}
+                    onClick={() => activeTab ? setActiveTab(null) : navigate('/home')}
+                >
+                    {activeTab ? <X className="w-6 h-6" /> : <Home className="w-6 h-6" />}
+                </Button>
+                <div>
+                    <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase relative inline-block">
+                        System Configuration
+                        <span className="absolute -top-4 -right-12 opacity-20 rotate-12">
+                            <Settings className="w-16 h-16" />
+                        </span>
+                    </h1>
+                    <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest opacity-70 mt-4">
+                        {activeTab
+                            ? `Modifying Protocol: ${menuItems.find(i => i.id === activeTab)?.label}`
+                            : 'Select a system module to reconfigure core protocols'
+                        }
+                    </p>
                 </div>
+            </div>
 
-                <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
-                    {Object.entries(groupedItems).map(([group, items]) => (
-                        <div key={group}>
-                            <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{group}</h3>
-                            <div className="space-y-1">
-                                {items.map(item => (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => {
-                                            setActiveTab(item.id);
-                                            setIsSidebarOpen(false);
-                                        }}
-                                        className={`
-                                            w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                                            ${activeTab === item.id
-                                                ? 'bg-primary/10 text-primary'
-                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                            }
-                                        `}
-                                    >
-                                        {item.icon}
-                                        {item.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="p-4 border-t">
-                    <button
-                        onClick={() => logout()}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+            <AnimatePresence mode="wait">
+                {!activeTab ? (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto pb-24"
                     >
-                        <LogOut className="w-4 h-4" />
-                        Sign Out
-                    </button>
-                </div>
-            </aside>
+                        {menuItems.map((item, idx) => (
+                            <motion.div
+                                key={item.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.05 }}
+                                whileHover={{ y: -5, scale: 1.02 }}
+                                onClick={() => setActiveTab(item.id)}
+                                className="group relative bg-[#0A0A0A] border border-white/10 rounded-3xl p-6 cursor-pointer hover:shadow-[0_0_40px_rgba(139,92,246,0.2)] transition-all duration-500 overflow-hidden"
+                            >
+                                {/* Abstract Cyber Background */}
+                                <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity"
+                                    style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '15px 15px' }}
+                                />
 
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col h-full overflow-hidden">
-                {/* Mobile Header */}
-                <header className="md:hidden flex items-center p-4 border-b bg-card">
-                    <Button variant="ghost" size="sm" onClick={toggleSidebar}>
-                        <Menu className="w-6 h-6" />
-                    </Button>
-                    <span className="ml-3 font-semibold">
-                        {menuItems.find(i => i.id === activeTab)?.label}
-                    </span>
-                </header>
+                                <div className="relative z-10 space-y-4">
+                                    <div className={`
+                                        w-12 h-12 rounded-2xl flex items-center justify-center transition-all
+                                        ${isWild ? 'bg-primary/20 text-primary border border-primary/50' : 'bg-white/5 border border-white/10 text-white group-hover:bg-primary group-hover:text-white'}
+                                    `}>
+                                        {item.icon}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-black uppercase tracking-tight group-hover:text-primary transition-colors">
+                                            {item.label}
+                                        </h3>
+                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest leading-relaxed mt-1">
+                                            {item.description}
+                                        </p>
+                                    </div>
+                                    <div className="pt-4 flex items-center justify-between text-[10px] font-mono opacity-50">
+                                        <span>PROTOCOL.{item.id.toUpperCase()}</span>
+                                        <span className="group-hover:translate-x-1 transition-transform">→</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
 
-                {/* Content Area */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 w-full max-w-7xl mx-auto">
-                    {renderContent()}
-                </div>
-            </main>
+                        {/* Logout Card */}
+                        <motion.div
+                            whileHover={{ scale: 1.02 }}
+                            onClick={() => logout()}
+                            className="col-span-1 md:col-span-2 lg:col-span-3 mt-8 border-2 border-dashed border-red-500/20 rounded-3xl p-12 text-center group cursor-pointer hover:border-red-500/50 hover:bg-red-500/5 transition-all"
+                        >
+                            <LogOut className="w-12 h-12 mx-auto mb-4 text-red-500 group-hover:scale-125 transition-transform" />
+                            <h3 className="text-2xl font-black uppercase text-red-500">Terminate Session</h3>
+                            <p className="text-xs font-bold text-red-500/60 uppercase tracking-widest mt-2">Disconnect from neural network and clear cache</p>
+                        </motion.div>
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="max-w-4xl mx-auto pb-24"
+                    >
+                        <div className="bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden min-h-[60vh]">
+                            {/* Content Header (Mobile) */}
+                            <div className="flex md:hidden items-center gap-4 mb-8 pb-8 border-b border-white/5">
+                                <div className="p-4 bg-primary/10 rounded-2xl text-primary">
+                                    {menuItems.find(i => i.id === activeTab)?.icon}
+                                </div>
+                                <h2 className="text-2xl font-black uppercase tracking-tighter">
+                                    {menuItems.find(i => i.id === activeTab)?.label}
+                                </h2>
+                            </div>
+
+                            {renderContent()}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

@@ -15,7 +15,7 @@ import { HabitService } from '../services/habit.service';
 import {
     Check, Sun, CloudSun, Moon, Timer, Plus, Trash2,
     Calendar as CalendarIcon, StickyNote, Trophy, Activity,
-    Share2, TrendingUp, Target, Star, CalendarOff, Home, AlertCircle
+    Share2, TrendingUp, Target, Star, CalendarOff, Home, AlertCircle, BookOpen
 } from 'lucide-react';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { SkipReasonModal } from '../components/tools/SkipReasonModal';
@@ -23,6 +23,7 @@ import { SmartFeed } from '../components/dashboard/SmartFeed';
 import { NewAchievementModal } from '../components/gamification/NewAchievementModal';
 import { Achievement } from '../services/achievement.service';
 import { useTheme } from '../context/ThemeContext';
+import { PWABanner } from '../components/layout/PWABanner';
 
 export default function DashboardPage() {
     const { logout } = useAuth();
@@ -64,6 +65,29 @@ export default function DashboardPage() {
         if (xpStats.level > prevLevelRef.current) setShowLevelUp(true);
         prevLevelRef.current = xpStats.level;
     }, [xpStats.level]);
+
+    // Handle URL Actions (e.g. from Assistant or LMS)
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const action = params.get('action');
+
+        if (action === 'create') {
+            setIsCreateOpen(true);
+            window.history.replaceState({}, '', '/dashboard');
+        } else if (action === 'achievement') {
+            // Mock triggering an achievement for course completion
+            setNewAchievement({
+                id: 'course-complete-' + Date.now(),
+                title: 'Neural Upgrade Complete',
+                description: 'Course Protocol Assimilated. Knowledge base expanded.',
+                xp: 500,
+                icon: 'book-open',
+                unlockedAt: new Date().toISOString(),
+                type: 'milestone'
+            });
+            window.history.replaceState({}, '', '/dashboard');
+        }
+    }, [window.location.search]);
 
     useEffect(() => {
         loadData();
@@ -225,19 +249,28 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center p-8 animate-pulse">
-                <div className="text-center space-y-4">
-                    <div className="text-4xl md:text-6xl font-black italic tracking-tighter text-primary animate-glitch uppercase">Initializing Ritual OS...</div>
-                    <div className="h-1 w-64 bg-primary mx-auto"></div>
-                    <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Auth_Token: Verified | System_Check: Optimal</div>
+            <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-8">
+                <div className="text-center space-y-6">
+                    <div className="flex items-center justify-center gap-3">
+                        <span className="text-4xl md:text-6xl font-black tracking-tighter text-white">RITU</span>
+                        <span className="bg-red-600 text-black px-2 py-0.5 rounded text-3xl md:text-5xl font-mono font-bold tracking-widest">OS</span>
+                    </div>
+
+                    <div className="w-64 h-1 bg-neutral-900 rounded-full overflow-hidden mx-auto">
+                        <div className="h-full bg-red-600 animate-[loading_1s_ease-in-out_infinite]" style={{ width: '50%' }} />
+                    </div>
+
+                    <div className="text-[10px] font-mono text-red-500/60 uppercase tracking-[0.2em] animate-pulse">
+                        System_Boot // Verifying_Neural_Links
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className={`min-h-screen bg-background relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : ''}`}>
-            {isWild && <div className="vignette pointer-events-none" />}
+        <div className={`min-h-screen bg-background relative selection:bg-red-500 selection:text-white ${isWild ? 'wild font-mono' : ''}`}>
+            {isWild && <div className="vignette pointer-events-none bg-red-900/5 mix-blend-overlay" />}
 
             <div className="relative z-10 p-4 md:p-8">
                 <ConfirmModal {...confirmState} onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))} />
@@ -251,39 +284,49 @@ export default function DashboardPage() {
                 {skipModal && <SkipReasonModal isOpen={skipModal.isOpen} onClose={() => setSkipModal(null)} onConfirm={async (r) => { await HabitService.skipHabit(skipModal.habitId, new Date().toISOString().split('T')[0], r); loadData(); setSkipModal(null); }} habitTitle={skipModal.title} />}
 
                 <div className="max-w-4xl mx-auto space-y-12">
+                    {/* PWA Install Banner */}
+                    <PWABanner />
+
                     {/* Header */}
                     <div className={`flex flex-col gap-6 ${isWild ? 'animate-reveal' : ''}`}>
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div>
-                                <div className="flex items-center gap-3 mb-1">
-                                    <h1 className={`text-4xl md:text-6xl font-black tracking-tighter uppercase ${isWild ? 'animate-glitch italic' : ''}`}>Ritual OS</h1>
-                                    <span className={`px-2 py-0.5 rounded text-xs font-bold border ${isWild ? 'bg-primary text-black border-primary line-through' : 'bg-primary text-primary-foreground border-primary'}`}>VER 2.0.4</span>
+                            <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase flex items-center gap-2 text-foreground">
+                                        RITU
+                                        <span className="bg-red-600 text-black px-2 py-0.5 rounded-[4px] text-2xl md:text-4xl font-mono font-bold tracking-widest align-middle transform -translate-y-1">
+                                            OS
+                                        </span>
+                                    </h1>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border self-start mt-2 ${isWild ? 'bg-red-500 text-black border-red-500' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>v2.0.4</span>
                                 </div>
-                                <div className="flex items-center gap-3 text-muted-foreground text-sm font-mono">
-                                    <span className="text-primary">{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                    <span>|</span>
-                                    <span className="uppercase">{currentTime.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+                                <div className="flex items-center gap-3 text-muted-foreground text-sm font-mono tracking-wide">
+                                    <span className="text-red-500 font-bold">{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    <span className="text-neutral-700">|</span>
+                                    <span className="uppercase text-neutral-500">{currentTime.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</span>
                                 </div>
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                                <Button variant="outline" size="sm" onClick={() => navigate('/')} className={isWild ? 'rounded-none border-2' : ''} title="Home Center"><Home className="w-4 h-4 mr-2" />Hub</Button>
-                                <Button variant="outline" size="icon" onClick={() => navigate('/achievements')} title="Achievements" className={isWild ? 'rounded-none border-2' : ''}><Trophy className="w-4 h-4" /></Button>
-                                <Button variant="outline" size="icon" onClick={() => navigate('/network')} title="Habit Network" className={isWild ? 'rounded-none border-2' : ''}><Share2 className="w-4 h-4" /></Button>
-                                <Button variant="outline" size="sm" onClick={() => setIsFocusOpen(true)} className={isWild ? 'rounded-none border-2' : ''}><Timer className="w-4 h-4 mr-2" />Focus</Button>
-                                <Button variant="outline" size="sm" onClick={() => navigate('/analytics')} className={isWild ? 'rounded-none border-2' : ''}><TrendingUp className="w-4 h-4 mr-2" />Stats</Button>
-                                <Button size="sm" onClick={() => setIsCreateOpen(true)} className={isWild ? 'rounded-none' : ''}><Plus className="w-4 h-4 mr-2" />New</Button>
-                                <Button variant="ghost" size="sm" onClick={() => logout()} className={isWild ? 'rounded-none hover:bg-primary/20' : ''}>Sign out</Button>
+
+                            <div className="flex items-center gap-2">
+                                <Button size="sm" onClick={() => setIsCreateOpen(true)} className={isWild ? 'rounded-none' : ''}>
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    New Protocol
+                                </Button>
+                                {/* Quick Focus access */}
+                                <Button variant="outline" size="icon" onClick={() => setIsFocusOpen(true)} className={isWild ? 'rounded-none border-2' : ''} title="Focus Mode">
+                                    <Timer className="w-4 h-4" />
+                                </Button>
                             </div>
                         </div>
                         <div className="w-full bg-muted/30 h-1 rounded-full overflow-hidden relative">
                             <div className="absolute top-0 left-0 h-full bg-primary transition-all duration-700" style={{ width: `${(xpStats.currentXP / xpStats.nextLevelXP) * 100}%` }} />
                         </div>
                         <div className="flex items-center gap-4 text-[8px] font-black uppercase tracking-[0.2em] opacity-50">
-                            <span>Detected_Sequences: {habits.length}</span>
+                            <span>Detected Sequences: {habits.length}</span>
                             <span>|</span>
-                            <span>Active_Logs: {Object.keys(logs).length}</span>
+                            <span>Active Logs: {Object.keys(logs).length}</span>
                             <span>|</span>
-                            <span>System_Status: {habits.length > 0 ? 'NOMINAL' : 'AWAITING_DATA'}</span>
+                            <span>System Status: {habits.length > 0 ? 'NOMINAL' : 'AWAITING_DATA'}</span>
                         </div>
                     </div>
 
@@ -302,6 +345,44 @@ export default function DashboardPage() {
 
                             {getUncategorized().length > 0 && (
                                 <HabitSection title="Uncategorized Protocols" icon={<AlertCircle className="w-5 h-5 text-gray-500" />} habits={getUncategorized()} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} isWild={isWild} />
+                            )}
+
+                            {/* ZERO STATE - Only show if absolutely no habits */}
+                            {habits.length === 0 && (
+                                <div className={`p-12 border-2 border-dashed rounded-3xl text-center space-y-6 flex flex-col items-center justify-center min-h-[400px]
+                                    ${isWild ? 'bg-black border-red-900/50' : 'bg-muted/5 border-muted-foreground/20'}
+                                `}>
+                                    <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${isWild ? 'bg-red-900/10 text-red-500' : 'bg-muted text-muted-foreground'}`}>
+                                        <Activity className="w-10 h-10 animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <h2 className={`text-2xl font-black uppercase tracking-tighter ${isWild ? 'text-red-500' : 'text-foreground'}`}>
+                                            SYSTEM IDLE // NO PROTOCOLS
+                                        </h2>
+                                        <p className="text-sm font-mono text-muted-foreground mt-2 max-w-sm mx-auto uppercase tracking-wide">
+                                            Neural network awaiting instructions. Initialize primary directive or install learning module.
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row gap-4">
+                                        <Button
+                                            size="lg"
+                                            onClick={() => setIsCreateOpen(true)}
+                                            className={isWild ? 'bg-red-600 text-black hover:bg-white rounded-none font-bold uppercase tracking-widest' : ''}
+                                        >
+                                            <Plus className="w-5 h-5 mr-2" />
+                                            Establish First Protocol
+                                        </Button>
+                                        <Button
+                                            size="lg"
+                                            variant="outline"
+                                            onClick={() => navigate('/settings?tab=data')}
+                                            className={isWild ? 'border-red-900 text-red-500 hover:bg-red-900/20 rounded-none uppercase tracking-widest' : ''}
+                                        >
+                                            <BookOpen className="w-5 h-5 mr-2" />
+                                            Install Modules
+                                        </Button>
+                                    </div>
+                                </div>
                             )}
 
                             <div className="space-y-16">
