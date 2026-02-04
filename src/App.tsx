@@ -65,16 +65,26 @@ function App() {
         let updateCheckInterval: NodeJS.Timeout;
 
         const initSystem = async () => {
-            // Initialize system (NotificationManager will handle the core registration)
-            const registration = await NotificationManagerInstance.init();
+            if (!('serviceWorker' in navigator)) {
+                console.warn('⚠️ Service Worker not supported');
+                return;
+            }
 
-            if (registration && 'serviceWorker' in navigator) {
-                // Check for updates every 6 hours
-                updateCheckInterval = setInterval(() => {
-                    navigator.serviceWorker.ready.then(reg => {
-                        reg.update();
-                    });
-                }, 6 * 60 * 60 * 1000);
+            try {
+                // Initialize system (NotificationManager will handle the core registration)
+                const registration = await NotificationManagerInstance.init();
+
+                if (registration && typeof registration !== 'boolean') {
+                    console.log('✅ Service Worker active with scope:', registration.scope);
+
+                    // ✅ Check for updates periodically (every 6 hours)
+                    updateCheckInterval = setInterval(() => {
+                        console.log('🔄 Checking for Service Worker updates...');
+                        registration.update().catch(err => console.warn('Update check failed:', err));
+                    }, 6 * 60 * 60 * 1000);
+                }
+            } catch (error) {
+                console.error('❌ Service Worker registration sequence failed:', error);
             }
         };
 

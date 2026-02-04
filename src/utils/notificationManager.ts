@@ -8,14 +8,14 @@ class NotificationManager {
     private notificationSchedules = new Map<string, NodeJS.Timeout>();
 
     // Initialize Service Worker
-    async init(): Promise<boolean> {
+    async init(): Promise<ServiceWorkerRegistration | boolean> {
         try {
             if ('serviceWorker' in navigator) {
                 const registration = await navigator.serviceWorker.register(
                     '/service-worker.js',
                     {
                         scope: '/',
-                        updateViaCache: 'none' // Essential for preventing update loops
+                        updateViaCache: 'none'
                     }
                 );
                 this.serviceWorkerRegistration = registration;
@@ -26,7 +26,7 @@ class NotificationManager {
                     this.handleNotificationMessage(event.data);
                 });
 
-                return true;
+                return registration;
             }
             return false;
         } catch (error) {
