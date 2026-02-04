@@ -11,6 +11,7 @@ import { HabitService } from '../services/habit.service';
 import { GoogleCalendarService } from '../services/googleCalendar.service';
 import { ReminderService } from '../services/reminder.service';
 import { NotificationManagerInstance } from '../utils/notificationManager';
+import { useNotifications } from '../context/NotificationContext';
 
 
 // Helper: Format 24h to 12h AM/PM
@@ -83,10 +84,10 @@ const getTimeRemaining = (reminder: Reminder): string | null => {
 export default function RemindersPage() {
     const navigate = useNavigate();
     const { preferences } = useTheme();
+    const { refreshReminders } = useNotifications();
     const isWild = preferences.wild_mode;
     const [reminders, setReminders] = useState<Reminder[]>([]);
     const [habits, setHabits] = useState<{ id: string; title: string }[]>([]);
-    const [activeToasts, setActiveToasts] = useState<ToastProps[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [hasPermission, setHasPermission] = useState(false);
     const [editingReminder, setEditingReminder] = useState<Reminder | undefined>(undefined);
@@ -121,87 +122,6 @@ export default function RemindersPage() {
         checkPerm();
     }, []);
 
-    // Polling System
-    useEffect(() => {
-        const interval = setInterval(() => {
-            reminders.forEach(async (reminder) => {
-                if (NotificationService.shouldTrigger(reminder)) {
-                    // Try Notification API first
-                    // NotificationService.sendNotification(reminder.title, `It's time for: ${reminder.title}`);
-                    const nowMsg = new Date().toISOString();
-
-                    // 1. Update UI immediately
-                    setReminders(prev => prev.map(r =>
-                        r.id === reminder.id ? { ...r, lastTriggered: nowMsg } : r
-                    ));
-
-                    // 2. Add to active toasts (if in-app enabled or just always for now)
-                    if (reminder.notificationType === 'in-app' || !reminder.notificationType) {
-                        const newToast: ToastProps = {
-                            id: reminder.id, // Use reminder ID as toast ID for simplicity, prevents dupes
-                            title: reminder.title,
-                            message: `It's time!`,
-                            onDismiss: dismissToast,
-                            onSnooze: snoozeToast
-                        };
-
-                        setActiveToasts(prev => {
-                            if (prev.find(t => t.id === newToast.id)) return prev;
-                            return [...prev, newToast];
-                        });
-                    }
-
-                    // 2.5 Update DB
-                    try {
-                        await ReminderService.updateReminder(reminder.id, { lastTriggered: nowMsg });
-                    } catch (err) {
-                        console.error("Failed to update trigger time", err);
-                    }
-                }
-            });
-        }, 1000); // Check every second (can be optimized to 10s or 1m)
-
-        return () => clearInterval(interval);
-    }, [reminders]);
-
-    const dismissToast = (id: string) => {
-        setActiveToasts(prev => prev.filter(t => t.id !== id));
-    };
-
-    const snoozeToast = async (id: string, minutes: number) => {
-        // Dismiss UI
-        dismissToast(id);
-
-        // Calculate new time
-        const now = new Date();
-        now.setMinutes(now.getMinutes() + minutes);
-        const newTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-        // Find reminder logic
-        const reminder = reminders.find(r => r.id === id);
-        if (!reminder) return;
-
-        // We could create a *new* one-off reminder OR just update this one if it's one-time?
-        // Better UX: Create a temporary one-time reminder or handle "Snooze" differently.
-        // Quickest robust way: Create a One-Time reminder for today with new Time.
-
-        try {
-            await ReminderService.createReminder({
-                title: `💤 ${reminder.title}`,
-                time: newTime,
-                days: [], // One-time
-                date: now.toISOString().split('T')[0], // Today
-                notificationType: 'in-app',
-                isEnabled: true
-            });
-            // Refresh list
-            const data = await ReminderService.getReminders();
-            setReminders(data);
-        } catch (err) {
-            console.error(err);
-            alert("Failed to snooze");
-        }
-    };
 
     const scheduleReminderInSW = async (reminder: Reminder) => {
         if (!reminder.isEnabled) return;
@@ -303,6 +223,7 @@ export default function RemindersPage() {
                 await scheduleReminderInSW(savedReminder);
             }
 
+            refreshReminders(); // Centralized sync
             setEditingReminder(undefined);
             setIsModalOpen(false);
         } catch (error) {
@@ -364,13 +285,6 @@ export default function RemindersPage() {
                 initialData={editingReminder}
                 habits={habits} // Added
             />
-
-            {/* Toast Container */}
-            <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-                {activeToasts.map(toast => (
-                    <ReminderToast key={toast.id} {...toast} />
-                ))}
-            </div>
 
             <div className={`relative z-10 max-w-2xl mx-auto space-y-12 pb-20 ${isWild ? 'animate-reveal' : ''}`}>
                 {/* Header */}

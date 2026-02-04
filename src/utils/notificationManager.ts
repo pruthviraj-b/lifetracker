@@ -169,30 +169,47 @@ class NotificationManager {
             }
 
             if (Notification.permission === 'granted') {
-                // Feature detection for service worker notification
-                if (this.serviceWorkerRegistration && this.serviceWorkerRegistration.active) {
-                    // ✅ Prefer SW notification as it handles background better on some systems
-                    this.serviceWorkerRegistration.showNotification(title, {
+                let registration = this.serviceWorkerRegistration;
+
+                // If instance registration is missing, try to get it from the browser
+                if (!registration && 'serviceWorker' in navigator) {
+                    registration = await navigator.serviceWorker.ready;
+                }
+
+                if (registration && registration.showNotification) {
+                    // ✅ Prefer SW notification as it handles background better
+                    await registration.showNotification(title, {
                         icon: '/pwa-192x192.png',
                         badge: '/pwa-192x192.png',
-                        body: options.body || 'Protocol requirement: High Priority.',
+                        body: options.body || 'Protocol requirement active.',
                         tag: options.tag || title,
                         requireInteraction: true,
                         vibrate: [200, 100, 200],
-                        actions: [
-                            { action: 'complete', title: '✅ Complete' },
-                            { action: 'snooze', title: '⏳ Snooze' }
+                        actions: (options as any).actions || [
+                            { action: 'complete', title: '✅ Done' },
+                            { action: 'snooze', title: '⏳ Snooze' },
+                            { action: 'open', title: '👁️ View' }
                         ],
-                        ...options
+                        ...options,
+                        data: {
+                            ...(options as any).data,
+                            url: (options as any).data?.url || '/'
+                        }
                     } as any);
                 } else {
                     // ✅ Fallback to browser Notification API directly
-                    new Notification(title, {
-                        icon: options.icon || '/pwa-192x192.png',
+                    const n = new Notification(title, {
+                        icon: '/pwa-192x192.png',
                         body: options.body || 'Time for your ritual.',
                         tag: options.tag || title,
                         ...options
                     });
+                    n.onclick = () => {
+                        window.focus();
+                        n.close();
+                        const url = (options as any).data?.url || '/';
+                        if (url !== '/') window.location.href = url;
+                    };
                 }
 
                 console.log('✅ Notification triggered:', title);

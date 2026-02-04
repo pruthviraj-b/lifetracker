@@ -5,6 +5,8 @@ interface ToastContextType {
     showToast: (title: string, message: string, options?: {
         duration?: number;
         onAction?: () => void;
+        onSnooze?: (minutes: number) => void;
+        onDismiss?: () => void;
         actionLabel?: string;
         type?: 'success' | 'error' | 'info';
     }) => void;
@@ -21,26 +23,24 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             id,
             title,
             message,
-            onDismiss: (toastId) => setToasts(prev => prev.filter(t => t.id !== toastId)),
-            onSnooze: (toastId, mins) => {
-                // Snooze logic handled by callback if passed, otherwise default dismiss
+            onDismiss: (toastId) => {
                 setToasts(prev => prev.filter(t => t.id !== toastId));
-            }
-            // Note: ReminderToast might need refactoring to accept generic actions instead of just 'onSnooze'
-            // For now, we will reuse it as is or slightly modify render logic
+                if (options.onDismiss) options.onDismiss();
+            },
+            onSnooze: options.onSnooze ? (toastId, mins) => {
+                options.onSnooze(mins);
+                setToasts(prev => prev.filter(t => t.id !== toastId));
+            } : undefined,
+            actionLabel: options.actionLabel,
+            onAction: options.onAction
         };
-
-        // If we want generic "Undo" action, we might need to update ReminderToast props
-        // or create a new GenericToast component.
-        // Let's assume we update ReminderToast to take `actionLabel` and `onAction` in a future step
-        // For now, this is a placeholder structure.
 
         setToasts(prev => [...prev, newToast]);
 
         if (options.duration !== 0) {
             setTimeout(() => {
                 setToasts(prev => prev.filter(t => t.id !== id));
-            }, options.duration || 3000);
+            }, options.duration || 5000);
         }
     };
 

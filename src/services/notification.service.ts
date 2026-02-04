@@ -35,30 +35,41 @@ export const NotificationService = {
                     if (registration) {
                         return registration.showNotification(title, {
                             body,
-                            icon: '/vite.svg',
+                            icon: '/pwa-192x192.png',
+                            badge: '/pwa-192x192.png',
                             requireInteraction: true,
-                            data
-                        });
+                            vibrate: [200, 100, 200],
+                            data: {
+                                ...data,
+                                url: data?.url || '/'
+                            }
+                        } as any);
                     }
                 } catch (e) {
-                    // Fallback
+                    console.warn('SW notification failed, falling back to window:', e);
                 }
             }
 
             // Standard fallback
-            const n = new Notification(title, {
-                body,
-                icon: '/vite.svg',
-                requireInteraction: true,
-                data
-            });
-            n.onclick = () => {
-                window.focus();
-                n.close();
-                if (data?.url) {
-                    window.location.href = data.url;
-                }
-            };
+            try {
+                const n = new Notification(title, {
+                    body,
+                    icon: '/pwa-192x192.png',
+                    requireInteraction: true,
+                    data
+                });
+                n.onclick = () => {
+                    window.focus();
+                    n.close();
+                    if (data?.url) {
+                        window.location.href = data.url;
+                    }
+                };
+            } catch (fallbackErr) {
+                console.error('All notification methods failed:', fallbackErr);
+            }
+        } else {
+            console.warn('Notification permission NOT granted.');
         }
     },
 

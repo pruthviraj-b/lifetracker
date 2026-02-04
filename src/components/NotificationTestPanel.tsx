@@ -1,18 +1,20 @@
-
 import React, { useState } from 'react';
+import { ReminderService } from '../services/reminder.service';
+import { useNotifications } from '../context/NotificationContext';
 import { NotificationManagerInstance } from '../utils/notificationManager';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { Bell, Clock, AlertTriangle } from 'lucide-react';
+import { Bell, Clock, AlertTriangle, Database } from 'lucide-react';
 
 export const NotificationTestPanel: React.FC = () => {
+    const { refreshReminders } = useNotifications();
     const [testTime, setTestTime] = useState('09:00');
     const [testMessage, setTestMessage] = useState('Test Habit');
 
     const testImmediateNotification = async () => {
         await NotificationManagerInstance.showNotification('Test Notification', {
             body: testMessage,
-            icon: '/habit-icon.png',
+            icon: '/pwa-192x192.png',
             tag: 'test-notification'
         });
     };
@@ -24,10 +26,6 @@ export const NotificationTestPanel: React.FC = () => {
 
         if (scheduledTime < new Date()) {
             scheduledTime.setSeconds(scheduledTime.getSeconds() + 5); // 5 seconds from now if passed
-        } else {
-            // use actual time from input? 
-            // User requested: "If scheduled time < now, schedule for tomorrow" 
-            // But for *testing*, we usually want it soon.
         }
 
         await NotificationManagerInstance.scheduleNotification(
@@ -40,7 +38,6 @@ export const NotificationTestPanel: React.FC = () => {
     };
 
     const testTabClosedNotification = async () => {
-        // Schedule notification 5 seconds from now
         const testTime = new Date();
         testTime.setSeconds(testTime.getSeconds() + 5);
 
@@ -53,10 +50,63 @@ export const NotificationTestPanel: React.FC = () => {
         alert('Notification scheduled for 5 seconds from now. Close this tab immediately!');
     };
 
+    const seedSampleReminders = async () => {
+        const now = new Date();
+        const inOneMin = new Date(now.getTime() + 60000);
+        const inOneMinTime = `${inOneMin.getHours().toString().padStart(2, '0')}:${inOneMin.getMinutes().toString().padStart(2, '0')}`;
+
+        const samples = [
+            {
+                title: "🧪 1-Min Test Alert",
+                time: inOneMinTime,
+                days: [0, 1, 2, 3, 4, 5, 6],
+                isEnabled: true,
+                notificationType: 'in-app' as const,
+                customMessage: "This is your 1-minute test reminder. System is operational."
+            },
+            {
+                title: "🧘 Morning Mindfulness",
+                time: "08:00",
+                days: [1, 2, 3, 4, 5],
+                isEnabled: true,
+                notificationType: 'push' as const,
+                customMessage: "Center your consciousness before the daily cycle begins."
+            },
+            {
+                title: "🌙 Evening Reflection",
+                time: "22:00",
+                days: [0, 1, 2, 3, 4, 5, 6],
+                isEnabled: true,
+                notificationType: 'in-app' as const,
+                customMessage: "Log your final protocols and prepare for restoration."
+            }
+        ];
+
+        try {
+            for (const sample of samples) {
+                await ReminderService.createReminder(sample);
+            }
+            await refreshReminders();
+            alert("✅ Successfully added 3 sample notification nodes!");
+        } catch (error) {
+            console.error(error);
+            alert("Failed to seed reminders. Check console.");
+        }
+    };
+
     return (
         <div className="border-2 border-dashed border-primary/20 bg-primary/5 p-6 rounded-xl space-y-6">
-            <h3 className="font-bold flex items-center gap-2">
-                🧪 Notification Testing Panel
+            <h3 className="font-bold flex items-center justify-between">
+                <span className="flex items-center gap-2">🧪 Notification Testing Panel</span>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={seedSampleReminders}
+                    className="border-primary/50 text-primary hover:bg-primary/10"
+                >
+                    <Database className="w-3 h-3 mr-2" />
+                    Seed Samples
+                </Button>
             </h3>
 
             <div className="space-y-2">

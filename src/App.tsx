@@ -67,7 +67,8 @@ function App() {
 
         const handleSWMessage = async (event: MessageEvent) => {
             if (event.data && event.data.type === 'NOTIF_ACTION') {
-                const { action, habitId } = event.data;
+                const { action, habitId, reminderId } = event.data;
+
                 if (action === 'complete' && habitId) {
                     try {
                         const today = new Date().toISOString().split('T')[0];
@@ -77,6 +78,11 @@ function App() {
                     } catch (err) {
                         console.error('Failed to complete habit from notification:', err);
                     }
+                } else if (action === 'snooze' && reminderId) {
+                    // We need access to snoozeReminder here, or we can use a custom event
+                    window.dispatchEvent(new CustomEvent('reminder-snooze-external', {
+                        detail: { reminderId, minutes: 15 }
+                    }));
                 }
             }
         };

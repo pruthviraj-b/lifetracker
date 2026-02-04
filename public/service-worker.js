@@ -85,14 +85,15 @@ self.addEventListener('notificationclick', (event) => {
 
     notification.close();
 
-    if (action === 'complete' && notification.data?.habitId) {
-        // Broadcast completion to all open tabs
+    if (action === 'complete' || action === 'snooze') {
+        // Broadcast action to all open tabs
         event.waitUntil(
             self.clients.matchAll().then(clients => {
                 clients.forEach(client => client.postMessage({
                     type: 'NOTIF_ACTION',
-                    action: 'complete',
-                    habitId: notification.data.habitId
+                    action: action,
+                    habitId: notification.data?.habitId,
+                    reminderId: notification.data?.reminderId
                 }));
             })
         );
