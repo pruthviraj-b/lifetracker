@@ -28,18 +28,20 @@ class NotificationManager {
                     }
                 );
                 this.serviceWorkerRegistration = registration;
-                console.log('Service Worker registered successfully');
+                console.log('✅ RITU SYSTEM: Service Worker registered. Ready for protocols.');
 
                 // Listen for messages from service worker
                 navigator.serviceWorker.addEventListener('message', (event) => {
+                    console.log('📩 RITU SYSTEM: Received message from deep-space (SW):', event.data);
                     this.handleNotificationMessage(event.data);
                 });
 
                 return registration;
             }
+            console.warn('⚠️ RITU SYSTEM: Browser does not support service workers.');
             return false;
         } catch (error) {
-            console.error('Service Worker registration failed:', error);
+            console.error('❌ RITU SYSTEM: Service Worker registration failed:', error);
             return false;
         }
     }
@@ -81,13 +83,14 @@ class NotificationManager {
             }
 
             const notificationId = `${habitName}_${Date.now()}`;
+            const uniqueTag = options.tag || notificationId; // Use unique tag to allow stacking
 
             // Store in IndexedDB for persistence
             await IndexedDBManagerInstance.addNotification({
                 id: notificationId,
                 habitName,
                 scheduledTime: notificationTime.toISOString(),
-                options,
+                options: { ...options, tag: uniqueTag },
                 createdAt: now.toISOString()
             });
 
@@ -100,30 +103,46 @@ class NotificationManager {
                         title: habitName,
                         options: {
                             body: options.body || `Protocol initialization required: ${habitName}`,
-                            icon: '/pwa-192x192.png',
+                            icon: '/pwa-512x512.png',
                             badge: '/pwa-192x192.png',
-                            tag: options.tag || habitName, // Group by habit name
+                            tag: uniqueTag, // UNIQUE TAG = MULTIPLE MESSAGES
+                            renotify: true,
                             requireInteraction: true,
                             vibrate: [200, 100, 200],
+                            data: {
+                                habitId: (options as any).habitId || habitName,
+                                url: (options as any).url || '/dashboard'
+                            },
                             actions: [
                                 { action: 'complete', title: '✅ Done' },
-                                { action: 'snooze', title: '⏳ +10m' }
+                                { action: 'open', title: '👁️ Open' }
                             ],
                             ...options
-                        },
+                        } as any,
                         delay: delay
                     });
                 }
             }
 
             // Also set local timer (for when tab is open)
-            this.setLocalNotificationTimer(habitName, delay, options);
+            this.setLocalNotificationTimer(habitName, delay, { ...options, tag: uniqueTag } as any);
 
             return true;
         } catch (error) {
             console.error('Error scheduling notification:', error);
             return false;
         }
+    }
+
+    // Specialized Course Reminder
+    async scheduleCourseReminder(courseTitle: string, courseId: string, delayMs: number) {
+        const scheduledTime = new Date(Date.now() + delayMs);
+        return this.scheduleNotification(`COURSE: ${courseTitle}`, scheduledTime, {
+            body: `Resume your neural training: ${courseTitle}`,
+            url: `/courses/${courseId}`,
+            tag: `course_${courseId}`, // Overwrites same course, but stacks with other courses/habits
+            icon: '/pwa-512x512.png'
+        } as any);
     }
 
     // Local timer (works when tab is open)

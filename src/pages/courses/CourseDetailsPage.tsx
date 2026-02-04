@@ -10,6 +10,8 @@ import { useToast } from '../../context/ToastContext';
 import { useTheme } from '../../context/ThemeContext';
 import { AddFlashcardModal } from '../../components/flashcards/AddFlashcardModal';
 import { FlashcardService } from '../../services/flashcard.service';
+import { NotificationManagerInstance } from '../../utils/notificationManager';
+import { Bell } from 'lucide-react';
 
 
 export const CourseDetailsPage: React.FC = () => {
@@ -282,9 +284,24 @@ export const CourseDetailsPage: React.FC = () => {
                         Initiate Protocol
                     </button>
                 ) : (
-                    <button className="w-full md:w-auto bg-green-500/20 text-green-500 border border-green-500/50 px-6 py-2 rounded-full font-bold uppercase tracking-wider flex items-center justify-center gap-2">
-                        <CheckCircle className="w-4 h-4" /> Active
-                    </button>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={async () => {
+                                // Default: Remind in 1 hour for now, or we can add a picker
+                                // For simplicity and "wow" factor, let's do 1 hour.
+                                const success = await NotificationManagerInstance.scheduleCourseReminder(course.title, course.id, 60 * 60 * 1000);
+                                if (success) {
+                                    showToast("Reminder Set", "Protocol resume alerted for in 1 hour.", { type: 'success' });
+                                }
+                            }}
+                            className="bg-secondary/20 text-secondary border border-secondary/50 px-6 py-2 rounded-full font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-secondary/30 transition-colors"
+                        >
+                            <Bell className="w-4 h-4" /> Remind Me
+                        </button>
+                        <button className="bg-green-500/20 text-green-500 border border-green-500/50 px-6 py-2 rounded-full font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-default">
+                            <CheckCircle className="w-4 h-4" /> Active
+                        </button>
+                    </div>
                 )}
             </div>
 
