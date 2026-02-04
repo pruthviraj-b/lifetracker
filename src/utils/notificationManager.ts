@@ -91,7 +91,7 @@ class NotificationManager {
                 createdAt: now.toISOString()
             });
 
-            // Send to service worker
+            // Send to service worker with Premium Native options
             if (this.serviceWorkerRegistration && this.serviceWorkerRegistration.active) {
                 const worker = this.serviceWorkerRegistration.active;
                 if (worker) {
@@ -99,11 +99,16 @@ class NotificationManager {
                         type: 'SCHEDULE_NOTIFICATION',
                         title: habitName,
                         options: {
-                            body: options.body || `Time to do: ${habitName}`,
-                            icon: options.icon || '/habit-icon.png',
-                            badge: options.badge || '/badge.png',
-                            tag: notificationId,
+                            body: options.body || `Protocol initialization required: ${habitName}`,
+                            icon: '/pwa-192x192.png',
+                            badge: '/pwa-192x192.png',
+                            tag: options.tag || habitName, // Group by habit name
                             requireInteraction: true,
+                            vibrate: [200, 100, 200],
+                            actions: [
+                                { action: 'complete', title: '✅ Done' },
+                                { action: 'snooze', title: '⏳ +10m' }
+                            ],
                             ...options
                         },
                         delay: delay
@@ -149,11 +154,16 @@ class NotificationManager {
                 if (this.serviceWorkerRegistration && this.serviceWorkerRegistration.active) {
                     // ✅ Prefer SW notification as it handles background better on some systems
                     this.serviceWorkerRegistration.showNotification(title, {
-                        icon: options.icon || '/pwa-192x192.png',
-                        badge: options.badge || '/pwa-192x192.png',
-                        body: options.body || 'Time for your ritual.',
+                        icon: '/pwa-192x192.png',
+                        badge: '/pwa-192x192.png',
+                        body: options.body || 'Protocol requirement: High Priority.',
                         tag: options.tag || title,
                         requireInteraction: true,
+                        vibrate: [200, 100, 200],
+                        actions: [
+                            { action: 'complete', title: '✅ Complete' },
+                            { action: 'snooze', title: '⏳ Snooze' }
+                        ],
                         ...options
                     } as any);
                 } else {

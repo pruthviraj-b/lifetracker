@@ -50,6 +50,7 @@ const PageLoader = () => (
 );
 
 import { NotificationManagerInstance } from './utils/notificationManager';
+import { HabitService } from './services/habit.service';
 
 function App() {
     const [isGraphOpen, setIsGraphOpen] = useState(false);
@@ -64,6 +65,22 @@ function App() {
     useEffect(() => {
         let updateCheckInterval: NodeJS.Timeout;
 
+        const handleSWMessage = async (event: MessageEvent) => {
+            if (event.data && event.data.type === 'NOTIF_ACTION') {
+                const { action, habitId } = event.data;
+                if (action === 'complete' && habitId) {
+                    try {
+                        const today = new Date().toISOString().split('T')[0];
+                        await HabitService.toggleHabitCompletion(habitId, today, true);
+                        window.dispatchEvent(new CustomEvent('habit-completed-external', { detail: { habitId } }));
+                        console.log('✅ Habit completed via notification action');
+                    } catch (err) {
+                        console.error('Failed to complete habit from notification:', err);
+                    }
+                }
+            }
+        };
+
         const initSystem = async () => {
             if (!('serviceWorker' in navigator)) {
                 console.warn('⚠️ Service Worker not supported');
@@ -71,6 +88,9 @@ function App() {
             }
 
             try {
+                // Listen for messages from SW
+                navigator.serviceWorker.addEventListener('message', handleSWMessage);
+
                 // Initialize system (NotificationManager will handle the core registration)
                 const registration = await NotificationManagerInstance.init();
 
@@ -92,6 +112,7 @@ function App() {
 
         return () => {
             if (updateCheckInterval) clearInterval(updateCheckInterval);
+            navigator.serviceWorker.removeEventListener('message', handleSWMessage);
         };
     }, []);
 
