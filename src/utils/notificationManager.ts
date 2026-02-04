@@ -10,12 +10,6 @@ class NotificationManager {
     // Initialize Service Worker
     async init(): Promise<boolean> {
         try {
-            // NOTE: Service Worker registration DISABLED to prevent reload loops
-            // Will be re-enabled once update logic is fixed
-            console.log('NotificationManager: SW registration disabled');
-            return true;
-
-            /*
             if ('serviceWorker' in navigator) {
                 const registration = await navigator.serviceWorker.register(
                     '/service-worker.js',
@@ -32,7 +26,6 @@ class NotificationManager {
                 return true;
             }
             return false;
-            */
         } catch (error) {
             console.error('Service Worker registration failed:', error);
             return false;

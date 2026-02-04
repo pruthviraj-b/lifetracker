@@ -24,7 +24,8 @@ self.addEventListener('install', (event) => {
         })
     );
 
-    self.skipWaiting(); // Force activation
+    // DON'T call skipWaiting() here - let it wait until user approves update
+    // self.skipWaiting() will be called via message handler when user clicks "Update"
 });
 
 // Activate Event - Clean up old caches

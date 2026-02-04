@@ -4,6 +4,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Bell, BellOff, Check } from 'lucide-react';
+import { NotificationManagerInstance } from '../utils/notificationManager';
 
 interface HabitReminderProps {
     habit: {
@@ -48,9 +49,24 @@ export const HabitReminder: React.FC<HabitReminderProps> = ({ habit }) => {
 
     if (!permissionGranted) {
         return (
-            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-sm text-yellow-500 flex items-center gap-2">
-                <BellOff className="w-4 h-4" />
-                <p>Enable notifications to set reminders.</p>
+            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl space-y-4">
+                <div className="flex items-center gap-2 text-sm text-yellow-500">
+                    <BellOff className="w-4 h-4" />
+                    <p>Enable notifications to set reminders.</p>
+                </div>
+                <Button
+                    onClick={async () => {
+                        const granted = await NotificationManagerInstance.requestPermission();
+                        if (!granted) {
+                            alert('Handshake rejected. Verify browser settings and use HTTPS.');
+                        }
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-yellow-500 border-yellow-500/50 hover:bg-yellow-500/10"
+                >
+                    Enable Notifications
+                </Button>
             </div>
         );
     }

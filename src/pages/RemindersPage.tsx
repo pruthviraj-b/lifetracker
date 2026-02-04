@@ -406,8 +406,10 @@ export default function RemindersPage() {
                             variant="outline"
                             className={`w-full ${isWild ? 'rounded-none border-red-500 hover:bg-red-500/10 text-red-500' : 'text-yellow-500 border-yellow-500 hover:bg-yellow-500/10'}`}
                             onClick={async () => {
-                                const granted = await NotificationService.requestPermission();
-                                if (!granted) alert("Handshake rejected. Verify secure connection (HTTPS) and browser settings.");
+                                const granted = await NotificationManagerInstance.requestPermission();
+                                if (!granted) {
+                                    alert("Handshake rejected. Verify secure connection (HTTPS) and browser settings.");
+                                }
                                 setHasPermission(granted);
                             }}
                         >
