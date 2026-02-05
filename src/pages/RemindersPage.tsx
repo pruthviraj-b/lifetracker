@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
-import { Bell, Plus, Trash2, Power, Home } from 'lucide-react';
+import { Bell, Plus, Trash2, Power, Home, Activity, Zap } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { Reminder } from '../types/reminder';
 import { ReminderModal } from '../components/tools/ReminderModal';
@@ -84,7 +84,7 @@ const getTimeRemaining = (reminder: Reminder): string | null => {
 export default function RemindersPage() {
     const navigate = useNavigate();
     const { preferences } = useTheme();
-    const { refreshReminders } = useNotifications();
+    const { refreshReminders, runDiagnostics, testNotifications } = useNotifications();
     const isWild = preferences.wild_mode;
     const [reminders, setReminders] = useState<Reminder[]>([]);
     const [habits, setHabits] = useState<{ id: string; title: string }[]>([]);
@@ -410,6 +410,54 @@ export default function RemindersPage() {
                                 </div>
                             </div>
                         ))
+                    )}
+                </div>
+
+                {/* Diagnostics Matrix */}
+                <div className={`p-8 border-2 ${isWild ? 'bg-black border-primary/40 rounded-none' : 'bg-card/50 border-primary/20 rounded-3xl'}`}>
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                            <Activity className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black uppercase tracking-tight">Diagnostic Matrix</h2>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">System Integrity Check</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Button
+                            variant="outline"
+                            className={`h-12 border-primary/30 hover:bg-primary/10 ${isWild ? 'rounded-none' : 'rounded-xl'}`}
+                            onClick={async () => {
+                                const results = await runDiagnostics();
+                                alert(`
+MATRIX DIAGNOSIS:
+-----------------
+Platform: ${results.isIOS ? 'iOS' : results.isMobile ? 'Android/Mobile' : 'Desktop'}
+Secure (HTTPS): ${results.isSecure ? 'YES' : 'NO'}
+Service Worker: ${results.hasServiceWorker ? 'ACTIVE' : 'MISSING'}
+PWA Installed: ${results.isPWA ? 'YES' : 'NO'}
+Permission: ${results.permission.toUpperCase()}
+                                `);
+                            }}
+                        >
+                            <Activity className="w-4 h-4 mr-2" />
+                            Run Diagnosis
+                        </Button>
+                        <Button
+                            className={`h-12 shadow-primary/20 ${isWild ? 'rounded-none' : 'rounded-xl'}`}
+                            onClick={testNotifications}
+                        >
+                            <Zap className="w-4 h-4 mr-2" />
+                            Test Signal
+                        </Button>
+                    </div>
+                    {NotificationService.isIOS() && !NotificationService.isPWA() && (
+                        <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-mono leading-relaxed">
+                            <p className="font-bold mb-2 uppercase">⚠️ iOS PROTOCOL VULNERABILITY</p>
+                            <p>Safari inhibits background triggers. You MUST perform 'Add to Home Screen' and launch via icon to initialize the notification bridge.</p>
+                        </div>
                     )}
                 </div>
             </div>
