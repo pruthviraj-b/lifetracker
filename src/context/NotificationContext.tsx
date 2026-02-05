@@ -115,6 +115,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         checkPermission();
     }, []);
 
+    const [localTriggerHistory, setLocalTriggerHistory] = useState<Record<string, string>>({});
+
     useEffect(() => {
         if (!user) return;
         loadReminders();
@@ -150,11 +152,16 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         const pollInterval = setInterval(() => {
             const now = new Date();
-            const nowIso = now.toISOString();
+            const nowIsoMin = now.toISOString().slice(0, 16); // e.g. "2024-01-01T12:00"
 
             reminders.forEach(async (reminder) => {
-                if (NotificationService.shouldTrigger(reminder)) {
-                    // Triggering reminder: reminder.title
+                // 🚀 CROSS-DEVICE TRIGGER FIX:
+                // We check 'localTriggerHistory' so this device rings even if DB update is fast.
+                const hasTriggeredLocally = localTriggerHistory[reminder.id] === nowIsoMin;
+
+                if (!hasTriggeredLocally && NotificationService.shouldTrigger(reminder)) {
+                    // Record local trigger immediately to prevent double-firing on THIS device
+                    setLocalTriggerHistory(prev => ({ ...prev, [reminder.id]: nowIsoMin }));
 
                     // 1. Browser Notification (Native Push)
                     NotificationManagerInstance.showNotification(
@@ -182,15 +189,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                         }
                     );
 
-                    // 3. Update State Locally to prevent double-firing in the same minute
+                    // 3. Update State Locally
                     setReminders(prev => prev.map(r =>
-                        r.id === reminder.id ? { ...r, lastTriggered: nowIso } : r
+                        r.id === reminder.id ? { ...r, lastTriggered: now.toISOString() } : r
                     ));
 
-                    // 4. Persistence (Supabase)
+                    // 4. Persistence (Supabase) - Heartbeat for other devices
                     try {
                         await ReminderService.updateReminder(reminder.id, {
-                            lastTriggered: nowIso
+                            lastTriggered: now.toISOString()
                         });
                     } catch (e) {
                         console.error('Failed to update trigger in DB:', e);
@@ -200,7 +207,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }, 5000); // Check every 5 seconds for better resolution
 
         return () => clearInterval(pollInterval);
-    }, [user, reminders, showToast]);
+    }, [user, reminders, showToast, localTriggerHistory]);
 
     const requestPermission = async () => {
         const granted = await NotificationService.requestPermission();

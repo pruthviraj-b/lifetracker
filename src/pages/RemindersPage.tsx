@@ -85,7 +85,7 @@ const getTimeRemaining = (reminder: Reminder): string | null => {
 export default function RemindersPage() {
     const navigate = useNavigate();
     const { preferences } = useTheme();
-    const { refreshReminders, runDiagnostics, testNotifications } = useNotifications();
+    const { refreshReminders, runDiagnostics, testNotifications, requestPermission } = useNotifications();
     const isWild = preferences.wild_mode;
     const [reminders, setReminders] = useState<Reminder[]>([]);
     const [habits, setHabits] = useState<{ id: string; title: string }[]>([]);
@@ -426,7 +426,7 @@ export default function RemindersPage() {
                                 <br />Please authorize the security handshake.
                             </p>
                             <Button
-                                onClick={() => NotificationManagerInstance.requestPermission().then(p => setHasPermission(p))}
+                                onClick={requestPermission}
                                 className="w-full h-10 bg-red-500 text-black font-black uppercase text-[10px] tracking-widest rounded-none"
                             >
                                 Authorize Synchronization
