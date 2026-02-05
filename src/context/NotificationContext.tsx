@@ -14,6 +14,7 @@ interface NotificationContextType {
     snoozeReminder: (id: string, minutes: number) => Promise<void>;
     testNotifications: () => Promise<void>;
     runDiagnostics: () => Promise<any>;
+    syncStatus: 'idle' | 'syncing' | 'error';
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -117,30 +118,42 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     const [localTriggerHistory, setLocalTriggerHistory] = useState<Record<string, string>>({});
 
+    const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
+
     useEffect(() => {
         if (!user) return;
         loadReminders();
 
-        // 🚀 REALTIME SYNC: Listen for changes across ALL devices
+        console.log("🛰️ [Cluster] Initializing Pulse Matrix for User:", user.id);
+
+        // 🚀 BROAD PULSE: Listen for ANY changes to the reminders cluster
         const channel = supabase
-            .channel('reminders-sync')
+            .channel('global-pulse')
             .on(
                 'postgres_changes',
                 {
                     event: '*',
                     schema: 'public',
-                    table: 'reminders',
-                    filter: `user_id=eq.${user.id}`
+                    table: 'reminders'
+                    // Filter removed to ensure broad detection across nodes
                 },
-                () => {
-                    console.log('🔄 [Realtime] Cluster update detected. Syncing protocols...');
-                    loadReminders();
+                (payload) => {
+                    // Only process if it belongs to this user (extra safety)
+                    const data = payload.new as any || payload.old as any;
+                    if (data && data.user_id === user.id) {
+                        console.log('⚡ [Pulse] Remote trigger detected. Synchronizing...');
+                        setSyncStatus('syncing');
+                        loadReminders().then(() => setSyncStatus('idle'));
+                    }
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('✅ [Pulse] Connected to Cloud Relay.');
+                }
+            });
 
-        // Backup refresh every 5 minutes (reduced frequency due to realtime)
-        const refreshInterval = setInterval(loadReminders, 5 * 60 * 1000);
+        const refreshInterval = setInterval(loadReminders, 2 * 60 * 1000); // 2 min refresh
         return () => {
             supabase.removeChannel(channel);
             clearInterval(refreshInterval);
@@ -285,7 +298,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             refreshReminders,
             snoozeReminder,
             testNotifications,
-            runDiagnostics
+            runDiagnostics,
+            syncStatus
         }}>
             {children}
         </NotificationContext.Provider>

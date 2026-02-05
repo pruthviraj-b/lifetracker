@@ -85,7 +85,7 @@ const getTimeRemaining = (reminder: Reminder): string | null => {
 export default function RemindersPage() {
     const navigate = useNavigate();
     const { preferences } = useTheme();
-    const { refreshReminders, runDiagnostics, testNotifications, requestPermission } = useNotifications();
+    const { refreshReminders, runDiagnostics, testNotifications, requestPermission, syncStatus } = useNotifications();
     const isWild = preferences.wild_mode;
     const [reminders, setReminders] = useState<Reminder[]>([]);
     const [habits, setHabits] = useState<{ id: string; title: string }[]>([]);
@@ -250,6 +250,12 @@ export default function RemindersPage() {
                         <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none italic">
                             Notification<br /><span className="text-primary not-italic">Matrix</span>
                         </h1>
+                        <div className="flex items-center gap-2 mt-2">
+                            <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'syncing' ? 'bg-yellow-500 animate-ping' : 'bg-green-500'}`} />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">
+                                {syncStatus === 'syncing' ? 'Cloud Syncing...' : 'Live Cluster Active'}
+                            </span>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-3">
