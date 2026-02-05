@@ -95,7 +95,6 @@ export const NotificationService = {
         if (!reminder.isEnabled) return false;
 
         const now = new Date();
-        const currentDay = now.getDay();
         const currentHours = now.getHours().toString().padStart(2, '0');
         const currentMinutes = now.getMinutes().toString().padStart(2, '0');
         const currentTime = `${currentHours}:${currentMinutes}`;
@@ -103,14 +102,18 @@ export const NotificationService = {
         // Check time match
         if (currentTime !== reminder.time) return false;
 
-        // Check Date match (One-time)
+        // Check Date match (One-time) using LOCAL date
         if (reminder.date) {
-            const todayStr = now.toISOString().split('T')[0];
-            if (reminder.date !== todayStr) return false;
+            const year = now.getFullYear();
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+            const localDateStr = `${year}-${month}-${day}`;
+            if (reminder.date !== localDateStr) return false;
         }
         // Check Day match (Recurring)
-        else if (reminder.days.length > 0 && !reminder.days.includes(currentDay)) {
-            return false;
+        else if (reminder.days.length > 0) {
+            const currentDay = now.getDay();
+            if (!reminder.days.includes(currentDay)) return false;
         }
 
         // Debounce: Verify it hasn't triggered in the last 60 seconds

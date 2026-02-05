@@ -79,13 +79,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                         reminder.title,
                         {
                             body: reminder.customMessage || `Protocol requirement: ${reminder.title}`,
-                            tag: reminder.id, // Tag by reminder ID to avoid duplicates if they fire fast
+                            tag: reminder.id, // Tag by reminder ID to avoid duplicates
+                            renotify: true,  // Overwrite existing notification with new alert
                             data: {
                                 url: reminder.habitId ? `/protocols` : '/reminders',
                                 reminderId: reminder.id,
                                 habitId: reminder.habitId // Critical for SW completion action
                             },
-                        }
+                        } as any
                     );
 
                     // 2. In-App Toast
@@ -166,8 +167,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const testNotifications = async () => {
         await NotificationManagerInstance.showNotification("🧪 Test Successful", {
             body: "If you saw this, your ritual notification matrix is calibrated.",
+            tag: `test-${Date.now()}`, // Unique tag allows stacking
             vibrate: [200, 100, 200, 100, 200],
-            requireInteraction: true
+            requireInteraction: true,
+            renotify: true
         } as any);
         showToast("Test Triggered", "Check your system notifications.", { type: 'success' });
     };
