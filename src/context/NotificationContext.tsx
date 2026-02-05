@@ -5,6 +5,7 @@ import { Reminder } from '../types/reminder';
 import { NotificationManagerInstance } from '../utils/notificationManager';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
+import { supabase } from '../lib/supabase';
 
 interface NotificationContextType {
     hasPermission: boolean;
@@ -71,9 +72,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 if (targetDate <= now) targetDate.setDate(targetDate.getDate() + 1);
             }
 
-            // Only schedule if it's in the next 24 hours to avoid clogging SW
+            // Only schedule if it's in the next 7 days to ensure cross-device persistence
             const delay = targetDate.getTime() - now.getTime();
-            if (delay > 0 && delay < 86400000) {
+            if (delay > 0 && delay < 7 * 24 * 60 * 60 * 1000) {
+                // Clear existing sync for this ID first to avoid duplicates
+                NotificationManagerInstance.cancelNotification(reminder.id);
+
                 NotificationManagerInstance.scheduleNotification(
                     reminder.title,
                     targetDate,
@@ -114,9 +118,31 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     useEffect(() => {
         if (!user) return;
         loadReminders();
-        // Refresh reminders every 2 minutes for high reliability
-        const refreshInterval = setInterval(loadReminders, 2 * 60 * 1000);
-        return () => clearInterval(refreshInterval);
+
+        // 🚀 REALTIME SYNC: Listen for changes across ALL devices
+        const channel = supabase
+            .channel('reminders-sync')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'reminders',
+                    filter: `user_id=eq.${user.id}`
+                },
+                () => {
+                    console.log('🔄 [Realtime] Cluster update detected. Syncing protocols...');
+                    loadReminders();
+                }
+            )
+            .subscribe();
+
+        // Backup refresh every 5 minutes (reduced frequency due to realtime)
+        const refreshInterval = setInterval(loadReminders, 5 * 60 * 1000);
+        return () => {
+            supabase.removeChannel(channel);
+            clearInterval(refreshInterval);
+        };
     }, [user, loadReminders]);
 
     useEffect(() => {
@@ -179,6 +205,16 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const requestPermission = async () => {
         const granted = await NotificationService.requestPermission();
         setHasPermission(granted);
+
+        if (granted) {
+            // 🚀 INITIALIZE PUSH MATIX: Secure device channel for cloud-to-device pulses
+            const subscription = await NotificationService.subscribeToPush();
+            if (subscription) {
+                await NotificationService.savePushSubscription(subscription);
+                showToast("Push Matrix Active", "This device is now bound to the cloud notification relay.", { type: 'success' });
+            }
+        }
+
         return granted;
     };
 

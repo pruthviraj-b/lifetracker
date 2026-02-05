@@ -62,27 +62,27 @@ export default function AchievementsPage() {
         <div className={`min-h-screen bg-background relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : 'font-sans'}`}>
             {isWild && <div className="vignette pointer-events-none" />}
 
-            <div className="relative z-10 p-4 md:p-8 max-w-7xl mx-auto space-y-12">
+            <div className="relative z-10 p-4 md:p-6 max-w-7xl mx-auto space-y-6">
                 {/* Header */}
-                <div className={`flex flex-col md:flex-row md:items-center justify-between gap-6 ${isWild ? 'animate-reveal' : ''}`}>
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" className={`rounded-full w-10 h-10 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
-                            <Home className="w-5 h-5" />
+                <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 ${isWild ? 'animate-reveal' : ''}`}>
+                    <div className="flex items-center gap-3">
+                        <Button variant="ghost" className={`rounded-full w-9 h-9 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
+                            <Home className="w-4 h-4" />
                         </Button>
                         <div>
-                            <h1 className={`text-4xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>Achievement Hub</h1>
-                            <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest opacity-70">Milestone Verification Sequence</p>
+                            <h1 className={`text-2xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>Achievement Hub</h1>
+                            <p className="text-muted-foreground text-[8px] uppercase font-bold tracking-widest opacity-60">Milestone Verification Sequence</p>
                         </div>
                     </div>
 
                     <div className="flex gap-4">
-                        <div className={`px-6 py-4 border-2 flex flex-col items-center min-w-[120px] ${isWild ? 'bg-black border-primary rounded-none' : 'bg-card rounded-2xl'}`}>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Unlocked</span>
-                            <span className="text-2xl font-black text-primary">{stats.unlocked}/{stats.total}</span>
+                        <div className={`px-4 py-2 border flex flex-col items-center min-w-[100px] ${isWild ? 'bg-black border-primary rounded-none' : 'bg-card rounded-xl shadow-sm'}`}>
+                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground opacity-40">Unlocked</span>
+                            <span className="text-xl font-black text-primary">{stats.unlocked}/{stats.total}</span>
                         </div>
-                        <div className={`px-6 py-4 border-2 flex flex-col items-center min-w-[120px] ${isWild ? 'bg-black border-primary rounded-none' : 'bg-card rounded-2xl'}`}>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">System_Pts</span>
-                            <span className="text-2xl font-black text-primary">{stats.points}</span>
+                        <div className={`px-4 py-2 border flex flex-col items-center min-w-[100px] ${isWild ? 'bg-black border-primary rounded-none' : 'bg-card rounded-xl shadow-sm'}`}>
+                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground opacity-40">System_Pts</span>
+                            <span className="text-xl font-black text-primary">{stats.points}</span>
                         </div>
                     </div>
                 </div>

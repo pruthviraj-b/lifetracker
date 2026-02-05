@@ -146,11 +146,11 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
             {isWild && <div className="vignette fixed inset-0 pointer-events-none z-50 opacity-50 bg-red-500/5 mix-blend-overlay" />}
 
             <div className="max-w-6xl mx-auto space-y-12">
-                <header className="text-center space-y-4 pt-8">
+                <header className="text-center space-y-2 pt-4">
                     <motion.h1
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        className="text-4xl md:text-5xl font-black text-red-600 tracking-tight uppercase"
+                        className="text-3xl md:text-3xl font-black text-red-600 tracking-tight uppercase"
                     >
                         Central Hub
                     </motion.h1>
@@ -158,7 +158,7 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.2 }}
-                        className="text-sm font-mono text-red-900/60 uppercase tracking-widest"
+                        className="text-[10px] font-mono text-red-900/60 uppercase tracking-[0.3em]"
                     >
                         Welcome Back, {user?.name || 'Operator'}
                     </motion.p>
@@ -180,18 +180,18 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
                                 `}
                             >
                                 <div className={`
-                                    w-16 h-16 rounded-2xl flex items-center justify-center
+                                    w-14 h-14 rounded-xl flex items-center justify-center
                                     ${mod.bg} ${mod.color}
                                     transition-transform duration-300 group-hover:scale-105
                                 `}>
-                                    <mod.icon strokeWidth={1.5} className="w-8 h-8" />
+                                    <mod.icon strokeWidth={1.5} className="w-7 h-7" /> {/* Reduced icon size from w-8 h-8 to w-7 h-7 */}
                                 </div>
 
-                                <div className="text-center space-y-1">
-                                    <h2 className="text-lg font-bold text-gray-200 group-hover:text-white transition-colors">
+                                <div className="text-center space-y-0.5"> {/* Reduced space-y from 1 to 0.5 */}
+                                    <h2 className="text-base font-bold text-gray-200 group-hover:text-white transition-colors"> {/* Reduced text size from lg to base */}
                                         {mod.label}
                                     </h2>
-                                    <p className="text-[10px] text-red-900/60 uppercase tracking-wider font-medium">
+                                    <p className="text-[9px] text-red-900/60 uppercase tracking-wider font-medium"> {/* Reduced text size from 10px to 9px */}
                                         {mod.sub}
                                     </p>
                                 </div>
@@ -203,6 +203,7 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
         </div>
     );
 };
+
 
 export default function HomePage() {
     const navigate = useNavigate();

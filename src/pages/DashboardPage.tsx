@@ -357,50 +357,49 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                <div className="max-w-4xl mx-auto space-y-12">
+                <div className="max-w-4xl mx-auto space-y-6">
                     {/* PWA Install Banner */}
                     <PWABanner />
 
                     {/* Header */}
-                    <div className={`flex flex-col gap-6 ${isWild ? 'animate-reveal' : ''}`}>
+                    <div className={`flex flex-col gap-2 ${isWild ? 'animate-reveal' : ''}`}>
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase flex items-center gap-2 text-foreground">
+                                <div className="flex items-center gap-3 mb-1">
+                                    <h1 className="text-2xl md:text-3xl font-black tracking-tighter uppercase flex items-center gap-2 text-foreground">
                                         RITU
-                                        <span className="bg-red-600 text-black px-2 py-0.5 rounded-[4px] text-2xl md:text-4xl font-mono font-bold tracking-widest align-middle transform -translate-y-1">
+                                        <span className="bg-red-600 text-black px-1.5 py-0.5 rounded-[4px] text-lg md:text-xl font-mono font-bold tracking-widest align-middle transform -translate-y-0.5">
                                             OS
                                         </span>
                                     </h1>
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border self-start mt-2 ${isWild ? 'bg-red-500 text-black border-red-500' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>v2.0.4</span>
+                                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold border self-start mt-1.5 ${isWild ? 'bg-red-500 text-black border-red-500' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>v2.0.4</span>
                                 </div>
-                                <div className="flex items-center gap-3 text-muted-foreground text-sm font-mono tracking-wide">
+                                <div className="flex items-center gap-3 text-muted-foreground text-[10px] font-mono tracking-wide">
                                     <span className="text-red-500 font-bold">{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                    <span className="text-neutral-700">|</span>
-                                    <span className="uppercase text-neutral-500">{currentTime.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+                                    <span className="text-neutral-700 opacity-30">|</span>
+                                    <span className="uppercase opacity-60">{currentTime.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</span>
                                 </div>
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <Button size="sm" onClick={() => setIsCreateOpen(true)} className={isWild ? 'rounded-none' : ''}>
-                                    <Plus className="w-4 h-4 mr-2" />
+                                <Button size="sm" onClick={() => setIsCreateOpen(true)} className={`h-9 text-[10px] font-black uppercase tracking-widest ${isWild ? 'rounded-none' : ''}`}>
+                                    <Plus className="w-3.5 h-3.5 mr-2" />
                                     New Protocol
                                 </Button>
-                                {/* Quick Focus access */}
-                                <Button variant="outline" size="icon" onClick={() => setIsFocusOpen(true)} className={isWild ? 'rounded-none border-2' : ''} title="Focus Mode">
+                                <Button variant="outline" size="icon" onClick={() => setIsFocusOpen(true)} className={`w-9 h-9 ${isWild ? 'rounded-none border-2' : ''}`} title="Focus Mode">
                                     <Timer className="w-4 h-4" />
                                 </Button>
                             </div>
                         </div>
-                        <div className="w-full bg-muted/30 h-1 rounded-full overflow-hidden relative">
+                        <div className="w-full bg-muted/20 h-[2px] rounded-full overflow-hidden relative">
                             <div className="absolute top-0 left-0 h-full bg-primary transition-all duration-700" style={{ width: `${(xpStats.currentXP / xpStats.nextLevelXP) * 100}%` }} />
                         </div>
-                        <div className="flex items-center gap-4 text-[8px] font-black uppercase tracking-[0.2em] opacity-50">
-                            <span>Detected Sequences: {habits.length}</span>
+                        <div className="flex items-center gap-4 text-[7px] font-black uppercase tracking-[0.2em] opacity-40">
+                            <span>Sequences: {habits.length}</span>
                             <span>|</span>
-                            <span>Active Logs: {Object.keys(logs).length}</span>
+                            <span>Logs: {Object.keys(logs).length}</span>
                             <span>|</span>
-                            <span>System Status: {habits.length > 0 ? 'NOMINAL' : 'AWAITING_DATA'}</span>
+                            <span>Status: {habits.length > 0 ? 'NOMINAL' : 'IDLE'}</span>
                         </div>
                     </div>
 

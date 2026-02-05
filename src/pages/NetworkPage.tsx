@@ -57,16 +57,16 @@ export default function NetworkPage() {
             <div className="relative z-10 p-4 md:p-8 max-w-7xl mx-auto space-y-12">
                 {/* Header */}
                 <div className={`flex items-center justify-between ${isWild ? 'animate-reveal' : ''}`}>
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" className={`rounded-full w-10 h-10 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
-                            <Home className="w-5 h-5" />
+                    <div className="flex items-center gap-3">
+                        <Button variant="ghost" className={`rounded-full w-8 h-8 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
+                            <Home className="w-4 h-4" />
                         </Button>
                         <div>
-                            <h1 className={`text-4xl font-black uppercase tracking-tighter flex items-center gap-3 ${isWild ? 'animate-glitch' : ''}`}>
-                                <Share2 className="w-8 h-8 text-primary" />
+                            <h1 className={`text-xl font-black uppercase tracking-tighter flex items-center gap-2 ${isWild ? 'animate-glitch' : ''}`}>
+                                <Share2 className="w-5 h-5 text-primary" />
                                 Ritual Network
                             </h1>
-                            <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest opacity-70">Neural Linkage Visualization</p>
+                            <p className="text-muted-foreground text-[8px] uppercase font-bold tracking-widest opacity-70">Neural Linkage Visualization</p>
                         </div>
                     </div>
                 </div>

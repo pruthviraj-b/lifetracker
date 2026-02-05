@@ -431,7 +431,7 @@ export const SidebarNavigation = () => {
 
             {/* Desktop Sidebar */}
             <div className={`
-                hidden md:block fixed top-0 left-0 h-screen w-72 
+                hidden md:block fixed top-0 left-0 h-screen w-60 
                 border-r border-white/5 bg-[#050505] z-40
                 ${isWild ? 'font-mono' : 'font-sans'}
             `}>
@@ -455,7 +455,7 @@ export const SidebarNavigation = () => {
                             exit={{ x: '-100%' }}
                             transition={{ type: "spring", bounce: 0, duration: 0.4 }}
                             className={`
-                                fixed top-0 left-0 h-screen w-80 
+                                fixed top-0 left-0 h-screen w-72 
                                 bg-[#0A0A0A] border-r border-white/10 z-50 md:hidden
                                 shadow-2xl
                                 ${isWild ? 'font-mono' : 'font-sans'}

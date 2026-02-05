@@ -118,16 +118,16 @@ const NeuralInstaller = ({ onInstallComplete }: { onInstallComplete: () => void 
     };
 
     return (
-        <div className={`mt-20 border-t ${isWild ? 'border-red-900/30' : 'border-white/10'} pt-12`}>
-            <div className="flex items-center gap-4 mb-8">
-                <div className={`p-3 rounded-xl ${isWild ? 'bg-red-900/20 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
-                    <Download className="w-6 h-6" />
+        <div className={`mt-12 border-t ${isWild ? 'border-red-900/30' : 'border-white/10'} pt-8`}>
+            <div className="flex items-center gap-3 mb-6">
+                <div className={`p-2 rounded-lg ${isWild ? 'bg-red-900/20 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
+                    <Download className="w-5 h-5" />
                 </div>
                 <div>
-                    <h2 className={`text-2xl font-black uppercase tracking-tight ${isWild ? 'text-red-500' : 'text-white'}`}>
+                    <h2 className={`text-xl font-black uppercase tracking-tight ${isWild ? 'text-red-500' : 'text-white'}`}>
                         System Modules
                     </h2>
-                    <p className="text-sm font-mono text-muted-foreground">
+                    <p className="text-[10px] font-mono text-muted-foreground">
                         AVAILABLE EXPANSION PACKS // READY FOR INJECTION
                     </p>
                 </div>
@@ -149,10 +149,10 @@ const NeuralInstaller = ({ onInstallComplete }: { onInstallComplete: () => void 
                             onClick={() => handleInstall(mod)}
                         >
                             <div className={`
-                                w-12 h-12 rounded-lg flex items-center justify-center 
+                                w-10 h-10 rounded-lg flex items-center justify-center 
                                 ${mod.color} bg-black/50 border border-white/10
                             `}>
-                                <mod.icon className="w-6 h-6" />
+                                <mod.icon className="w-5 h-5" />
                             </div>
                             <div className="flex-1">
                                 <h3 className="font-bold uppercase text-sm tracking-wider">{mod.name}</h3>
@@ -245,25 +245,25 @@ export const CourseLibraryPage: React.FC = () => {
             {isWild && <div className="vignette pointer-events-none" />}
 
             {/* Hero Header */}
-            <div className="space-y-4 max-w-4xl">
-                <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase relative inline-block">
+            <div className="space-y-2 max-w-4xl pt-4">
+                <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase relative inline-block">
                     Academy
-                    <span className="absolute -top-4 -right-8 opacity-20 rotate-12">
-                        <Zap className="w-12 h-12 fill-yellow-400 text-yellow-500" />
+                    <span className="absolute -top-2 -right-6 opacity-20 rotate-12">
+                        <Zap className="w-8 h-8 fill-yellow-400 text-yellow-500" />
                     </span>
                 </h1>
-                <p className="text-xl text-muted-foreground font-light tracking-wide max-w-2xl">
+                <p className="text-base text-muted-foreground font-light tracking-wide max-w-2xl">
                     Select a protocol. Initiate the download. Upgrade your biological software.
                 </p>
             </div>
 
             {/* Search / Filter (Visual Only for now) */}
             <div className="relative max-w-xl">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <input
                     type="text"
                     placeholder="Identify Protocol..."
-                    className="w-full bg-secondary/30 border border-white/10 rounded-full py-4 pl-12 pr-6 text-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono placeholder:text-muted-foreground/50"
+                    className="w-full bg-secondary/30 border border-white/10 rounded-xl py-2.5 pl-10 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all font-mono placeholder:text-muted-foreground/50"
                 />
             </div>
 

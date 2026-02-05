@@ -237,36 +237,38 @@ export default function NotesPage() {
                     </div>
 
                     {/* Main Content */}
-                    <div className="flex-1 space-y-8">
-                        <div className={`flex flex-col md:flex-row md:items-center justify-between gap-6 ${isWild ? 'animate-reveal' : ''}`}>
-                            <div className="flex items-center gap-4">
-                                <Button variant="ghost" className={`rounded-full w-10 h-10 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
-                                    <Home className="w-5 h-5" />
+                    <div className="flex-1 space-y-4">
+                        <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 ${isWild ? 'animate-reveal' : ''}`}>
+                            <div className="flex items-center gap-3">
+                                <Button variant="ghost" className={`rounded-full w-9 h-9 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
+                                    <Home className="w-4 h-4" />
                                 </Button>
                                 <div>
-                                    <h1 className={`text-4xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>Neural Notes</h1>
-                                    <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest opacity-70">Cognitive Backup Sequence</p>
+                                    <h1 className={`text-2xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>Neural Notes</h1>
+                                    <p className="text-muted-foreground text-[8px] uppercase font-bold tracking-widest opacity-60">Cognitive Backup Sequence</p>
                                 </div>
                             </div>
-                            <Button
-                                onClick={() => {
-                                    setEditingNote(null);
-                                    setIsModalOpen(true);
-                                }}
-                                className={`h-12 px-8 shadow-xl shadow-primary/20 hover:scale-105 transition-transform ${isWild ? 'rounded-none border-2 animate-pulse' : 'rounded-2xl'}`}
-                            >
-                                <Plus className="w-5 h-5 mr-2" />
-                                Initialize Note
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    onClick={() => {
+                                        setEditingNote(null);
+                                        setIsModalOpen(true);
+                                    }}
+                                    className={`h-10 px-6 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-transform ${isWild ? 'rounded-none border-2 animate-pulse' : 'rounded-xl'}`}
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Initialize Note
+                                </Button>
 
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsFlashcardModalOpen(true)}
-                                className={`h-12 w-12 p-0 flex items-center justify-center ${isWild ? 'rounded-none border-2' : 'rounded-2xl'}`}
-                                title="Create Flashcard"
-                            >
-                                <Zap className="w-5 h-5" />
-                            </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsFlashcardModalOpen(true)}
+                                    className={`h-10 w-10 p-0 flex items-center justify-center ${isWild ? 'rounded-none border-2' : 'rounded-xl'}`}
+                                    title="Create Flashcard"
+                                >
+                                    <Zap className="w-4 h-4" />
+                                </Button>
+                            </div>
                         </div>
 
                         <div className="relative group">

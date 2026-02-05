@@ -106,18 +106,18 @@ export default function RecallPage() {
     return (
         <div className={`min-h-screen bg-background p-4 md:p-8 flex flex-col items-center max-w-4xl mx-auto ${isWild ? 'wild font-mono' : ''}`}>
             {/* Header / Progress */}
-            <div className="w-full flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                    <Zap className="w-6 h-6 text-yellow-500 fill-yellow-500" />
-                    <h1 className="text-xl font-bold uppercase tracking-wider">Neural Gym</h1>
+            <div className="w-full flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                    <h1 className="text-lg font-bold uppercase tracking-wider">Neural Gym</h1>
                 </div>
-                <div className="text-sm font-mono text-muted-foreground">
+                <div className="text-[10px] font-mono text-muted-foreground">
                     CARD {currentIndex + 1} / {queue.length}
                 </div>
             </div>
 
             {/* Progress Bar */}
-            <div className="w-full h-1 bg-secondary mb-12 rounded-full overflow-hidden">
+            <div className="w-full h-1 bg-secondary mb-8 rounded-full overflow-hidden">
                 <motion.div
                     className="h-full bg-primary"
                     initial={{ width: 0 }}

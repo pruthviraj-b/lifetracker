@@ -1,4 +1,5 @@
 import { Reminder } from '../types/reminder';
+import { supabase } from '../lib/supabase';
 
 export const NotificationService = {
     isMobile: () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
@@ -88,6 +89,68 @@ export const NotificationService = {
 
         console.table(diagnostics);
         return diagnostics;
+    },
+
+    // 🚀 NEW: Web Push Subscription Logic
+    subscribeToPush: async (): Promise<PushSubscription | null> => {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            console.warn('Push protocol NOT supported by this hardware.');
+            return null;
+        }
+
+        try {
+            const registration = await navigator.serviceWorker.ready;
+
+            // Generate/Replace your VAPID Public Key here
+            // This is a generic public key for demo/initial setup
+            const VAPID_PUBLIC_KEY = 'BCOp7Y8u_3_T_v0T7UeI9v_4-0bN_Q-Q7f8v-v0T7UeI9v_4-0bN_Q-Q7f8v';
+
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: NotificationService.urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+
+            console.log('✅ Push Handshake Successful:', subscription);
+            return subscription;
+        } catch (error) {
+            console.error('❌ Push Handshake Failed:', error);
+            return null;
+        }
+    },
+
+    savePushSubscription: async (subscription: PushSubscription) => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // Upsert subscription to avoid duplicates for the same device/user
+            // We use 'endpoint' as a unique identifier for the device's push channel
+            const { error } = await supabase
+                .from('push_subscriptions')
+                .upsert({
+                    user_id: user.id,
+                    endpoint: subscription.endpoint,
+                    p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')!) as any)),
+                    auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')!) as any)),
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'endpoint' });
+
+            if (error) throw error;
+            console.log('💾 Push Matrix Saved to Cloud.');
+        } catch (error) {
+            console.error('Failed to persist push matrix:', error);
+        }
+    },
+
+    urlBase64ToUint8Array: (base64String: string) => {
+        const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
     },
 
     // Check if a reminder should fire (Supports catch-up for missed minutes)

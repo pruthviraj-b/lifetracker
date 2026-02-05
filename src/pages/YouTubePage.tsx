@@ -255,35 +255,35 @@ export default function YouTubePage() {
             {isWild && <div className="vignette pointer-events-none" />}
 
             {/* Sidebar */}
-            <div className={`w-full md:w-64 border-b md:border-b-0 md:border-r bg-card/30 flex flex-col shrink-0 relative z-10 ${isWild ? 'border-primary/20' : ''}`}>
-                <div className={`p-6 border-b flex items-center justify-between ${isWild ? 'border-primary/20' : ''}`}>
-                    <h2 className={`font-bold flex items-center gap-2 ${isWild ? 'text-primary animate-glitch' : ''}`}>
-                        <Folder className="w-4 h-4" />
+            <div className={`w-full md:w-56 border-b md:border-b-0 md:border-r bg-card/30 flex flex-col shrink-0 relative z-10 ${isWild ? 'border-primary/20' : ''}`}>
+                <div className={`p-4 border-b flex items-center justify-between ${isWild ? 'border-primary/20' : ''}`}>
+                    <h2 className={`font-bold text-xs flex items-center gap-2 ${isWild ? 'text-primary animate-glitch' : ''}`}>
+                        <Folder className="w-3.5 h-3.5" />
                         Intelligence Store
                     </h2>
                     <Button variant="ghost" size="sm" onClick={() => {
                         setAddType('folder');
                         setIsAddModalOpen(true);
-                    }} className={isWild ? 'rounded-none hover:bg-primary/10' : ''}>
-                        <Plus className="w-4 h-4" />
+                    }} className={`h-7 w-7 p-0 ${isWild ? 'rounded-none hover:bg-primary/10' : ''}`}>
+                        <Plus className="w-3.5 h-3.5" />
                     </Button>
                 </div>
-                <div className="flex-1 p-3 space-y-1 overflow-y-auto">
+                <div className="flex-1 p-2 space-y-0.5 overflow-y-auto">
                     <button
                         onClick={() => {
                             setActiveFolderId(null);
                             setActiveCourseId(null);
                         }}
                         className={cn(
-                            "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                            "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors",
                             (!activeFolderId && !activeCourseId) ? "bg-primary/10 text-primary" : "hover:bg-muted"
                         )}
                     >
-                        <LayoutGrid className="w-4 h-4" />
+                        <LayoutGrid className="w-3.5 h-3.5" />
                         All Content
                     </button>
 
-                    <div className="pt-4 pb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                    <div className="pt-3 pb-1.5 px-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 flex items-center justify-between">
                         <span>Curriculum</span>
                         <button onClick={() => { setAddType('course'); setIsAddModalOpen(true); }} className="hover:text-primary"><Plus className="w-3 h-3" /></button>
                     </div>
@@ -295,18 +295,18 @@ export default function YouTubePage() {
                                 setActiveFolderId(null);
                             }}
                             className={cn(
-                                "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group",
+                                "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors group",
                                 activeCourseId === course.id ? "bg-primary/10 text-primary" : "hover:bg-muted"
                             )}
                         >
-                            <div className="flex items-center gap-3 truncate">
-                                <GraduationCap className={cn("w-4 h-4", activeCourseId === course.id ? "text-primary" : "text-muted-foreground")} />
+                            <div className="flex items-center gap-2.5 truncate">
+                                <GraduationCap className={cn("w-3.5 h-3.5", activeCourseId === course.id ? "text-primary" : "text-muted-foreground")} />
                                 <span className="truncate">{course.title}</span>
                             </div>
                         </button>
                     ))}
 
-                    <div className="pt-4 pb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <div className="pt-3 pb-1.5 px-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">
                         Collections
                     </div>
                     {folders.map(f => (
@@ -317,30 +317,30 @@ export default function YouTubePage() {
                                     setActiveCourseId(null);
                                 }}
                                 className={cn(
-                                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                                    "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors",
                                     activeFolderId === f.id ? "bg-primary/10 text-primary" : "hover:bg-muted"
                                 )}
                             >
-                                <div className="flex items-center gap-3 truncate">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: f.color }} />
+                                <div className="flex items-center gap-2.5 truncate">
+                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: f.color }} />
                                     <span className="truncate">{f.name}</span>
                                 </div>
-                                <span className="text-[10px] opacity-40 group-hover:hidden">
+                                <span className="text-[9px] opacity-40 group-hover:hidden">
                                     {videos.filter(v => v.folderId === f.id).length + resources.filter(r => r.folderId === f.id).length}
                                 </span>
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); handleDelete(f.id, 'folder'); }}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-red-500/10 hover:text-red-500 rounded hidden group-hover:block"
+                                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 hover:bg-red-500/10 hover:text-red-500 rounded hidden group-hover:block"
                             >
                                 <Trash2 className="w-3 h-3" />
                             </button>
                         </div>
                     ))}
                 </div>
-                <div className="p-4 border-t">
-                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => navigate('/home')}>
-                        <ArrowLeft className="w-4 h-4 mr-2" />
+                <div className="p-3 border-t">
+                    <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-xs" onClick={() => navigate('/home')}>
+                        <Home className="w-3.5 h-3.5 mr-2" />
                         Back to Home
                     </Button>
                 </div>
@@ -349,37 +349,37 @@ export default function YouTubePage() {
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0 relative z-10">
                 {/* Header */}
-                <div className={`p-4 md:p-6 border-b bg-card/30 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 ${isWild ? 'border-primary/20 animate-reveal' : ''}`}>
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" className={`rounded-full w-10 h-10 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
-                            <Home className="w-5 h-5" />
+                <div className={`p-4 md:py-4 md:px-6 border-b bg-card/30 flex flex-col md:flex-row md:items-center justify-between gap-4 ${isWild ? 'border-primary/20 animate-reveal' : ''}`}>
+                    <div className="flex items-center gap-3">
+                        <Button variant="ghost" className={`rounded-full w-9 h-9 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
+                            <Home className="w-4 h-4" />
                         </Button>
                         <div>
-                            <h1 className={`text-3xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>
+                            <h1 className={`text-2xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>
                                 {activeCourse ? activeCourse.title : activeFolder ? activeFolder.name : "Ritual Intelligence"}
-                                {activeCourse && <GraduationCap className="inline-block ml-3 w-6 h-6 text-primary" />}
+                                {activeCourse && <GraduationCap className="inline-block ml-2 w-5 h-5 text-primary" />}
                             </h1>
-                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest opacity-70">
+                            <p className="text-[8px] text-muted-foreground uppercase font-bold tracking-widest opacity-60">
                                 {activeCourse ? "Neural Sequence Progression" : activeFolder ? "Segmented Tactical Knowledge" : "Universal Asset Repository"}
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <div className="flex flex-col sm:flex-row items-center gap-2">
                         <div className="relative w-full sm:w-auto flex-1 md:flex-none">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                             <Input
                                 placeholder="Scan intelligence..."
-                                className={`pl-9 w-full md:w-64 h-11 bg-muted/30 ${isWild ? 'rounded-none border-primary/20' : 'border rounded-xl'}`}
+                                className={`pl-8 w-full md:w-56 h-9 text-xs bg-muted/30 ${isWild ? 'rounded-none border-primary/20' : 'border rounded-lg'}`}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <Button onClick={() => {
+                        <Button size="sm" onClick={() => {
                             setAddType('video');
                             setIsAddModalOpen(true);
-                        }} className={`w-full sm:w-auto shadow-lg h-11 px-4 md:px-6 shrink-0 ${isWild ? 'rounded-none shadow-primary/20' : 'shadow-primary/20 rounded-xl'}`}>
-                            <Plus className="w-4 h-4 mr-2" />
+                        }} className={`w-full sm:w-auto shadow-lg h-9 px-4 text-[10px] font-black uppercase tracking-widest shrink-0 ${isWild ? 'rounded-none shadow-primary/20' : 'shadow-primary/20 rounded-lg'}`}>
+                            <Plus className="w-3.5 h-3.5 mr-1.5" />
                             <span>Add Asset</span>
                         </Button>
                     </div>

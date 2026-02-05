@@ -197,6 +197,34 @@ export default function RemindersPage() {
         }
     };
 
+    const handleDeleteAll = async () => {
+        if (!confirm('MASS PROTOCOL ABORT: Delete all active nodes?')) return;
+        try {
+            await ReminderService.deleteAllReminders();
+            setReminders([]);
+            refreshReminders(); // Centralized sync
+            NotificationManagerInstance.cancelAllNotifications();
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleToggleAll = async (isEnabled: boolean) => {
+        try {
+            await ReminderService.updateAllStatus(isEnabled);
+            setReminders(prev => prev.map(r => ({ ...r, isEnabled })));
+            refreshReminders();
+            if (!isEnabled) {
+                NotificationManagerInstance.cancelAllNotifications();
+            } else {
+                // Re-syncing handled by refreshReminders mostly, 
+                // but for immediate SW sync we could loop here if needed.
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     return (
         <div className={`min-h-screen bg-[#050505] text-white selection:bg-primary selection:text-black font-mono relative overflow-x-hidden`}>
             {/* Background elements */}
@@ -211,15 +239,15 @@ export default function RemindersPage() {
                 habits={habits}
             />
 
-            <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 md:py-12 space-y-12">
+            <div className="relative z-10 max-w-5xl mx-auto px-4 py-4 md:py-6 space-y-12">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/10 pb-8">
-                    <div className="space-y-2">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/10 pb-4">
+                    <div className="space-y-1">
                         <div className="flex items-center gap-3 text-primary">
-                            <Activity className="w-5 h-5 animate-pulse" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em]">System Status: Operational</span>
+                            <Activity className="w-4 h-4 animate-pulse" />
+                            <span className="text-[9px] font-black uppercase tracking-[0.4em]">System Status: Operational</span>
                         </div>
-                        <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none italic">
+                        <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none italic">
                             Notification<br /><span className="text-primary not-italic">Matrix</span>
                         </h1>
                     </div>
@@ -227,13 +255,13 @@ export default function RemindersPage() {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate('/')}
-                            className="h-14 w-14 border border-white/10 rounded-full flex items-center justify-center hover:bg-white/5 transition-all text-muted-foreground hover:text-white"
+                            className="h-12 w-12 border border-white/10 rounded-full flex items-center justify-center hover:bg-white/5 transition-all text-muted-foreground hover:text-white"
                         >
-                            <Home className="w-6 h-6" />
+                            <Home className="w-5 h-5" />
                         </button>
                         <Button
                             onClick={() => setIsModalOpen(true)}
-                            className="h-14 px-8 bg-primary text-black font-black uppercase text-xs tracking-widest rounded-none hover:translate-x-1 hover:-translate-y-1 transition-transform shadow-[4px_4px_0_rgba(var(--primary-rgb),0.3)]"
+                            className="h-12 px-6 bg-primary text-black font-black uppercase text-[10px] tracking-widest rounded-none hover:translate-x-1 hover:-translate-y-1 transition-transform shadow-[4px_4px_0_rgba(var(--primary-rgb),0.3)]"
                         >
                             <Plus className="w-4 h-4 mr-2" />
                             Inject Node
@@ -241,22 +269,49 @@ export default function RemindersPage() {
                     </div>
                 </div>
 
-                {/* Status Bar */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white/5 border border-white/10 p-4 space-y-1">
-                        <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Active Nodes</span>
-                        <div className="text-2xl font-black">{reminders.filter(r => r.isEnabled).length} / {reminders.length}</div>
-                    </div>
-                    <div className="bg-white/5 border border-white/10 p-4 space-y-1">
-                        <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Handshake</span>
-                        <div className={`text-2xl font-black ${hasPermission ? 'text-green-500' : 'text-red-500'}`}>
-                            {hasPermission ? 'SECURE' : 'BLOCKED'}
+                {/* Status Bar & Bulk Actions */}
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-white/5 border border-white/10 p-4 space-y-1">
+                            <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Active Nodes</span>
+                            <div className="text-2xl font-black">{reminders.filter(r => r.isEnabled).length} / {reminders.length}</div>
+                        </div>
+                        <div className="bg-white/5 border border-white/10 p-4 space-y-1">
+                            <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Handshake</span>
+                            <div className={`text-2xl font-black ${hasPermission ? 'text-green-500' : 'text-red-500'}`}>
+                                {hasPermission ? 'SECURE' : 'BLOCKED'}
+                            </div>
+                        </div>
+                        <div className="bg-white/5 border border-white/10 p-4 space-y-1 col-span-2">
+                            <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Temporal Sync</span>
+                            <div className="text-2xl font-black uppercase truncate">{new Date().toLocaleTimeString()}</div>
                         </div>
                     </div>
-                    <div className="bg-white/5 border border-white/10 p-4 space-y-1 col-span-2">
-                        <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Temporal Sync</span>
-                        <div className="text-2xl font-black uppercase truncate">{new Date().toLocaleTimeString()}</div>
-                    </div>
+
+                    {/* Bulk Actions Mini Bar */}
+                    {reminders.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 p-2 bg-white/[0.02] border border-white/5">
+                            <span className="text-[10px] font-black uppercase tracking-widest px-2 opacity-40">Bulk Command:</span>
+                            <button
+                                onClick={() => handleToggleAll(true)}
+                                className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border border-white/10 hover:border-primary/50 hover:bg-primary/10 transition-all"
+                            >
+                                [Enable All]
+                            </button>
+                            <button
+                                onClick={() => handleToggleAll(false)}
+                                className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border border-white/10 hover:border-white/30 hover:bg-white/5 transition-all"
+                            >
+                                [Disable All]
+                            </button>
+                            <button
+                                onClick={handleDeleteAll}
+                                className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border border-red-500/20 text-red-500/60 hover:border-red-500 hover:text-red-500 hover:bg-red-500/10 transition-all ml-auto"
+                            >
+                                [Abort All Nodes]
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Nodes Grid */}

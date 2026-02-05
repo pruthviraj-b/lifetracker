@@ -42,30 +42,30 @@ export default function AnalyticsPage() {
         <div className={`min-h-screen bg-background relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : 'font-sans'}`}>
             {isWild && <div className="vignette pointer-events-none" />}
 
-            <div className="relative z-10 max-w-5xl mx-auto p-4 md:p-8 space-y-12">
+            <div className="relative z-10 max-w-5xl mx-auto p-4 md:p-6 space-y-6">
                 {/* Header */}
-                <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-6 ${isWild ? 'animate-reveal' : ''}`}>
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" className={`rounded-full w-10 h-10 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
-                            <Home className="w-5 h-5" />
+                <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${isWild ? 'animate-reveal' : ''}`}>
+                    <div className="flex items-center gap-3">
+                        <Button variant="ghost" className={`rounded-full w-9 h-9 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
+                            <Home className="w-4 h-4" />
                         </Button>
                         <div>
-                            <h1 className={`text-4xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>Analytics</h1>
-                            <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest opacity-70">Deep Metric Evaluation Sequence</p>
+                            <h1 className={`text-2xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>Analytics</h1>
+                            <p className="text-muted-foreground text-[8px] uppercase font-bold tracking-widest opacity-60">Deep Metric Evaluation Sequence</p>
                         </div>
                     </div>
                     <div className="flex gap-2">
                         <select
-                            className={`bg-muted text-sm px-3 py-2 focus:ring-1 focus:ring-primary ${isWild ? 'rounded-none border-2 border-primary/50' : 'rounded-md border-none'}`}
+                            className={`bg-muted text-xs px-2.5 py-1.5 focus:ring-1 focus:ring-primary h-9 ${isWild ? 'rounded-none border-2 border-primary/50' : 'rounded-md border-none'}`}
                             value={range}
                             onChange={(e) => setRange(Number(e.target.value))}
                         >
-                            <option value="7">Last 7 Days</option>
-                            <option value="30">Last 30 Days</option>
-                            <option value="90">Last 3 Months</option>
+                            <option value="7">Last 7D</option>
+                            <option value="30">Last 30D</option>
+                            <option value="90">Last 3M</option>
                         </select>
-                        <Button variant="outline" onClick={() => AnalyticsService.exportToCSV()} className={isWild ? 'rounded-none border-2' : ''}>
-                            <Download className="w-4 h-4 mr-2" />
+                        <Button variant="outline" size="sm" onClick={() => AnalyticsService.exportToCSV()} className={`h-9 px-4 text-[10px] uppercase font-black tracking-widest ${isWild ? 'rounded-none border-2' : ''}`}>
+                            <Download className="w-3.5 h-3.5 mr-2" />
                             Export
                         </Button>
                     </div>

@@ -133,5 +133,29 @@ export const ReminderService = {
             .eq('id', id);
 
         if (error) throw error;
+    },
+
+    async deleteAllReminders() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('No user logged in');
+
+        const { error } = await supabase
+            .from('reminders')
+            .delete()
+            .eq('user_id', user.id);
+
+        if (error) throw error;
+    },
+
+    async updateAllStatus(isEnabled: boolean) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('No user logged in');
+
+        const { error } = await supabase
+            .from('reminders')
+            .update({ is_enabled: isEnabled })
+            .eq('user_id', user.id);
+
+        if (error) throw error;
     }
 };

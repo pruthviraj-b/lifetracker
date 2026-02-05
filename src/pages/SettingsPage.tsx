@@ -79,26 +79,26 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className={`min-h-screen bg-background text-foreground p-6 md:p-12 space-y-12 relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : ''}`}>
+        <div className={`min-h-screen bg-background text-foreground p-4 md:p-6 space-y-6 relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : ''}`}>
             {isWild && <div className="vignette pointer-events-none" />}
 
             {/* Back Button & Header */}
-            <div className="flex flex-col items-center justify-center text-center space-y-6 max-w-4xl mx-auto">
+            <div className="flex flex-col items-center justify-center text-center space-y-4 max-w-4xl mx-auto">
                 <Button
                     variant="ghost"
-                    className={`rounded-full w-12 h-12 p-0 bg-white/5 border border-white/10 ${isWild ? 'rounded-none border-2 border-primary' : ''}`}
+                    className={`rounded-full w-10 h-10 p-0 bg-white/5 border border-white/10 ${isWild ? 'rounded-none border-2 border-primary' : ''}`}
                     onClick={() => activeTab ? setActiveTab(null) : navigate('/home')}
                 >
-                    {activeTab ? <X className="w-6 h-6" /> : <Home className="w-6 h-6" />}
+                    {activeTab ? <X className="w-5 h-5" /> : <Home className="w-5 h-5" />}
                 </Button>
                 <div>
-                    <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase relative inline-block">
+                    <h1 className="text-2xl md:text-3xl font-black tracking-tighter uppercase relative inline-block">
                         System Configuration
-                        <span className="absolute -top-4 -right-12 opacity-20 rotate-12">
-                            <Settings className="w-16 h-16" />
+                        <span className="absolute -top-3 -right-8 opacity-10 rotate-12">
+                            <Settings className="w-8 h-8" />
                         </span>
                     </h1>
-                    <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest opacity-70 mt-4">
+                    <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-60 mt-2">
                         {activeTab
                             ? `Modifying Protocol: ${menuItems.find(i => i.id === activeTab)?.label}`
                             : 'Select a system module to reconfigure core protocols'

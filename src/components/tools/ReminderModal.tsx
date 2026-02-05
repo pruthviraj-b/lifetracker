@@ -60,56 +60,56 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, o
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/5">
-                    <h2 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-primary" />
+                <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-white/5">
+                    <h2 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-primary" />
                         {initialData ? 'Update Node' : 'Initialize Node'}
                     </h2>
                     <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors">
-                        <X className="w-4 h-4 text-muted-foreground" />
+                        <X className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
                 </div>
 
                 {/* Body */}
-                <form onSubmit={handleSave} className="p-4 space-y-4">
+                <form onSubmit={handleSave} className="p-3 space-y-3">
                     <div className="space-y-1">
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Protocol ID</label>
+                        <label className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/60">Protocol ID</label>
                         <Input
                             value={title}
                             onChange={e => setTitle(e.target.value)}
                             placeholder="Ritual identifier..."
                             required
                             autoFocus
-                            className="bg-black/40 h-9 text-sm"
+                            className="bg-black/40 h-8 text-[11px] rounded-none border-white/10"
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Temporal Mark</label>
+                            <label className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/60">Temporal Mark</label>
                             <Input
                                 type="time"
                                 step="1"
                                 value={time}
                                 onChange={e => setTime(e.target.value)}
                                 required
-                                className="bg-black/40 h-9 text-sm"
+                                className="bg-black/40 h-8 text-[11px] rounded-none border-white/10"
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Type</label>
-                            <div className="flex bg-white/5 p-0.5 rounded border border-white/10 h-9">
+                            <label className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/60">Type</label>
+                            <div className="flex bg-white/5 p-0.5 rounded-none border border-white/10 h-8">
                                 <button
                                     type="button"
                                     onClick={() => setIsRecurring(false)}
-                                    className={`flex-1 text-[10px] uppercase font-bold tracking-tighter rounded transition-all ${!isRecurring ? 'bg-primary text-black' : 'text-muted-foreground hover:text-white'}`}
+                                    className={`flex-1 text-[9px] uppercase font-black tracking-tighter transition-all ${!isRecurring ? 'bg-primary text-black' : 'text-muted-foreground hover:text-white'}`}
                                 >
                                     Once
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setIsRecurring(true)}
-                                    className={`flex-1 text-[10px] uppercase font-bold tracking-tighter rounded transition-all ${isRecurring ? 'bg-primary text-black' : 'text-muted-foreground hover:text-white'}`}
+                                    className={`flex-1 text-[9px] uppercase font-black tracking-tighter transition-all ${isRecurring ? 'bg-primary text-black' : 'text-muted-foreground hover:text-white'}`}
                                 >
                                     Cycle
                                 </button>
@@ -119,19 +119,19 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, o
 
                     {!isRecurring ? (
                         <div className="space-y-1 animate-in slide-in-from-top-1 duration-200">
-                            <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Specific Date</label>
+                            <label className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/60">Specific Date</label>
                             <Input
                                 type="date"
                                 value={date}
                                 onChange={e => setDate(e.target.value)}
                                 required={!isRecurring}
                                 min={new Date().toISOString().split('T')[0]}
-                                className="bg-black/40 h-9 text-sm"
+                                className="bg-black/40 h-8 text-[11px] rounded-none border-white/10"
                             />
                         </div>
                     ) : (
-                        <div className="space-y-2 animate-in slide-in-from-top-1 duration-200">
-                            <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Protocol Cycles</label>
+                        <div className="space-y-1.5 animate-in slide-in-from-top-1 duration-200">
+                            <label className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/60">Protocol Cycles</label>
                             <div className="flex justify-between gap-1">
                                 {DAYS_OF_WEEK.map(day => {
                                     const isSelected = days.includes(day.id);
@@ -141,7 +141,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, o
                                             type="button"
                                             onClick={() => toggleDay(day.id)}
                                             className={`
-                                                w-8 h-8 rounded text-[10px] font-black uppercase transition-all border
+                                                w-7 h-7 rounded-sm text-[9px] font-black uppercase transition-all border
                                                 ${isSelected
                                                     ? 'bg-primary text-black border-primary'
                                                     : 'bg-black/40 text-muted-foreground border-white/10 hover:border-primary/50'
@@ -156,13 +156,13 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, o
                         </div>
                     )}
 
-                    <div className="space-y-3 pt-3 border-t border-white/5">
+                    <div className="space-y-2 pt-2 border-t border-white/5">
                         <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Link Protocol</label>
+                            <label className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/60">Link Protocol</label>
                             <select
                                 value={habitId}
                                 onChange={e => setHabitId(e.target.value)}
-                                className="w-full h-9 px-3 rounded border border-white/10 bg-black/40 text-[10px] uppercase font-bold tracking-widest text-white focus:outline-none focus:ring-1 focus:ring-primary"
+                                className="w-full h-8 px-2 rounded-none border border-white/10 bg-black/40 text-[9px] uppercase font-black tracking-widest text-white focus:outline-none focus:ring-1 focus:ring-primary"
                             >
                                 <option value="">Standalone</option>
                                 {habits.map(habit => (
@@ -174,7 +174,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, o
                         </div>
 
                         <div className="flex items-center justify-between gap-2">
-                            <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Mode</span>
+                            <span className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/60">Mode</span>
                             <div className="flex gap-1">
                                 {(['push', 'in-app'] as const).map(type => (
                                     <button
@@ -182,7 +182,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, o
                                         type="button"
                                         onClick={() => setNotificationType(type)}
                                         className={`
-                                            px-2 py-1 rounded text-[10px] font-black uppercase border transition-all
+                                            px-2 py-0.5 rounded-sm text-[9px] font-black uppercase border transition-all
                                             ${notificationType === type
                                                 ? 'bg-primary/20 text-primary border-primary/50'
                                                 : 'bg-black/40 text-muted-foreground border-white/10 hover:border-white/20'
@@ -197,10 +197,10 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, o
                     </div>
 
                     <div className="pt-2 flex gap-2">
-                        <Button type="button" variant="ghost" className="flex-1 h-9 text-[10px] uppercase font-black" onClick={onClose}>
+                        <Button type="button" variant="ghost" className="flex-1 h-8 text-[9px] uppercase font-black rounded-none" onClick={onClose}>
                             Abort
                         </Button>
-                        <Button type="submit" className="flex-1 h-9 text-[10px] uppercase font-black">
+                        <Button type="submit" className="flex-1 h-8 text-[9px] uppercase font-black rounded-none">
                             Confirm
                         </Button>
                     </div>

@@ -237,9 +237,13 @@ class NotificationManager {
             clearTimeout(timerId);
             this.notificationSchedules.delete(habitName);
         }
-        // Also remove from DB?
-        // Implementation of removing from SW queue is complex (requires message to SW to clear timeout)
-        // For now, we clear local and DB.
+    }
+
+    // MASS ABORT: Cancel everything
+    async cancelAllNotifications() {
+        this.notificationSchedules.forEach((timerId) => clearTimeout(timerId));
+        this.notificationSchedules.clear();
+        console.log('☣️ MASS ABORT: All local notification schedules purged.');
     }
 
     // Physical haptic feedback (Mobile)
