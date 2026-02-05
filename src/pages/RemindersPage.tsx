@@ -402,16 +402,31 @@ export default function RemindersPage() {
                             The temporal sync engine monitors all active protocols within the current session.
                             Background persistent notifications rely on the Service Worker handshake.
                         </p>
-                        <div className="flex gap-4">
+                        <div className="flex flex-wrap gap-4">
                             <button onClick={async () => {
                                 const results = await runDiagnostics();
-                                alert(`DIAGNOSIS:\nPlatform: ${results.isMobile ? 'Mobile' : 'Desktop'}\nPWA: ${results.isPWA}\nSecure: ${results.isSecure}`);
+                                alert(`DIAGNOSIS:\nPlatform: ${results.isMobile ? 'Mobile' : 'Desktop'}\nPWA: ${results.isPWA}\nSecure: ${results.isSecure}\nSW: ${results.hasServiceWorker}\nPerm: ${results.permission}`);
                             }} className="text-[10px] font-black uppercase tracking-widest border-b border-primary text-primary hover:bg-primary/10 px-1 py-0.5">
                                 [Run Diagnosis]
                             </button>
                             <button onClick={testNotifications} className="text-[10px] font-black uppercase tracking-widest border-b border-white text-white hover:bg-white/10 px-1 py-0.5">
                                 [Send Test Pulse]
                             </button>
+                            <button onClick={async () => {
+                                if (!confirm("CLEAR SYSTEM CACHE? This will force a full reload and update.")) return;
+                                if ('serviceWorker' in navigator) {
+                                    const regs = await navigator.serviceWorker.getRegistrations();
+                                    for (let reg of regs) await reg.unregister();
+                                }
+                                const keys = await caches.keys();
+                                for (let key of keys) await caches.delete(key);
+                                window.location.reload();
+                            }} className="text-[10px] font-black uppercase tracking-widest border-b border-red-500 text-red-500 hover:bg-red-500/10 px-1 py-0.5">
+                                [Kill Cache & Sync]
+                            </button>
+                        </div>
+                        <div className="pt-2 text-[8px] opacity-30 uppercase font-black tracking-[0.2em]">
+                            System Build: v2.1.0-MATRIX-3.6
                         </div>
                     </div>
 

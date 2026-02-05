@@ -173,20 +173,15 @@ export const NotificationService = {
             if (!reminder.days.includes(now.getDay())) return false;
         }
 
-        // Logic: 
-        // 1. Current time must be >= target time
-        // 2. HAS NOT been triggered today (or ever for one-time)
-
+        // 🚀 MULTI-DEVICE FIX: 
+        // We only check if the current time is beyond the target time.
+        // The actual deduplication (preventing loops) is handled by 'localTriggerHistory' 
+        // in NotificationContext for the current session.
         if (now < targetTimeToday) return false;
 
-        if (reminder.lastTriggered) {
-            const last = new Date(reminder.lastTriggered);
-
-            // If triggered today at any time, don't trigger again
-            if (last.toDateString() === now.toDateString()) {
-                return false;
-            }
-        }
+        // If it was already triggered specifically within the LAST MINUTE (globally), 
+        // we might still want to skip it to avoid overwhelming.
+        // But to ensure all devices ring, we let the local device's history decide.
 
         return true;
     }

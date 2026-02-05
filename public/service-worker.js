@@ -1,7 +1,7 @@
 // 🚀 RITU OS: Ultra-Stable Service Worker v3.5
 // Optimized for: Multi-Device Sync, Background Stability, & Temporal Reliability
 
-const CACHE_NAME = 'ritu-os-v3.5';
+const CACHE_NAME = 'ritu-os-v3.6';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
