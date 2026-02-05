@@ -57,7 +57,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
             reminders.forEach(async (reminder) => {
                 if (NotificationService.shouldTrigger(reminder)) {
-                    console.log('🔔 Triggering reminder:', reminder.title);
+                    // Triggering reminder: reminder.title
 
                     // 1. Browser Notification (Native Push)
                     NotificationManagerInstance.showNotification(
