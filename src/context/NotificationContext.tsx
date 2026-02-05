@@ -45,9 +45,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             if (!reminder.isEnabled) continue;
 
             const now = new Date();
-            const [hours, minutes] = reminder.time.split(':').map(Number);
+            const [hours, minutes, seconds] = reminder.time.split(':').map(Number);
             let targetDate = new Date();
-            targetDate.setHours(hours, minutes, 0, 0);
+            targetDate.setHours(hours, minutes, seconds || 0, 0);
 
             if (reminder.date) {
                 const [y, m, d] = reminder.date.split('-').map(Number);
@@ -59,7 +59,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 for (let i = 0; i < 7; i++) {
                     const d = new Date();
                     d.setDate(now.getDate() + i);
-                    d.setHours(hours, minutes, 0, 0);
+                    d.setHours(hours, minutes, seconds || 0, 0);
                     if (d > now && reminder.days.includes(d.getDay())) {
                         targetDate = d;
                         found = true;

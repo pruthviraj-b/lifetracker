@@ -14,12 +14,15 @@ import { NotificationManagerInstance } from '../utils/notificationManager';
 import { useNotifications } from '../context/NotificationContext';
 
 
-// Helper: Format 24h to 12h AM/PM
+// Helper: Format 24h to 12h AM/PM with SECONDS
 const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':').map(Number);
+    const parts = time.split(':');
+    const hours = parseInt(parts[0]);
+    const minutes = parts[1];
+    const seconds = parts[2] || '00';
     const period = hours >= 12 ? 'PM' : 'AM';
     const hours12 = hours % 12 || 12;
-    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period} `;
+    return `${hours12}:${minutes}:${seconds} ${period}`;
 };
 
 // Helper: Calculate time remaining
@@ -27,29 +30,28 @@ const getTimeRemaining = (reminder: Reminder): string | null => {
     if (!reminder.isEnabled) return null;
 
     const now = new Date();
-    const [targetHours, targetMinutes] = reminder.time.split(':').map(Number);
+    const parts = reminder.time.split(':');
+    const targetHours = parseInt(parts[0]);
+    const targetMinutes = parseInt(parts[1]);
+    const targetSeconds = parseInt(parts[2] || '0');
+
     let targetDate = new Date();
-    targetDate.setHours(targetHours, targetMinutes, 0, 0);
+    targetDate.setHours(targetHours, targetMinutes, targetSeconds, 0);
 
     // Case 1: Specific Date
     if (reminder.date) {
         const [year, month, day] = reminder.date.split('-').map(Number);
         targetDate.setFullYear(year, month - 1, day);
-
-        // If passed?
-        if (targetDate < now) return "Overdue";
+        if (targetDate < now) return "Terminated";
     }
     // Case 2: Recurring
     else if (reminder.days.length > 0) {
-        // Find next valid day logic (existing)
         let found = false;
-        // Check next 7 days
         for (let i = 0; i < 7; i++) {
             const checkDate = new Date();
             checkDate.setDate(now.getDate() + i);
-            checkDate.setHours(targetHours, targetMinutes, 0, 0);
+            checkDate.setHours(targetHours, targetMinutes, targetSeconds, 0);
 
-            // If it's today and already passed, skip
             if (i === 0 && checkDate <= now) continue;
 
             const dayOfWeek = checkDate.getDay();
@@ -59,9 +61,9 @@ const getTimeRemaining = (reminder: Reminder): string | null => {
                 break;
             }
         }
-        if (!found) return "No upcoming days";
+        if (!found) return "Offline";
     }
-    // Case 3: One-time (today/tomorrow implicit if no date set - LEGACY fallback)
+    // Case 3: One-time fallback
     else {
         if (targetDate <= now) {
             targetDate.setDate(targetDate.getDate() + 1);
@@ -69,17 +71,16 @@ const getTimeRemaining = (reminder: Reminder): string | null => {
     }
 
     const diffMs = targetDate.getTime() - now.getTime();
-    if (diffMs <= 0) return "Due now";
+    if (diffMs <= 0) return "Active Now";
 
     const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
     const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     const diffDays = Math.floor(diffHrs / 24);
 
-    if (diffDays > 0) return `in ${diffDays}d ${diffHrs % 24} h`;
-    if (diffHrs > 0) return `in ${diffHrs}h ${diffMins} m`;
-    return `in ${diffMins} mins`;
+    if (diffDays > 0) return `T-${diffDays}D ${diffHrs % 24}H`;
+    if (diffHrs > 0) return `T-${diffHrs}H ${diffMins}M`;
+    return `T-${diffMins}M`;
 };
-
 
 export default function RemindersPage() {
     const navigate = useNavigate();
@@ -91,7 +92,6 @@ export default function RemindersPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [hasPermission, setHasPermission] = useState(false);
     const [editingReminder, setEditingReminder] = useState<Reminder | undefined>(undefined);
-    // Data state
 
     // Initial Load & Sync
     useEffect(() => {
@@ -99,313 +99,236 @@ export default function RemindersPage() {
             try {
                 const data = await ReminderService.getReminders();
                 setReminders(data);
-
-                // Fetch habits for dropdown
                 const habitsData = await HabitService.getHabits();
                 setHabits(habitsData.map(h => ({ id: h.id, title: h.title })));
             } catch (error) {
                 console.error("Failed to load reminders:", error);
-                // If table missing, maybe alert user?
-                // For now, let's just use empty array or maybe fallback to localStorage if needed?
-                // But user wants sync. Let's just assume valid DB for now.
             }
         };
         loadData();
 
         const checkPerm = async () => {
-            // ... existing permission logic ...
-            // Re-implementing simplified version to match previous exact logic if needed, 
-            // but wrapping in async IIFE
             const granted = await NotificationService.requestPermission();
             setHasPermission(granted);
         };
         checkPerm();
     }, []);
 
-
     const scheduleReminderInSW = async (reminder: Reminder) => {
         if (!reminder.isEnabled) return;
-
-        // Calculate next occurrence
         const now = new Date();
-        const [hours, minutes] = reminder.time.split(':').map(Number);
+        const [hours, minutes, seconds] = reminder.time.split(':').map(Number);
         let targetDate = new Date();
-        targetDate.setHours(hours, minutes, 0, 0);
+        targetDate.setHours(hours, minutes, seconds || 0, 0);
 
         if (reminder.date) {
-            // Specific Date
             const [y, m, d] = reminder.date.split('-').map(Number);
             targetDate.setFullYear(y, m - 1, d);
-            if (targetDate < now) return; // Passed
+            if (targetDate < now) return;
         } else if (reminder.days.length > 0) {
-            // Recurring: Find next day
-            let daysUntil = -1;
+            let found = false;
             for (let i = 0; i < 7; i++) {
                 const d = new Date();
                 d.setDate(now.getDate() + i);
-                if (reminder.days.includes(d.getDay())) {
-                    d.setHours(hours, minutes, 0, 0);
-                    if (d > now) {
-                        targetDate = d;
-                        break;
-                    }
+                d.setHours(hours, minutes, seconds || 0, 0);
+                if (d > now && reminder.days.includes(d.getDay())) {
+                    targetDate = d;
+                    found = true;
+                    break;
                 }
             }
-        } else {
-            // Daily/One-time default
-            if (targetDate <= now) {
-                targetDate.setDate(targetDate.getDate() + 1);
-            }
+            if (!found) return;
+        } else if (targetDate <= now) {
+            targetDate.setDate(targetDate.getDate() + 1);
         }
 
-        const delay = targetDate.getTime() - now.getTime();
         await NotificationManagerInstance.scheduleNotification(
             reminder.title,
             targetDate,
             {
-                body: reminder.customMessage || "Time to complete your habit!",
-                icon: '/vite.svg'
-            }
+                body: reminder.customMessage || "Protocol requirement active.",
+                tag: reminder.id
+            } as any
         );
     };
 
-    const handleSave = async (data: Omit<Reminder, 'id' | 'isEnabled' | 'lastTriggered'> & { syncToGoogle?: boolean }) => {
+    const handleSave = async (data: any) => {
         try {
-            let savedReminder: Reminder | undefined;
-
             if (editingReminder) {
-                // Optimistic UI
-                savedReminder = { ...editingReminder, ...data };
-                setReminders(prev => prev.map(r => r.id === editingReminder.id ? savedReminder! : r));
                 await ReminderService.updateReminder(editingReminder.id, data);
             } else {
-                // Create
-                const newReminder = await ReminderService.createReminder({
-                    ...data,
-                    isEnabled: true
-                });
-                savedReminder = newReminder;
-                setReminders(prev => [...prev, newReminder]);
-
-                // Handle Google Sync (Existing logic...)
-                if (data.syncToGoogle) {
-                    /* ... existing google sync code ... */
-                    try {
-                        const now = new Date();
-                        const [hrs, mins] = data.time.split(':').map(Number);
-                        let startDate = new Date();
-                        startDate.setHours(hrs, mins, 0, 0);
-                        if (data.date) {
-                            const [y, m, d] = data.date.split('-').map(Number);
-                            startDate.setFullYear(y, m - 1, d);
-                        } else {
-                            if (startDate <= now && data.days.length === 0) startDate.setDate(startDate.getDate() + 1);
-                        }
-                        const endDate = new Date(startDate);
-                        endDate.setMinutes(endDate.getMinutes() + 30);
-
-                        await GoogleCalendarService.createEvent({
-                            summary: `Habit: ${data.title}`,
-                            description: data.customMessage || "Time to complete your habit!",
-                            startTime: startDate.toISOString(),
-                            endTime: endDate.toISOString(),
-                        });
-                        alert("Added to Google Calendar!");
-                    } catch (gError: any) {
-                        console.error("Google Sync Failed", gError);
-                        alert(`Google Sync Error: ${gError.message}`);
-                    }
-                }
+                await ReminderService.createReminder({ ...data, isEnabled: true });
             }
-
-            // Sync with Service Worker
-            if (savedReminder && savedReminder.isEnabled) {
-                await scheduleReminderInSW(savedReminder);
-            }
-
-            refreshReminders(); // Centralized sync
+            refreshReminders();
+            const updatedReminders = await ReminderService.getReminders();
+            setReminders(updatedReminders);
             setEditingReminder(undefined);
             setIsModalOpen(false);
         } catch (error: any) {
-            console.error('Save error details:', error);
-            alert(`Failed to save reminder: ${error.message || 'Unknown error'}`);
+            alert(`Failed to save: ${error.message}`);
         }
     };
 
-    const toggleReminder = async (id: string) => {
-        const reminder = reminders.find(r => r.id === id);
-        if (!reminder) return;
-
-        const newState = !reminder.isEnabled;
-        setReminders(prev => prev.map(r => r.id === id ? { ...r, isEnabled: newState } : r));
-
+    const toggleReminder = async (id: string, currentStatus: boolean) => {
+        const newState = !currentStatus;
         try {
+            setReminders(prev => prev.map(r => r.id === id ? { ...r, isEnabled: newState } : r));
             await ReminderService.updateReminder(id, { isEnabled: newState });
-
             if (newState) {
-                await scheduleReminderInSW({ ...reminder, isEnabled: true });
+                const r = reminders.find(item => item.id === id);
+                if (r) scheduleReminderInSW({ ...r, isEnabled: true });
             } else {
-                // Cancel not fully implemented in Manager by ID yet, but re-scheduling handles overwrite mostly?
-                // Actually NotificationManager.cancel needs ID.
-                // NOTE: NotificationManager as verified uses ID generated internally or passed?
-                // Let's check NotificationManager.cancel implementation.
-                // It uses timestamp as ID in simple implementation or title. 
-                // For now, re-enabling works. Disabling might leave a zombie notification in SW if I don't implement cancel by ID.
-                // I'll assume standard cancel behavior based on title if implemented, or just accept it.
-                // A better approach is:
-                await NotificationManagerInstance.cancelNotification(reminder.title);
+                const r = reminders.find(item => item.id === id);
+                if (r) NotificationManagerInstance.cancelNotification(r.title);
             }
         } catch (error) {
             console.error(error);
         }
     };
 
-    const deleteReminder = async (id: string) => {
-        if (!confirm('Delete this reminder?')) return;
-        const reminder = reminders.find(r => r.id === id);
-        setReminders(prev => prev.filter(r => r.id !== id));
-
+    const deleteReminder = async (id: string, title: string) => {
+        if (!confirm('Abort this protocol node?')) return;
         try {
+            setReminders(prev => prev.filter(r => r.id !== id));
             await ReminderService.deleteReminder(id);
-            if (reminder) await NotificationManagerInstance.cancelNotification(reminder.title);
+            await NotificationManagerInstance.cancelNotification(title);
         } catch (error) {
             console.error(error);
-            alert("Failed to delete from server");
         }
     };
 
     return (
-        <div className={`min-h-screen bg-background relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : 'font-sans'}`}>
-            {isWild && <div className="vignette pointer-events-none" />}
+        <div className={`min-h-screen bg-[#050505] text-white selection:bg-primary selection:text-black font-mono relative overflow-x-hidden`}>
+            {/* Background elements */}
+            <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(17,17,17,1)_0%,rgba(0,0,0,1)_100%)] z-0" />
+            <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
             <ReminderModal
                 isOpen={isModalOpen || !!editingReminder}
                 onClose={() => { setIsModalOpen(false); setEditingReminder(undefined); }}
                 onSave={handleSave}
                 initialData={editingReminder}
-                habits={habits} // Added
+                habits={habits}
             />
 
-            <div className={`relative z-10 max-w-2xl mx-auto space-y-12 pb-20 ${isWild ? 'animate-reveal' : ''}`}>
+            <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 md:py-12 space-y-12">
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" className={`rounded-full w-10 h-10 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
-                            <Home className="w-5 h-5" />
-                        </Button>
-                        <div>
-                            <h1 className={`text-4xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>
-                                Notification Hub
-                            </h1>
-                            <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest opacity-70">Temporal Sync Monitoring</p>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/10 pb-8">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3 text-primary">
+                            <Activity className="w-5 h-5 animate-pulse" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em]">System Status: Operational</span>
                         </div>
+                        <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none italic">
+                            Notification<br /><span className="text-primary not-italic">Matrix</span>
+                        </h1>
                     </div>
-                    <Button onClick={() => setIsModalOpen(true)} className={`shadow-lg h-11 px-6 ${isWild ? 'rounded-none shadow-primary/20' : 'shadow-primary/20 rounded-xl'}`}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Node
-                    </Button>
+
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => navigate('/')}
+                            className="h-14 w-14 border border-white/10 rounded-full flex items-center justify-center hover:bg-white/5 transition-all text-muted-foreground hover:text-white"
+                        >
+                            <Home className="w-6 h-6" />
+                        </button>
+                        <Button
+                            onClick={() => setIsModalOpen(true)}
+                            className="h-14 px-8 bg-primary text-black font-black uppercase text-xs tracking-widest rounded-none hover:translate-x-1 hover:-translate-y-1 transition-transform shadow-[4px_4px_0_rgba(var(--primary-rgb),0.3)]"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Inject Node
+                        </Button>
+                    </div>
                 </div>
 
-                {/* Permission Warning */}
-                {!hasPermission && (
-                    <div className={`p-6 border flex flex-col items-center gap-4 text-center ${isWild ? 'bg-black border-red-500 text-red-500 rounded-none' : 'bg-yellow-500/10 border-yellow-500/50 text-yellow-500 rounded-2xl'}`}>
-                        <div className="flex items-center gap-3">
-                            <Bell className="w-5 h-5" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">External_Comm_Blocked</span>
-                        </div>
-                        <p className="text-xs font-bold leading-relaxed max-w-md">
-                            Browser notification protocols are inactive. System alerts will only manifest within the active UI container.
-                        </p>
-                        <Button
-                            variant="outline"
-                            className={`w-full ${isWild ? 'rounded-none border-red-500 hover:bg-red-500/10 text-red-500' : 'text-yellow-500 border-yellow-500 hover:bg-yellow-500/10'}`}
-                            onClick={async () => {
-                                const granted = await NotificationManagerInstance.requestPermission();
-                                if (!granted) {
-                                    alert("Handshake rejected. Verify secure connection (HTTPS) and browser settings.");
-                                }
-                                setHasPermission(granted);
-                            }}
-                        >
-                            Authorize Handshake
-                        </Button>
+                {/* Status Bar */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white/5 border border-white/10 p-4 space-y-1">
+                        <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Active Nodes</span>
+                        <div className="text-2xl font-black">{reminders.filter(r => r.isEnabled).length} / {reminders.length}</div>
                     </div>
-                )}
+                    <div className="bg-white/5 border border-white/10 p-4 space-y-1">
+                        <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Handshake</span>
+                        <div className={`text-2xl font-black ${hasPermission ? 'text-green-500' : 'text-red-500'}`}>
+                            {hasPermission ? 'SECURE' : 'BLOCKED'}
+                        </div>
+                    </div>
+                    <div className="bg-white/5 border border-white/10 p-4 space-y-1 col-span-2">
+                        <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Temporal Sync</span>
+                        <div className="text-2xl font-black uppercase truncate">{new Date().toLocaleTimeString()}</div>
+                    </div>
+                </div>
 
-                {/* List */}
-                <div className="grid gap-3 md:gap-4">
+                {/* Nodes Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {reminders.length === 0 ? (
-                        <div className={`text-center py-20 border border-dashed ${isWild ? 'bg-black border-primary/20 rounded-none' : 'bg-card rounded-2xl'}`}>
-                            <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest opacity-60">No notification nodes active</p>
+                        <div className="col-span-full py-32 border border-dashed border-white/10 flex flex-col items-center justify-center space-y-4 opacity-30">
+                            <Zap className="w-12 h-12" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">No active ritual nodes detected in matrix</span>
                         </div>
                     ) : (
                         reminders.map(reminder => (
                             <div
                                 key={reminder.id}
                                 className={`
-                                    flex flex-col sm:flex-row sm:items-center justify-between p-6 border transition-all duration-300 gap-4
-                                    ${isWild ? 'bg-black border-primary/20 rounded-none hover:border-primary shadow-[inset_0_0_20px_rgba(255,0,0,0.05)]' : 'bg-card rounded-2xl'}
-                                    ${!reminder.isEnabled && 'opacity-40 grayscale'}
+                                    relative border transition-all duration-300 group
+                                    ${reminder.isEnabled
+                                        ? 'bg-white/[0.03] border-white/10 hover:border-primary/50'
+                                        : 'bg-black border-white/5 opacity-40 grayscale'}
                                 `}
                             >
-                                <div className="flex items-start gap-4">
-                                    <div className="p-3 bg-blue-500/10 rounded-full shrink-0">
-                                        <Bell className="w-5 h-5 text-blue-500" />
+                                {/* Time Header */}
+                                <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${reminder.isEnabled ? 'bg-primary animate-pulse' : 'bg-muted-foreground'}`} />
+                                        <span className="text-lg font-black tracking-tighter">{formatTime(reminder.time)}</span>
                                     </div>
-                                    <div className="min-w-0">
-                                        <h3 className="font-semibold text-lg truncate">{reminder.title}</h3>
-                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground mt-1">
-                                            <span className="font-mono bg-primary/10 text-primary px-2 py-0.5 rounded font-bold text-xs">
-                                                {formatTime(reminder.time)}
-                                            </span>
-                                            <span className="hidden sm:inline">•</span>
-                                            <span>
-                                                {reminder.date
-                                                    ? new Date(reminder.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-                                                    : reminder.days.length === 7
-                                                        ? 'Everyday'
-                                                        : reminder.days.length > 0
-                                                            ? 'Custom Days'
-                                                            : 'Once'
-                                                }
-                                            </span>
-                                            {reminder.isEnabled && (
-                                                <>
-                                                    <span className="hidden sm:inline">•</span>
-                                                    <span className="text-orange-500 font-medium animate-pulse text-xs whitespace-nowrap">
-                                                        {getTimeRemaining(reminder)}
-                                                    </span>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
+                                    <button
+                                        onClick={() => toggleReminder(reminder.id, reminder.isEnabled)}
+                                        className={`p-1.5 rounded-none border transition-all ${reminder.isEnabled ? 'border-primary/30 text-primary bg-primary/5' : 'border-white/10 text-muted-foreground'}`}
+                                    >
+                                        <Power className="w-3 h-3" />
+                                    </button>
                                 </div>
 
-                                <div className="flex items-center gap-2 self-end sm:self-auto">
-                                    <button
-                                        onClick={() => toggleReminder(reminder.id)}
-                                        className={`
-                                            p-2 rounded-full transition-colors 
-                                            ${reminder.isEnabled
-                                                ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20'
-                                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                {/* Body */}
+                                <div className="p-4 space-y-4">
+                                    <div>
+                                        <h3 className="text-xs font-black uppercase tracking-widest mb-1 truncate group-hover:text-primary transition-colors">
+                                            {reminder.title}
+                                        </h3>
+                                        <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
+                                            {reminder.date
+                                                ? `ON ${reminder.date}`
+                                                : reminder.days.length === 7
+                                                    ? 'EVERY CYCLE'
+                                                    : reminder.days.length > 0
+                                                        ? 'PARTIAL CYCLES'
+                                                        : 'SINGLE PULSE'
                                             }
-                                        `}
-                                        title={reminder.isEnabled ? 'Disable' : 'Enable'}
-                                    >
-                                        <Power className="w-4 h-4" />
-                                    </button>
+                                        </div>
+                                    </div>
+
+                                    {reminder.isEnabled && (
+                                        <div className="bg-primary/10 border border-primary/20 px-2 py-1 inline-flex items-center gap-2">
+                                            <span className="text-[10px] font-black uppercase text-primary tracking-widest">{getTimeRemaining(reminder)}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Actions Toggle (Overlay on hover) */}
+                                <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#0a0a0a]/90 backdrop-blur-sm border-l border-b border-white/10 flex items-center gap-1">
                                     <button
                                         onClick={() => setEditingReminder(reminder)}
-                                        className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
+                                        className="p-2 hover:text-primary transition-colors"
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
                                     </button>
                                     <button
-                                        onClick={() => deleteReminder(reminder.id)}
-                                        className="p-2 rounded-full hover:bg-red-500/10 text-muted-foreground hover:text-red-500"
+                                        onClick={() => deleteReminder(reminder.id, reminder.title)}
+                                        className="p-2 hover:text-red-500 transition-colors"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                             </div>
@@ -413,50 +336,46 @@ export default function RemindersPage() {
                     )}
                 </div>
 
-                {/* Diagnostics Matrix */}
-                <div className={`p-8 border-2 ${isWild ? 'bg-black border-primary/40 rounded-none' : 'bg-card/50 border-primary/20 rounded-3xl'}`}>
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                            <Activity className="w-5 h-5 text-primary" />
+                {/* Footer Diagnostic Panel */}
+                <div className="pt-12 border-t border-white/10 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <Activity className="w-4 h-4 text-primary" />
+                            <h2 className="text-sm font-black uppercase tracking-widest">Matrix Integrity</h2>
                         </div>
-                        <div>
-                            <h2 className="text-xl font-black uppercase tracking-tight">Diagnostic Matrix</h2>
-                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">System Integrity Check</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed font-bold uppercase tracking-tight opacity-60">
+                            The temporal sync engine monitors all active protocols within the current session.
+                            Background persistent notifications rely on the Service Worker handshake.
+                        </p>
+                        <div className="flex gap-4">
+                            <button onClick={async () => {
+                                const results = await runDiagnostics();
+                                alert(`DIAGNOSIS:\nPlatform: ${results.isMobile ? 'Mobile' : 'Desktop'}\nPWA: ${results.isPWA}\nSecure: ${results.isSecure}`);
+                            }} className="text-[10px] font-black uppercase tracking-widest border-b border-primary text-primary hover:bg-primary/10 px-1 py-0.5">
+                                [Run Diagnosis]
+                            </button>
+                            <button onClick={testNotifications} className="text-[10px] font-black uppercase tracking-widest border-b border-white text-white hover:bg-white/10 px-1 py-0.5">
+                                [Send Test Pulse]
+                            </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Button
-                            variant="outline"
-                            className={`h-12 border-primary/30 hover:bg-primary/10 ${isWild ? 'rounded-none' : 'rounded-xl'}`}
-                            onClick={async () => {
-                                const results = await runDiagnostics();
-                                alert(`
-MATRIX DIAGNOSIS:
------------------
-Platform: ${results.isIOS ? 'iOS' : results.isMobile ? 'Android/Mobile' : 'Desktop'}
-Secure (HTTPS): ${results.isSecure ? 'YES' : 'NO'}
-Service Worker: ${results.hasServiceWorker ? 'ACTIVE' : 'MISSING'}
-PWA Installed: ${results.isPWA ? 'YES' : 'NO'}
-Permission: ${results.permission.toUpperCase()}
-                                `);
-                            }}
-                        >
-                            <Activity className="w-4 h-4 mr-2" />
-                            Run Diagnosis
-                        </Button>
-                        <Button
-                            className={`h-12 shadow-primary/20 ${isWild ? 'rounded-none' : 'rounded-xl'}`}
-                            onClick={testNotifications}
-                        >
-                            <Zap className="w-4 h-4 mr-2" />
-                            Test Signal
-                        </Button>
-                    </div>
-                    {NotificationService.isIOS() && !NotificationService.isPWA() && (
-                        <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-mono leading-relaxed">
-                            <p className="font-bold mb-2 uppercase">⚠️ iOS PROTOCOL VULNERABILITY</p>
-                            <p>Safari inhibits background triggers. You MUST perform 'Add to Home Screen' and launch via icon to initialize the notification bridge.</p>
+                    {!hasPermission && (
+                        <div className="bg-red-500/10 border border-red-500/30 p-6 space-y-3">
+                            <div className="flex items-center gap-2 text-red-500">
+                                <Zap className="w-4 h-4" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Protocol Warning</span>
+                            </div>
+                            <p className="text-[10px] font-bold uppercase tracking-tight leading-relaxed">
+                                External communication is restricted by host browser. Notifications will not leave the visual buffer.
+                                <br />Please authorize the security handshake.
+                            </p>
+                            <Button
+                                onClick={() => NotificationManagerInstance.requestPermission().then(p => setHasPermission(p))}
+                                className="w-full h-10 bg-red-500 text-black font-black uppercase text-[10px] tracking-widest rounded-none"
+                            >
+                                Authorize Synchronization
+                            </Button>
                         </div>
                     )}
                 </div>

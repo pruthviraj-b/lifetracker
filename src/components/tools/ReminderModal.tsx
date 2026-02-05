@@ -17,7 +17,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, o
     if (!isOpen) return null;
 
     const [title, setTitle] = useState(initialData?.title || '');
-    const [time, setTime] = useState(initialData?.time || '09:00');
+    const [time, setTime] = useState(initialData?.time || '09:00:00');
     const [isRecurring, setIsRecurring] = useState(initialData?.days && initialData.days.length > 0 ? true : false);
     const [date, setDate] = useState(initialData?.date || new Date().toISOString().split('T')[0]);
     const [days, setDays] = useState<number[]>(initialData?.days || []);
@@ -54,80 +54,84 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, o
     };
 
     const modalContent = (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
             <div
-                className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
+                className="bg-[#0a0a0a] border border-white/10 rounded-lg shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-border bg-muted/20">
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-primary" />
-                        {initialData ? 'Edit Reminder' : 'New Reminder'}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/5">
+                    <h2 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-primary" />
+                        {initialData ? 'Update Node' : 'Initialize Node'}
                     </h2>
-                    <button onClick={onClose} className="p-1 hover:bg-muted rounded-full transition-colors">
-                        <X className="w-5 h-5 text-muted-foreground" />
+                    <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors">
+                        <X className="w-4 h-4 text-muted-foreground" />
                     </button>
                 </div>
 
                 {/* Body */}
-                <form onSubmit={handleSave} className="p-6 space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-muted-foreground">Title</label>
+                <form onSubmit={handleSave} className="p-4 space-y-4">
+                    <div className="space-y-1">
+                        <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Protocol ID</label>
                         <Input
                             value={title}
                             onChange={e => setTitle(e.target.value)}
-                            placeholder="e.g. Drink Water"
+                            placeholder="Ritual identifier..."
                             required
                             autoFocus
+                            className="bg-black/40 h-9 text-sm"
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-muted-foreground">Time</label>
-                        <Input
-                            type="time"
-                            value={time}
-                            onChange={e => setTime(e.target.value)}
-                            required
-                        />
-                    </div>
-
-                    {/* Type Selection */}
-                    <div className="flex bg-muted p-1 rounded-lg">
-                        <button
-                            type="button"
-                            onClick={() => setIsRecurring(false)}
-                            className={`flex-1 text-sm font-medium py-1.5 rounded-md transition-all ${!isRecurring ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                        >
-                            One-time
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setIsRecurring(true)}
-                            className={`flex-1 text-sm font-medium py-1.5 rounded-md transition-all ${isRecurring ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                        >
-                            Recurring
-                        </button>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Temporal Mark</label>
+                            <Input
+                                type="time"
+                                step="1"
+                                value={time}
+                                onChange={e => setTime(e.target.value)}
+                                required
+                                className="bg-black/40 h-9 text-sm"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Type</label>
+                            <div className="flex bg-white/5 p-0.5 rounded border border-white/10 h-9">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsRecurring(false)}
+                                    className={`flex-1 text-[10px] uppercase font-bold tracking-tighter rounded transition-all ${!isRecurring ? 'bg-primary text-black' : 'text-muted-foreground hover:text-white'}`}
+                                >
+                                    Once
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsRecurring(true)}
+                                    className={`flex-1 text-[10px] uppercase font-bold tracking-tighter rounded transition-all ${isRecurring ? 'bg-primary text-black' : 'text-muted-foreground hover:text-white'}`}
+                                >
+                                    Cycle
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {!isRecurring ? (
-                        <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
-                            <label className="text-sm font-medium text-muted-foreground">Date</label>
+                        <div className="space-y-1 animate-in slide-in-from-top-1 duration-200">
+                            <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Specific Date</label>
                             <Input
                                 type="date"
                                 value={date}
                                 onChange={e => setDate(e.target.value)}
                                 required={!isRecurring}
                                 min={new Date().toISOString().split('T')[0]}
+                                className="bg-black/40 h-9 text-sm"
                             />
                         </div>
                     ) : (
-                        <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
-                            <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                <Calendar className="w-4 h-4" />
-                                Repeat Days
-                            </label>
+                        <div className="space-y-2 animate-in slide-in-from-top-1 duration-200">
+                            <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Protocol Cycles</label>
                             <div className="flex justify-between gap-1">
                                 {DAYS_OF_WEEK.map(day => {
                                     const isSelected = days.includes(day.id);
@@ -137,35 +141,30 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, o
                                             type="button"
                                             onClick={() => toggleDay(day.id)}
                                             className={`
-                                                w-10 h-10 rounded-full text-sm font-medium transition-all
+                                                w-8 h-8 rounded text-[10px] font-black uppercase transition-all border
                                                 ${isSelected
-                                                    ? 'bg-primary text-primary-foreground shadow-lg scale-105'
-                                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                                    ? 'bg-primary text-black border-primary'
+                                                    : 'bg-black/40 text-muted-foreground border-white/10 hover:border-primary/50'
                                                 }
                                             `}
                                         >
-                                            {day.label}
+                                            {day.label.charAt(0)}
                                         </button>
                                     );
                                 })}
                             </div>
-                            <p className="text-xs text-muted-foreground text-center">
-                                {days.length === 0 ? 'Select days to repeat' : days.length === 7 ? 'Every day' : 'Selected days'}
-                            </p>
                         </div>
                     )}
 
-                    {/* Extended Options */}
-                    <div className="space-y-4 pt-2 border-t border-border">
-                        {/* Habit Link */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">Link to Habit (Optional)</label>
+                    <div className="space-y-3 pt-3 border-t border-white/5">
+                        <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Link Protocol</label>
                             <select
                                 value={habitId}
                                 onChange={e => setHabitId(e.target.value)}
-                                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                className="w-full h-9 px-3 rounded border border-white/10 bg-black/40 text-[10px] uppercase font-bold tracking-widest text-white focus:outline-none focus:ring-1 focus:ring-primary"
                             >
-                                <option value="">None</option>
+                                <option value="">Standalone</option>
                                 {habits.map(habit => (
                                     <option key={habit.id} value={habit.id}>
                                         {habit.title}
@@ -174,47 +173,19 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, o
                             </select>
                         </div>
 
-                        {/* Custom Message & Note Prompt */}
-                        {habitId && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-top-1">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-muted-foreground">Custom Message</label>
-                                    <Input
-                                        value={customMessage}
-                                        onChange={e => setCustomMessage(e.target.value)}
-                                        placeholder="e.g. Time to crush it! 💪"
-                                    />
-                                </div>
-
-                                <label className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={promptForNote}
-                                        onChange={e => setPromptForNote(e.target.checked)}
-                                        className="w-4 h-4 rounded border-primary text-primary focus:ring-primary"
-                                    />
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium">Prompt for Reflection?</span>
-                                        <span className="text-xs text-muted-foreground">Clicking the notification will open the Note entry for this habit.</span>
-                                    </div>
-                                </label>
-                            </div>
-                        )}
-
-                        {/* Notification Type */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">Notification Type</label>
-                            <div className="flex gap-2">
-                                {(['in-app', 'push', 'email'] as const).map(type => (
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Mode</span>
+                            <div className="flex gap-1">
+                                {(['push', 'in-app'] as const).map(type => (
                                     <button
                                         key={type}
                                         type="button"
                                         onClick={() => setNotificationType(type)}
                                         className={`
-                                            flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-all capitalize
+                                            px-2 py-1 rounded text-[10px] font-black uppercase border transition-all
                                             ${notificationType === type
-                                                ? 'bg-primary/20 text-primary border border-primary/50'
-                                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                                ? 'bg-primary/20 text-primary border-primary/50'
+                                                : 'bg-black/40 text-muted-foreground border-white/10 hover:border-white/20'
                                             }
                                         `}
                                     >
@@ -223,33 +194,14 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, o
                                 ))}
                             </div>
                         </div>
-
-                        {/* Google Calendar Sync */}
-                        <div className="pt-2 border-t border-border">
-                            <label className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group">
-                                <div className="p-2 bg-red-100 rounded-full text-red-600 group-hover:bg-red-200 transition-colors">
-                                    <Calendar className="w-4 h-4" />
-                                </div>
-                                <div className="flex flex-col flex-1">
-                                    <span className="text-sm font-medium">Sync to Google Calendar</span>
-                                    <span className="text-xs text-muted-foreground">Add this reminder to your Google Calendar</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={syncToGoogle}
-                                    onChange={e => setSyncToGoogle(e.target.checked)}
-                                    className="w-4 h-4 rounded border-primary text-primary focus:ring-primary"
-                                />
-                            </label>
-                        </div>
                     </div>
 
-                    <div className="pt-4 flex gap-3">
-                        <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
-                            Cancel
+                    <div className="pt-2 flex gap-2">
+                        <Button type="button" variant="ghost" className="flex-1 h-9 text-[10px] uppercase font-black" onClick={onClose}>
+                            Abort
                         </Button>
-                        <Button type="submit" className="flex-1">
-                            Save
+                        <Button type="submit" className="flex-1 h-9 text-[10px] uppercase font-black">
+                            Confirm
                         </Button>
                     </div>
                 </form>

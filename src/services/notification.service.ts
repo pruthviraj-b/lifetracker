@@ -95,11 +95,11 @@ export const NotificationService = {
         if (!reminder.isEnabled) return false;
 
         const now = new Date();
-        const [targetHours, targetMinutes] = reminder.time.split(':').map(Number);
+        const [targetHours, targetMinutes, targetSeconds] = reminder.time.split(':').map(Number);
 
         // Create a date object for the reminder time TODAY
         const targetTimeToday = new Date();
-        targetTimeToday.setHours(targetHours, targetMinutes, 0, 0);
+        targetTimeToday.setHours(targetHours, targetMinutes, targetSeconds || 0, 0);
 
         // Check if it's the right day
         if (reminder.date) {
