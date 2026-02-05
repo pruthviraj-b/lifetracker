@@ -38,24 +38,30 @@ self.addEventListener('fetch', (event) => {
 });
 
 // 🔔 Advanced Notification Logic
+const pendingNotifications = new Map();
+
 self.addEventListener('message', (event) => {
     if (!event.data) return;
 
     if (event.data.type === 'SCHEDULE_NOTIFICATION') {
         const { title, options, delay } = event.data;
+        const tag = options.tag || `ritu-${Date.now()}`;
 
-        console.log(`[SW] Received Schedule: ${title} in ${delay}ms`);
+        console.log(`[SW] Scheduling: ${title} in ${delay}ms (Tag: ${tag})`);
 
-        // We use a self-invoking function to create a persistent closure
-        // and event.waitUntil to keep the worker alive if possible
+        // Clear existing timer for same tag if any
+        if (pendingNotifications.has(tag)) {
+            clearTimeout(pendingNotifications.get(tag).timer);
+        }
+
         const show = () => {
             self.registration.showNotification(title, {
                 body: options.body || 'Protocol requirement active.',
                 icon: '/pwa-512x512.png',
                 badge: '/pwa-192x192.png',
-                tag: options.tag || `ritu-${Date.now()}`, // Unique tag ensures multiple messages stack
+                tag: tag,
                 renotify: true,
-                vibrate: [200, 100, 200],
+                vibrate: [200, 100, 200, 100, 200],
                 requireInteraction: true,
                 data: {
                     habitId: options.habitId,
@@ -63,17 +69,30 @@ self.addEventListener('message', (event) => {
                 },
                 actions: [
                     { action: 'complete', title: '✅ Done' },
+                    { action: 'snooze', title: '⏳ Snooze' },
                     { action: 'open', title: '👁️ View' }
                 ],
                 ...options
             });
+            pendingNotifications.delete(tag);
         };
 
         if (delay <= 0) {
             show();
         } else {
-            // SW might be killed for very long delays, but for short ones (minutes) this works
-            setTimeout(show, delay);
+            // Keep SW alive as long as possible (browsers may still kill it after a few mins)
+            const promise = new Promise((resolve) => {
+                const timer = setTimeout(() => {
+                    show();
+                    resolve();
+                }, delay);
+                pendingNotifications.set(tag, { timer, resolve });
+            });
+
+            // If the message event supports waitUntil (it does in many browsers)
+            if (event.waitUntil) {
+                event.waitUntil(promise);
+            }
         }
     }
 });

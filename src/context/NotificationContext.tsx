@@ -36,15 +36,71 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
     }, [showToast]);
 
+    const syncRemindersToSW = useCallback(async (remindersList: Reminder[]) => {
+        if (!('serviceWorker' in navigator)) return;
+
+        console.log(`[Sync] Queueing ${remindersList.length} reminders to Service Worker...`);
+
+        for (const reminder of remindersList) {
+            if (!reminder.isEnabled) continue;
+
+            const now = new Date();
+            const [hours, minutes] = reminder.time.split(':').map(Number);
+            let targetDate = new Date();
+            targetDate.setHours(hours, minutes, 0, 0);
+
+            if (reminder.date) {
+                const [y, m, d] = reminder.date.split('-').map(Number);
+                targetDate.setFullYear(y, m - 1, d);
+                if (targetDate < now) continue;
+            } else if (reminder.days.length > 0) {
+                // Find next occurrence in next 7 days
+                let found = false;
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date();
+                    d.setDate(now.getDate() + i);
+                    d.setHours(hours, minutes, 0, 0);
+                    if (d > now && reminder.days.includes(d.getDay())) {
+                        targetDate = d;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) continue;
+            } else {
+                if (targetDate <= now) targetDate.setDate(targetDate.getDate() + 1);
+            }
+
+            // Only schedule if it's in the next 24 hours to avoid clogging SW
+            const delay = targetDate.getTime() - now.getTime();
+            if (delay > 0 && delay < 86400000) {
+                NotificationManagerInstance.scheduleNotification(
+                    reminder.title,
+                    targetDate,
+                    {
+                        body: reminder.customMessage || "Protocol requirement active.",
+                        tag: reminder.id,
+                        data: {
+                            reminderId: reminder.id,
+                            habitId: reminder.habitId,
+                            url: reminder.habitId ? '/protocols' : '/reminders'
+                        }
+                    } as any
+                );
+            }
+        }
+    }, []);
+
     const loadReminders = useCallback(async () => {
         if (!user) return;
         try {
             const data = await ReminderService.getReminders();
             setReminders(data);
+            syncRemindersToSW(data);
         } catch (e) {
             console.error('Failed to load reminders in context:', e);
         }
-    }, [user]);
+    }, [user, syncRemindersToSW]);
 
     useEffect(() => {
         const checkPermission = async () => {

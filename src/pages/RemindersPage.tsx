@@ -226,9 +226,9 @@ export default function RemindersPage() {
             refreshReminders(); // Centralized sync
             setEditingReminder(undefined);
             setIsModalOpen(false);
-        } catch (error) {
-            alert('Failed to save reminder.');
-            console.error(error);
+        } catch (error: any) {
+            console.error('Save error details:', error);
+            alert(`Failed to save reminder: ${error.message || 'Unknown error'}`);
         }
     };
 
