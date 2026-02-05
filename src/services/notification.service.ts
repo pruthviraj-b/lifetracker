@@ -90,36 +90,37 @@ export const NotificationService = {
         return diagnostics;
     },
 
-    // Check if a reminder should fire NOW
+    // Check if a reminder should fire (Supports catch-up for missed minutes)
     shouldTrigger: (reminder: Reminder): boolean => {
         if (!reminder.isEnabled) return false;
 
         const now = new Date();
-        const currentHours = now.getHours().toString().padStart(2, '0');
-        const currentMinutes = now.getMinutes().toString().padStart(2, '0');
-        const currentTime = `${currentHours}:${currentMinutes}`;
+        const [targetHours, targetMinutes] = reminder.time.split(':').map(Number);
 
-        // Check time match
-        if (currentTime !== reminder.time) return false;
+        // Create a date object for the reminder time TODAY
+        const targetTimeToday = new Date();
+        targetTimeToday.setHours(targetHours, targetMinutes, 0, 0);
 
-        // Check Date match (One-time) using LOCAL date
+        // Check if it's the right day
         if (reminder.date) {
-            const year = now.getFullYear();
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const day = now.getDate().toString().padStart(2, '0');
-            const localDateStr = `${year}-${month}-${day}`;
-            if (reminder.date !== localDateStr) return false;
-        }
-        // Check Day match (Recurring)
-        else if (reminder.days.length > 0) {
-            const currentDay = now.getDay();
-            if (!reminder.days.includes(currentDay)) return false;
+            const [y, m, d] = reminder.date.split('-').map(Number);
+            const reminderDate = new Date(y, m - 1, d);
+            if (reminderDate.toDateString() !== now.toDateString()) return false;
+        } else if (reminder.days.length > 0) {
+            if (!reminder.days.includes(now.getDay())) return false;
         }
 
-        // Debounce: Verify it hasn't triggered in the last 60 seconds
+        // Logic: 
+        // 1. Current time must be >= target time
+        // 2. HAS NOT been triggered today (or ever for one-time)
+
+        if (now < targetTimeToday) return false;
+
         if (reminder.lastTriggered) {
             const last = new Date(reminder.lastTriggered);
-            if (now.getTime() - last.getTime() < 60000) {
+
+            // If triggered today at any time, don't trigger again
+            if (last.toDateString() === now.toDateString()) {
                 return false;
             }
         }
