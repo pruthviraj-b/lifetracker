@@ -11,6 +11,8 @@ interface NotificationContextType {
     requestPermission: () => Promise<boolean>;
     refreshReminders: () => Promise<void>;
     snoozeReminder: (id: string, minutes: number) => Promise<void>;
+    testNotifications: () => Promise<void>;
+    runDiagnostics: () => Promise<any>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -20,6 +22,19 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const { showToast } = useToast();
     const [hasPermission, setHasPermission] = useState(false);
     const [reminders, setReminders] = useState<Reminder[]>([]);
+
+    // iOS PWA Check and Guidance
+    useEffect(() => {
+        if (NotificationService.isIOS() && !NotificationService.isPWA()) {
+            setTimeout(() => {
+                showToast(
+                    "📱 iOS Setup Required",
+                    "To receive notifications on iPhone: Tap 'Share' (↑) then 'Add to Home Screen'. Open the app from your home screen icon.",
+                    { type: 'info', duration: 15000 }
+                );
+            }, 3000);
+        }
+    }, [showToast]);
 
     const loadReminders = useCallback(async () => {
         if (!user) return;
@@ -148,8 +163,28 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return () => window.removeEventListener('reminder-snooze-external', handleExternalSnooze);
     }, [snoozeReminder]);
 
+    const testNotifications = async () => {
+        await NotificationManagerInstance.showNotification("🧪 Test Successful", {
+            body: "If you saw this, your ritual notification matrix is calibrated.",
+            vibrate: [200, 100, 200, 100, 200],
+            requireInteraction: true
+        } as any);
+        showToast("Test Triggered", "Check your system notifications.", { type: 'success' });
+    };
+
+    const runDiagnostics = async () => {
+        return await NotificationService.diagnose();
+    };
+
     return (
-        <NotificationContext.Provider value={{ hasPermission, requestPermission, refreshReminders, snoozeReminder }}>
+        <NotificationContext.Provider value={{
+            hasPermission,
+            requestPermission,
+            refreshReminders,
+            snoozeReminder,
+            testNotifications,
+            runDiagnostics
+        }}>
             {children}
         </NotificationContext.Provider>
     );

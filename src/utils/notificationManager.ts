@@ -162,6 +162,7 @@ class NotificationManager {
 
     // Show notification immediately (with background fallback)
     async showNotification(title: string, options: NotificationOptions = {}) {
+        this.vibrate();
         try {
             // 1. Check Permission
             if (Notification.permission === 'default') {
@@ -239,6 +240,13 @@ class NotificationManager {
         // Also remove from DB?
         // Implementation of removing from SW queue is complex (requires message to SW to clear timeout)
         // For now, we clear local and DB.
+    }
+
+    // Physical haptic feedback (Mobile)
+    private vibrate() {
+        if ('vibrate' in navigator) {
+            navigator.vibrate([100, 50, 100]);
+        }
     }
 
     // Handle notification action (click, snooze, dismiss)

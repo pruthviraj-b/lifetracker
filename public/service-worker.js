@@ -99,11 +99,11 @@ self.addEventListener('notificationclick', (event) => {
         );
     } else {
         // Default: Open the specified URL or just the app
-        const targetUrl = notification.data?.url || '/';
+        const targetUrl = new URL(notification.data?.url || '/', self.location.origin).href;
         event.waitUntil(
-            self.clients.matchAll({ type: 'window' }).then(clientList => {
+            self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
                 for (const client of clientList) {
-                    if (new URL(client.url).pathname === targetUrl && 'focus' in client) {
+                    if (client.url === targetUrl && 'focus' in client) {
                         return client.focus();
                     }
                 }

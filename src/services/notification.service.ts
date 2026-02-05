@@ -1,6 +1,10 @@
 import { Reminder } from '../types/reminder';
 
 export const NotificationService = {
+    isMobile: () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+    isIOS: () => /iPhone|iPad|iPod/i.test(navigator.userAgent),
+    isPWA: () => window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true,
+
     requestPermission: async (): Promise<boolean> => {
         if (!('Notification' in window)) {
             console.error('This browser does not support desktop notification');
@@ -17,9 +21,7 @@ export const NotificationService = {
                 return permission === 'granted';
             }
         } catch (error) {
-            // Likely blocked by "Insecure Context" (http://IP)
-            console.warn("Notification permission blocked (likely insecure context):", error);
-            // We return false, but we can handle this in UI
+            console.warn("Notification permission blocked:", error);
             return false;
         }
 
@@ -38,7 +40,7 @@ export const NotificationService = {
                             icon: '/pwa-192x192.png',
                             badge: '/pwa-192x192.png',
                             requireInteraction: true,
-                            vibrate: [200, 100, 200],
+                            vibrate: [200, 100, 200, 100, 200], // More pronounced for mobile
                             data: {
                                 ...data,
                                 url: data?.url || '/'
@@ -71,6 +73,21 @@ export const NotificationService = {
         } else {
             console.warn('Notification permission NOT granted.');
         }
+    },
+
+    diagnose: async () => {
+        const diagnostics = {
+            hasNotification: 'Notification' in window,
+            hasServiceWorker: 'serviceWorker' in navigator,
+            permission: Notification.permission,
+            isSecure: window.location.protocol === 'https:' || window.location.hostname === 'localhost',
+            isIOS: NotificationService.isIOS(),
+            isPWA: NotificationService.isPWA(),
+            isMobile: NotificationService.isMobile()
+        };
+
+        console.table(diagnostics);
+        return diagnostics;
     },
 
     // Check if a reminder should fire NOW
@@ -107,3 +124,4 @@ export const NotificationService = {
         return true;
     }
 };
+
