@@ -121,70 +121,72 @@ export function FocusTimer({ isOpen, onClose }: FocusTimerProps) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-card border border-border w-full max-w-sm rounded-2xl shadow-xl p-8 relative">
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
-                >
-                    <X className="w-5 h-5" />
-                </button>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 overflow-y-auto p-4">
+            <div className="min-h-screen flex items-start justify-center py-12">
+                <div className="bg-card border border-border w-full max-w-sm rounded-2xl shadow-xl p-8 relative">
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
 
-                <div className="text-center space-y-8">
-                    <div className="space-y-2">
-                        <h2 className="text-2xl font-semibold tracking-tight">Focus Mode</h2>
-                        <p className="text-sm text-muted-foreground">
-                            {mode === 'FOCUS' ? 'Stay tracking.' : 'Take a breather.'}
-                        </p>
-                    </div>
-
-                    <div className="text-7xl font-mono font-bold tracking-tighter tabular-nums">
-                        {formatTime(timeLeft)}
-                    </div>
-
-                    <div className="flex justify-center gap-2">
-                        <div className="flex gap-1 bg-muted p-1 rounded-lg">
-                            <button
-                                onClick={() => switchMode('FOCUS')}
-                                className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${mode === 'FOCUS' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                            >
-                                Focus
-                            </button>
-                            <button
-                                onClick={() => switchMode('BREAK')}
-                                className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${mode === 'BREAK' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                            >
-                                Break
-                            </button>
+                    <div className="text-center space-y-8">
+                        <div className="space-y-2">
+                            <h2 className="text-2xl font-semibold tracking-tight">Focus Mode</h2>
+                            <p className="text-sm text-muted-foreground">
+                                {mode === 'FOCUS' ? 'Stay tracking.' : 'Take a breather.'}
+                            </p>
                         </div>
-                    </div>
 
-                    <div className="flex justify-center gap-4">
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={resetTimer}
-                        >
-                            <RotateCcw className="w-4 h-4" />
-                        </Button>
+                        <div className="text-7xl font-mono font-bold tracking-tighter tabular-nums">
+                            {formatTime(timeLeft)}
+                        </div>
 
-                        <Button
-                            size="lg"
-                            className="w-32 rounded-full"
-                            onClick={toggleTimer}
-                        >
-                            {isActive ? (
-                                <>
-                                    <Pause className="w-4 h-4 mr-2" /> Pause
-                                </>
-                            ) : (
-                                <>
-                                    <Play className="w-4 h-4 mr-2" /> Start
-                                </>
-                            )}
-                        </Button>
+                        <div className="flex justify-center gap-2">
+                            <div className="flex gap-1 bg-muted p-1 rounded-lg">
+                                <button
+                                    onClick={() => switchMode('FOCUS')}
+                                    className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${mode === 'FOCUS' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                >
+                                    Focus
+                                </button>
+                                <button
+                                    onClick={() => switchMode('BREAK')}
+                                    className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${mode === 'BREAK' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                >
+                                    Break
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-center gap-4">
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={resetTimer}
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                            </Button>
+
+                            <Button
+                                size="lg"
+                                className="w-32 rounded-full"
+                                onClick={toggleTimer}
+                            >
+                                {isActive ? (
+                                    <>
+                                        <Pause className="w-4 h-4 mr-2" /> Pause
+                                    </>
+                                ) : (
+                                    <>
+                                        <Play className="w-4 h-4 mr-2" /> Start
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>

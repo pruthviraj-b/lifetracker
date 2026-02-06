@@ -5,6 +5,7 @@ import { ProtocolPulseWidget } from './widgets/ProtocolPulseWidget';
 import { StreakMatrixWidget } from './widgets/StreakMatrixWidget';
 import { QuickLogWidget } from './widgets/QuickLogWidget';
 import { motion } from 'framer-motion';
+import { Reminder } from '../../types/reminder';
 
 interface WidgetGridProps {
     stats: {
@@ -13,14 +14,15 @@ interface WidgetGridProps {
         completed: number;
     };
     nextReminder: { title: string; time: string } | null;
+    allReminders?: Reminder[];
     streakData: number[];
     habits: { id: string; title: string; completed: boolean }[];
     onLog: (id: string) => void;
 }
 
-export const WidgetGrid: React.FC<WidgetGridProps> = ({ stats, nextReminder, streakData, habits, onLog }) => {
+export const WidgetGrid: React.FC<WidgetGridProps> = ({ stats, nextReminder, allReminders, streakData, habits, onLog }) => {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -34,7 +36,7 @@ export const WidgetGrid: React.FC<WidgetGridProps> = ({ stats, nextReminder, str
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
             >
-                <ProtocolPulseWidget nextReminder={nextReminder} />
+                <ProtocolPulseWidget nextReminder={nextReminder} allReminders={allReminders} />
             </motion.div>
 
             <motion.div

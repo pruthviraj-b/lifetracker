@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { Habit, TimeOfDay, HabitCategory, DayOfWeek, HabitLink } from '../types/habit';
+import { MultiverseService } from './multiverse.service';
 
 export const HabitService = {
     // --- Habits ---
@@ -109,6 +110,17 @@ export const HabitService = {
                     metadata: l.metadata || {}
                 }));
                 await supabase.from('habit_links').insert(linksToInsert);
+
+                // --- 🌌 MULTIVERSE SYNC ---
+                for (const l of habit.links) {
+                    await MultiverseService.createLink({
+                        sourceType: 'habit',
+                        sourceId: data.id,
+                        targetType: 'habit',
+                        targetId: l.targetHabitId,
+                        relationType: l.type as any === 'synergy' ? 'synergy' : 'prerequisite'
+                    });
+                }
             } catch (linkError) {
                 console.warn("Failed to save habit links (table might be missing):", linkError);
             }
@@ -151,6 +163,19 @@ export const HabitService = {
                     metadata: l.metadata || {}
                 }));
                 await supabase.from('habit_links').insert(linksToInsert);
+
+                // --- 🌌 MULTIVERSE SYNC ---
+                // For simplified logic, we just add new links. 
+                // A better approach would be to reconciliate, but for now we follow the same pattern.
+                for (const l of updates.links) {
+                    await MultiverseService.createLink({
+                        sourceType: 'habit',
+                        sourceId: id,
+                        targetType: 'habit',
+                        targetId: l.targetHabitId,
+                        relationType: l.type as any === 'synergy' ? 'synergy' : 'prerequisite'
+                    });
+                }
             }
         }
     },

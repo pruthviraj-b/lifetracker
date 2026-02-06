@@ -6,8 +6,12 @@ import { AuthLayout } from '../components/auth/AuthLayout';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 
+import { useTheme } from '../context/ThemeContext';
+
 export default function SignupPage() {
     const { register } = useAuth();
+    const { preferences } = useTheme();
+    const isWild = preferences.wild_mode;
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +28,6 @@ export default function SignupPage() {
 
         try {
             await register(formData);
-            // Redirect is handled by the PublicRoute wrapper or useEffect in App
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to create account');
             setLoading(false);
@@ -33,14 +36,14 @@ export default function SignupPage() {
 
     return (
         <AuthLayout
-            title="Create an account"
-            subtitle="Start tracking your habits today"
+            title="Create Account"
+            subtitle="Join the journey of mindful growth."
         >
-            <div className="space-y-4">
+            <div className="space-y-6 transition-all duration-300">
                 <Button
                     type="button"
                     variant="outline"
-                    className="w-full flex items-center justify-center gap-2"
+                    className="claude-button w-full border-border hover:bg-secondary text-foreground flex items-center justify-center gap-3 h-12"
                     onClick={async () => {
                         try {
                             setLoading(true);
@@ -67,68 +70,80 @@ export default function SignupPage() {
                         />
                         <path
                             fill="currentColor"
-                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                         />
                     </svg>
                     Continue with Google
                 </Button>
 
-                <div className="relative my-6">
+                <div className="relative">
                     <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
+                        <span className="w-full border-t border-border" />
                     </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+                    <div className="relative flex justify-center text-xs">
+                        <span className="bg-card px-4 text-muted-foreground font-medium">or email</span>
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Input
-                            placeholder="Full Name"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            required
-                            disabled={loading}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Input
-                            type="email"
-                            placeholder="Email address"
-                            value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            required
-                            disabled={loading}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Input
-                            type="password"
-                            placeholder="Password"
-                            value={formData.password}
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                            required
-                            minLength={6}
-                            disabled={loading}
-                        />
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-foreground ml-1">Your Name</label>
+                            <Input
+                                placeholder="Jane Doe"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                required
+                                disabled={loading}
+                                className="claude-input w-full"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-foreground ml-1">Email</label>
+                            <Input
+                                type="email"
+                                placeholder="name@example.com"
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                required
+                                disabled={loading}
+                                className="claude-input w-full"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-foreground ml-1">Password</label>
+                            <Input
+                                type="password"
+                                placeholder="••••••••"
+                                value={formData.password}
+                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                required
+                                minLength={6}
+                                disabled={loading}
+                                className="claude-input w-full"
+                            />
+                        </div>
                     </div>
 
                     {error && (
-                        <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+                        <div className="p-4 text-xs font-semibold text-destructive bg-destructive/5 border border-destructive/10 rounded-xl animate-claude-in">
                             {error}
                         </div>
                     )}
 
-                    <Button type="submit" className="w-full" isLoading={loading}>
+                    <Button
+                        type="submit"
+                        className="claude-button w-full h-12 bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20"
+                        isLoading={loading}
+                    >
                         Create Account
                     </Button>
                 </form>
 
-                <div className="text-center text-sm text-muted-foreground">
+                <div className="text-center text-sm font-medium text-muted-foreground pt-4">
                     Already have an account?{' '}
-                    <Link to="/login" className="underline hover:text-white transition-colors">
-                        Sign in
+                    <Link to="/login" className="text-primary hover:underline underline-offset-4 font-semibold">
+                        Sign in instead
                     </Link>
                 </div>
             </div>

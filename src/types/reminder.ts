@@ -6,6 +6,10 @@ export interface Reminder {
     date?: string; // YYYY-MM-DD (Optional, for specific date)
     isEnabled: boolean;
     habitId?: string; // Optional link to a habit
+    videoId?: string; // Optional link to a video
+    courseId?: string; // Optional link to a course
+    resourceId?: string; // Optional link to a resource
+    folderId?: string;
     promptForNote?: boolean; // If linked, should we ask for a note?
     customMessage?: string; // Override default "Time for..." message
     notificationType?: 'in-app' | 'email' | 'push';

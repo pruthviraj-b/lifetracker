@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
-import { Bell, Plus, Trash2, Power, Home, Activity, Zap } from 'lucide-react';
+import { Bell, Plus, Trash2, Power, Home, Activity, Zap, Edit3 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { Reminder } from '../types/reminder';
 import { ReminderModal } from '../components/tools/ReminderModal';
@@ -12,6 +12,9 @@ import { GoogleCalendarService } from '../services/googleCalendar.service';
 import { ReminderService } from '../services/reminder.service';
 import { NotificationManagerInstance } from '../utils/notificationManager';
 import { useNotifications } from '../context/NotificationContext';
+import { YouTubeService } from '../services/youtube.service';
+import { LearningService } from '../services/learning.service';
+import { CourseService } from '../services/course.service';
 
 
 // Helper: Format 24h to 12h AM/PM with SECONDS
@@ -82,13 +85,19 @@ const getTimeRemaining = (reminder: Reminder): string | null => {
     return `T-${diffMins}M`;
 };
 
+import { ThemedCard } from '../components/ui/ThemedCard';
+
 export default function RemindersPage() {
     const navigate = useNavigate();
     const { preferences } = useTheme();
-    const { refreshReminders, runDiagnostics, testNotifications, requestPermission, syncStatus } = useNotifications();
+    const { refreshReminders, runDiagnostics, testNotifications, requestPermission: requestNativePermission, syncStatus } = useNotifications();
     const isWild = preferences.wild_mode;
     const [reminders, setReminders] = useState<Reminder[]>([]);
     const [habits, setHabits] = useState<{ id: string; title: string }[]>([]);
+    const [videos, setVideos] = useState<{ id: string; title: string }[]>([]);
+    const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
+    const [resources, setResources] = useState<{ id: string; title: string }[]>([]);
+    const [folders, setFolders] = useState<{ id: string; title: string }[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [hasPermission, setHasPermission] = useState(false);
     const [editingReminder, setEditingReminder] = useState<Reminder | undefined>(undefined);
@@ -97,12 +106,23 @@ export default function RemindersPage() {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const data = await ReminderService.getReminders();
-                setReminders(data);
-                const habitsData = await HabitService.getHabits();
-                setHabits(habitsData.map(h => ({ id: h.id, title: h.title })));
+                const [remData, habData, vidData, couData, resData, folData] = await Promise.all([
+                    ReminderService.getReminders(),
+                    HabitService.getHabits(),
+                    YouTubeService.getVideos(),
+                    CourseService.getCourses(),
+                    LearningService.getResources(),
+                    LearningService.getFolders()
+                ]);
+
+                setReminders(remData);
+                setHabits(habData.map(h => ({ id: h.id, title: h.title })));
+                setVideos(vidData.map(v => ({ id: v.id, title: v.title })));
+                setCourses(couData.map(c => ({ id: c.id, title: c.title })));
+                setResources(resData.map(r => ({ id: r.id, title: r.title })));
+                setFolders(folData.map((f: any) => ({ id: f.id, title: f.name })));
             } catch (error) {
-                console.error("Failed to load reminders:", error);
+                console.error("Failed to load reminders data:", error);
             }
         };
         loadData();
@@ -186,7 +206,7 @@ export default function RemindersPage() {
         }
     };
 
-    const deleteReminder = async (id: string, title: string) => {
+    const deleteReminderAction = async (id: string, title: string) => {
         if (!confirm('Abort this protocol node?')) return;
         try {
             setReminders(prev => prev.filter(r => r.id !== id));
@@ -226,236 +246,209 @@ export default function RemindersPage() {
     };
 
     return (
-        <div className={`min-h-screen bg-[#050505] text-white selection:bg-primary selection:text-black font-mono relative overflow-x-hidden`}>
-            {/* Background elements */}
-            <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(17,17,17,1)_0%,rgba(0,0,0,1)_100%)] z-0" />
-            <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-
+        <div className="p-4 md:p-8 space-y-12 max-w-5xl mx-auto">
             <ReminderModal
                 isOpen={isModalOpen || !!editingReminder}
                 onClose={() => { setIsModalOpen(false); setEditingReminder(undefined); }}
                 onSave={handleSave}
                 initialData={editingReminder}
                 habits={habits}
+                videos={videos}
+                courses={courses}
+                resources={resources}
+                folders={folders}
             />
 
-            <div className="relative z-10 max-w-5xl mx-auto px-4 py-4 md:py-6 space-y-12">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/10 pb-4">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-3 text-primary">
-                            <Activity className="w-4 h-4 animate-pulse" />
-                            <span className="text-[9px] font-black uppercase tracking-[0.4em]">System Status: Operational</span>
-                        </div>
-                        <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none italic">
-                            Notification<br /><span className="text-primary not-italic">Matrix</span>
-                        </h1>
-                        <div className="flex items-center gap-2 mt-2">
-                            <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'syncing' ? 'bg-yellow-500 animate-ping' : 'bg-green-500'}`} />
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">
-                                {syncStatus === 'syncing' ? 'Cloud Syncing...' : 'Live Cluster Active'}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => navigate('/')}
-                            className="h-12 w-12 border border-white/10 rounded-full flex items-center justify-center hover:bg-white/5 transition-all text-muted-foreground hover:text-white"
-                        >
+            {/* Header */}
+            <div className={`flex flex-col md:flex-row justify-between items-start md:items-end gap-6 ${isWild ? 'animate-reveal' : ''}`}>
+                <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                        <Button variant="ghost" className={`rounded-full w-10 h-10 p-0 ${isWild ? 'rounded-none border-2 border-primary/20' : ''}`} onClick={() => navigate('/')}>
                             <Home className="w-5 h-5" />
-                        </button>
-                        <Button
-                            onClick={() => setIsModalOpen(true)}
-                            className="h-12 px-6 bg-primary text-black font-black uppercase text-[10px] tracking-widest rounded-none hover:translate-x-1 hover:-translate-y-1 transition-transform shadow-[4px_4px_0_rgba(var(--primary-rgb),0.3)]"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Inject Node
                         </Button>
+                        <div>
+                            <h1 className={`text-3xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>Trigger Protocols</h1>
+                            <p className="text-muted-foreground text-[8px] uppercase font-bold tracking-[0.3em] opacity-60">Temporal Alert Management</p>
+                        </div>
                     </div>
                 </div>
 
-                {/* Status Bar & Bulk Actions */}
-                <div className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-white/5 border border-white/10 p-4 space-y-1">
-                            <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Active Nodes</span>
-                            <div className="text-2xl font-black">{reminders.filter(r => r.isEnabled).length} / {reminders.length}</div>
-                        </div>
-                        <div className="bg-white/5 border border-white/10 p-4 space-y-1">
-                            <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Handshake</span>
-                            <div className={`text-2xl font-black ${hasPermission ? 'text-green-500' : 'text-red-500'}`}>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <Button
+                        onClick={() => setIsModalOpen(true)}
+                        className={`h-11 px-8 text-[11px] font-black uppercase tracking-widest flex-1 md:flex-none ${isWild ? 'rounded-none border-2 shadow-[0_0_15px_rgba(255,0,0,0.15)]' : 'rounded-xl'}`}
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Inject Node
+                    </Button>
+                </div>
+            </div>
+
+            {/* Diagnostics & Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <ThemedCard className="space-y-6">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">System Matrix Status</h3>
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                            <div className="text-[10px] uppercase font-bold text-muted-foreground opacity-40">Handshake</div>
+                            <div className={`text-xl font-black ${hasPermission ? 'text-primary' : 'text-red-500'}`}>
                                 {hasPermission ? 'SECURE' : 'BLOCKED'}
                             </div>
                         </div>
-                        <div className="bg-white/5 border border-white/10 p-4 space-y-1 col-span-2">
-                            <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Temporal Sync</span>
-                            <div className="text-2xl font-black uppercase truncate">{new Date().toLocaleTimeString()}</div>
+                        <div className="space-y-1">
+                            <div className="text-[10px] uppercase font-bold text-muted-foreground opacity-40">Active Nodes</div>
+                            <div className="text-xl font-black">{reminders.filter(r => r.isEnabled).length} / {reminders.length}</div>
                         </div>
                     </div>
-
-                    {/* Bulk Actions Mini Bar */}
-                    {reminders.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-2 p-2 bg-white/[0.02] border border-white/5">
-                            <span className="text-[10px] font-black uppercase tracking-widest px-2 opacity-40">Bulk Command:</span>
-                            <button
-                                onClick={() => handleToggleAll(true)}
-                                className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border border-white/10 hover:border-primary/50 hover:bg-primary/10 transition-all"
-                            >
-                                [Enable All]
-                            </button>
-                            <button
-                                onClick={() => handleToggleAll(false)}
-                                className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border border-white/10 hover:border-white/30 hover:bg-white/5 transition-all"
-                            >
-                                [Disable All]
-                            </button>
-                            <button
-                                onClick={handleDeleteAll}
-                                className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border border-red-500/20 text-red-500/60 hover:border-red-500 hover:text-red-500 hover:bg-red-500/10 transition-all ml-auto"
-                            >
-                                [Abort All Nodes]
-                            </button>
-                        </div>
+                    {!hasPermission && (
+                        <Button onClick={requestNativePermission} className={`w-full text-[10px] font-black tracking-widest uppercase ${isWild ? 'rounded-none border-2' : ''}`}>
+                            Authorize Signal Uplink
+                        </Button>
                     )}
+                </ThemedCard>
+
+                <ThemedCard className="space-y-6">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">Bulk Protocol Control</h3>
+                    <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleToggleAll(true)} className={`text-[10px] font-black ${isWild ? 'rounded-none border-2' : ''}`}>
+                            Enable Cluster
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleToggleAll(false)} className={`text-[10px] font-black ${isWild ? 'rounded-none border-2' : ''}`}>
+                            Silence All
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={handleDeleteAll} className={`text-[10px] font-black ${isWild ? 'rounded-none' : ''}`}>
+                            Full Abort
+                        </Button>
+                    </div>
+                </ThemedCard>
+            </div>
+
+            {/* Main Reminders Display */}
+            <div className="space-y-6">
+                <div className="flex items-center justify-between px-2">
+                    <h2 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-primary" />
+                        Active Listeners
+                    </h2>
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-30 font-mono">
+                        {new Date().toLocaleTimeString()}
+                    </span>
                 </div>
 
-                {/* Nodes Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {reminders.length === 0 ? (
-                        <div className="col-span-full py-32 border border-dashed border-white/10 flex flex-col items-center justify-center space-y-4 opacity-30">
-                            <Zap className="w-12 h-12" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">No active ritual nodes detected in matrix</span>
+                        <div className={`col-span-full py-24 bg-muted/5 border-2 border-dashed flex flex-col items-center justify-center gap-6 ${isWild ? 'rounded-none border-primary/20' : 'rounded-[2rem] border-border'}`}>
+                            <Zap className="w-10 h-10 text-primary opacity-20" />
+                            <div className="text-center space-y-1">
+                                <h3 className="text-xl font-black uppercase tracking-tight">No trigger nodes found</h3>
+                                <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest opacity-60">Initialize new protocol node</p>
+                            </div>
                         </div>
                     ) : (
                         reminders.map(reminder => (
-                            <div
+                            <ThemedCard
                                 key={reminder.id}
-                                className={`
-                                    relative border transition-all duration-300 group
-                                    ${reminder.isEnabled
-                                        ? 'bg-white/[0.03] border-white/10 hover:border-primary/50'
-                                        : 'bg-black border-white/5 opacity-40 grayscale'}
-                                `}
+                                className={`group relative transition-all duration-300 ${!reminder.isEnabled ? 'opacity-40 grayscale pointer-events-none' : ''}`}
                             >
-                                {/* Time Header */}
-                                <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${reminder.isEnabled ? 'bg-primary animate-pulse' : 'bg-muted-foreground'}`} />
-                                        <span className="text-lg font-black tracking-tighter">{formatTime(reminder.time)}</span>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${reminder.isEnabled ? 'bg-primary animate-pulse' : 'bg-muted-foreground'}`} />
+                                            <span className="text-2xl font-black tracking-tighter text-primary">{formatTime(reminder.time)}</span>
+                                        </div>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleReminder(reminder.id, reminder.isEnabled);
+                                            }}
+                                            className={`p-2 rounded-lg border transition-all ${reminder.isEnabled ? 'border-primary/30 text-primary bg-primary/5' : 'border-white/10 text-muted-foreground'} ${isWild ? 'rounded-none' : ''}`}
+                                        >
+                                            <Power className="w-4 h-4" />
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={() => toggleReminder(reminder.id, reminder.isEnabled)}
-                                        className={`p-1.5 rounded-none border transition-all ${reminder.isEnabled ? 'border-primary/30 text-primary bg-primary/5' : 'border-white/10 text-muted-foreground'}`}
-                                    >
-                                        <Power className="w-3 h-3" />
-                                    </button>
-                                </div>
 
-                                {/* Body */}
-                                <div className="p-4 space-y-4">
-                                    <div>
-                                        <h3 className="text-xs font-black uppercase tracking-widest mb-1 truncate group-hover:text-primary transition-colors">
-                                            {reminder.title}
-                                        </h3>
-                                        <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
+                                    <div className="space-y-2">
+                                        <h3 className="text-sm font-black uppercase tracking-widest truncate">{reminder.title}</h3>
+                                        <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter opacity-60">
                                             {reminder.date
                                                 ? `ON ${reminder.date}`
                                                 : reminder.days.length === 7
-                                                    ? 'EVERY CYCLE'
+                                                    ? 'CYCLE: EVERY 24H'
                                                     : reminder.days.length > 0
-                                                        ? 'PARTIAL CYCLES'
-                                                        : 'SINGLE PULSE'
+                                                        ? 'CYCLE: PARTIAL'
+                                                        : 'CYCLE: SINGLE'
                                             }
                                         </div>
                                     </div>
 
                                     {reminder.isEnabled && (
-                                        <div className="bg-primary/10 border border-primary/20 px-2 py-1 inline-flex items-center gap-2">
-                                            <span className="text-[10px] font-black uppercase text-primary tracking-widest">{getTimeRemaining(reminder)}</span>
+                                        <div className="bg-primary/10 border border-primary/20 px-3 py-1.5 inline-flex items-center gap-2">
+                                            <span className="text-[10px] font-black uppercase text-primary tracking-widest">
+                                                {getTimeRemaining(reminder)}
+                                            </span>
                                         </div>
                                     )}
-                                </div>
 
-                                {/* Actions Toggle (Overlay on hover) */}
-                                <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#0a0a0a]/90 backdrop-blur-sm border-l border-b border-white/10 flex items-center gap-1">
-                                    <button
-                                        onClick={() => setEditingReminder(reminder)}
-                                        className="p-2 hover:text-primary transition-colors"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
-                                    </button>
-                                    <button
-                                        onClick={() => deleteReminder(reminder.id, reminder.title)}
-                                        className="p-2 hover:text-red-500 transition-colors"
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
+                                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                        <button
+                                            onClick={() => setEditingReminder(reminder)}
+                                            className="p-2 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
+                                        >
+                                            <Edit3 className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => deleteReminderAction(reminder.id, reminder.title)}
+                                            className="p-2 hover:bg-red-500/10 hover:text-red-500 rounded-lg transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            </ThemedCard>
                         ))
                     )}
                 </div>
-
-                {/* Footer Diagnostic Panel */}
-                <div className="pt-12 border-t border-white/10 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <Activity className="w-4 h-4 text-primary" />
-                            <h2 className="text-sm font-black uppercase tracking-widest">Matrix Integrity</h2>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed font-bold uppercase tracking-tight opacity-60">
-                            The temporal sync engine monitors all active protocols within the current session.
-                            Background persistent notifications rely on the Service Worker handshake.
-                        </p>
-                        <div className="flex flex-wrap gap-4">
-                            <button onClick={async () => {
-                                const results = await runDiagnostics();
-                                alert(`DIAGNOSIS:\nPlatform: ${results.isMobile ? 'Mobile' : 'Desktop'}\nPWA: ${results.isPWA}\nSecure: ${results.isSecure}\nSW: ${results.hasServiceWorker}\nPerm: ${results.permission}`);
-                            }} className="text-[10px] font-black uppercase tracking-widest border-b border-primary text-primary hover:bg-primary/10 px-1 py-0.5">
-                                [Run Diagnosis]
-                            </button>
-                            <button onClick={testNotifications} className="text-[10px] font-black uppercase tracking-widest border-b border-white text-white hover:bg-white/10 px-1 py-0.5">
-                                [Send Test Pulse]
-                            </button>
-                            <button onClick={async () => {
-                                if (!confirm("CLEAR SYSTEM CACHE? This will force a full reload and update.")) return;
-                                if ('serviceWorker' in navigator) {
-                                    const regs = await navigator.serviceWorker.getRegistrations();
-                                    for (let reg of regs) await reg.unregister();
-                                }
-                                const keys = await caches.keys();
-                                for (let key of keys) await caches.delete(key);
-                                window.location.reload();
-                            }} className="text-[10px] font-black uppercase tracking-widest border-b border-red-500 text-red-500 hover:bg-red-500/10 px-1 py-0.5">
-                                [Kill Cache & Sync]
-                            </button>
-                        </div>
-                        <div className="pt-2 text-[8px] opacity-30 uppercase font-black tracking-[0.2em]">
-                            System Build: v2.1.0-MATRIX-3.6
-                        </div>
-                    </div>
-
-                    {!hasPermission && (
-                        <div className="bg-red-500/10 border border-red-500/30 p-6 space-y-3">
-                            <div className="flex items-center gap-2 text-red-500">
-                                <Zap className="w-4 h-4" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Protocol Warning</span>
-                            </div>
-                            <p className="text-[10px] font-bold uppercase tracking-tight leading-relaxed">
-                                External communication is restricted by host browser. Notifications will not leave the visual buffer.
-                                <br />Please authorize the security handshake.
-                            </p>
-                            <Button
-                                onClick={requestPermission}
-                                className="w-full h-10 bg-red-500 text-black font-black uppercase text-[10px] tracking-widest rounded-none"
-                            >
-                                Authorize Synchronization
-                            </Button>
-                        </div>
-                    )}
-                </div>
             </div>
+
+            {/* Footer Diagnostic Panel */}
+            <ThemedCard className="border-t-2 border-primary/10 bg-primary/5 space-y-6">
+                <div className="flex items-center gap-3">
+                    <Activity className="w-5 h-5 text-primary" />
+                    <h2 className="text-lg font-black uppercase tracking-tight italic">Matrix Integrity Diagnostics</h2>
+                </div>
+                <div className="grid md:grid-cols-2 gap-8 items-center">
+                    <p className="text-[10px] text-muted-foreground leading-relaxed font-bold uppercase tracking-widest opacity-60">
+                        The temporal sync engine monitors all active protocols within the current cluster.
+                        Persistent triggers rely on the Service Worker handshake and notification permissions.
+                    </p>
+                    <div className="flex flex-wrap gap-4 justify-end">
+                        <button onClick={async () => {
+                            const results = await runDiagnostics();
+                            alert(`DIAGNOSIS:\nPlatform: ${results.isMobile ? 'Mobile' : 'Desktop'}\nPWA: ${results.isPWA}\nSecure: ${results.isSecure}\nSW: ${results.hasServiceWorker}\nPerm: ${results.permission}`);
+                        }} className="text-[10px] font-black uppercase tracking-widest border-b-2 border-primary text-primary hover:bg-primary/10 px-1 py-1 transition-colors">
+                            [Execute Diagnosis]
+                        </button>
+                        <button onClick={testNotifications} className="text-[10px] font-black uppercase tracking-widest border-b-2 border-foreground text-foreground hover:bg-muted/20 px-1 py-1 transition-colors">
+                            [Pulse Test Signal]
+                        </button>
+                        <button onClick={async () => {
+                            if (!confirm("PURGE SYSTEM CACHE? Matrix reconciliation required.")) return;
+                            if ('serviceWorker' in navigator) {
+                                const regs = await navigator.serviceWorker.getRegistrations();
+                                for (let reg of regs) await reg.unregister();
+                            }
+                            const keys = await caches.keys();
+                            for (let key of keys) await caches.delete(key);
+                            window.location.reload();
+                        }} className="text-[10px] font-black uppercase tracking-widest border-b-2 border-red-500 text-red-500 hover:bg-red-500/10 px-1 py-1 transition-colors">
+                            [Purge & Re-sync]
+                        </button>
+                    </div>
+                </div>
+                <div className="text-[8px] opacity-30 uppercase font-black tracking-[0.4em] text-center pt-4">
+                    Matrix Build Sequence: v3.0.0-RITUAL-PROTOCOL
+                </div>
+            </ThemedCard>
         </div>
     );
 }

@@ -8,8 +8,10 @@ import { Button } from '../components/ui/Button';
 import {
     Activity, StickyNote, Bell,
     Youtube, Trophy, TrendingUp,
-    GraduationCap, Network
+    GraduationCap, Network, Eye,
+    Plus, ChevronRight, Globe, BookOpen, Search
 } from 'lucide-react';
+import { AdvancedSearch } from '../components/ui/AdvancedSearch';
 import { WidgetGrid } from '../components/dashboard/WidgetGrid';
 import { HabitService } from '../services/habit.service';
 import { ReminderService } from '../services/reminder.service';
@@ -19,121 +21,101 @@ import { Reminder } from '../types/reminder';
 const HUB_MODULES = [
     {
         id: 'protocols',
-        label: 'Protocols',
-        sub: 'Daily Habits',
+        label: 'Daily Rituals',
+        sub: 'Habits & Practice',
         icon: Activity,
         path: '/protocols',
-        color: 'text-red-500',
-        bg: 'bg-red-500/10'
     },
     {
         id: 'notes',
-        label: 'Notes',
-        sub: 'Journal & Ideas',
+        label: 'Knowledge Base',
+        sub: 'Notes & Resources',
         icon: StickyNote,
         path: '/notes',
-        color: 'text-red-500',
-        bg: 'bg-red-500/10'
     },
     {
         id: 'courses',
         label: 'Academy',
-        sub: 'Courses & Skills',
+        sub: 'Learning Paths',
         icon: GraduationCap,
         path: '/courses',
-        color: 'text-red-500',
-        bg: 'bg-red-500/10'
     },
     {
         id: 'analytics',
-        label: 'Analytics',
-        sub: 'Stats & Trends',
+        label: 'Insights',
+        sub: 'Data & Trends',
         icon: TrendingUp,
         path: '/analytics',
-        color: 'text-red-500',
-        bg: 'bg-red-500/10'
     },
     {
         id: 'reminders',
-        label: 'Reminders',
-        sub: 'Alerts & Notifications',
+        label: 'Schedule',
+        sub: 'Daily Reminders',
         icon: Bell,
         path: '/reminders',
-        color: 'text-red-500',
-        bg: 'bg-red-500/10'
     },
     {
         id: 'youtube',
         label: 'Library',
-        sub: 'Saved Videos',
+        sub: 'Video Archive',
         icon: Youtube,
         path: '/youtube',
-        color: 'text-red-500',
-        bg: 'bg-red-500/10'
     },
     {
         id: 'achievements',
-        label: 'Trophies',
+        label: 'Progress',
         sub: 'Milestones',
         icon: Trophy,
         path: '/achievements',
-        color: 'text-red-500',
-        bg: 'bg-red-500/10'
     },
     {
         id: 'network',
-        label: 'Network',
-        sub: 'Connections',
+        label: 'Community',
+        sub: 'Shared Journeys',
         icon: Network,
         path: '/network',
-        color: 'text-red-500',
-        bg: 'bg-red-500/10'
     }
 ];
 
-// --- Central Hub Components (Authenticated) ---
+import { ThemedCard } from '../components/ui/ThemedCard';
+
+
 
 const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean, user: any }) => {
     const [habits, setHabits] = useState<any[]>([]);
     const [nextReminder, setNextReminder] = useState<{ title: string; time: string } | null>(null);
+    const [allReminders, setAllReminders] = useState<Reminder[]>([]);
     const [stats, setStats] = useState({ percentage: 0, total: 0, completed: 0 });
     const [streakData, setStreakData] = useState<number[]>([]);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [currentTime, setCurrentTime] = useState(new Date());
+    // Removed: const [isChatOpen, setIsChatOpen] = useState(false);
+
+    // Live clock update
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     useEffect(() => {
         const loadDashboardData = async () => {
             try {
-                // 1. Load Habits & Stats
                 const habitsData = await HabitService.getHabits();
                 const completedCount = habitsData.filter(h => h.completedToday).length;
-
-                setHabits(habitsData.map(h => ({
-                    id: h.id,
-                    title: h.title,
-                    completed: h.completedToday
-                })));
-
-                setStats({
-                    total: habitsData.length,
-                    completed: completedCount,
-                    percentage: habitsData.length > 0 ? Math.round((completedCount / habitsData.length) * 100) : 0
-                });
-
-                // 2. Load Next Reminder
-                const reminders = await ReminderService.getReminders();
-                const activeReminders = reminders.filter((r: Reminder) => r.isEnabled);
+                setHabits(habitsData.map(h => ({ id: h.id, title: h.title, completed: h.completedToday })));
+                setStats({ total: habitsData.length, completed: completedCount, percentage: habitsData.length > 0 ? Math.round((completedCount / habitsData.length) * 100) : 0 });
+                const remindersData = await ReminderService.getReminders();
+                const activeReminders = remindersData.filter((r: Reminder) => r.isEnabled);
+                setAllReminders(activeReminders);
                 if (activeReminders.length > 0) {
-                    const sorted = activeReminders.sort((a, b) => a.time.localeCompare(b.time));
+                    const sorted = [...activeReminders].sort((a, b) => a.time.localeCompare(b.time));
                     setNextReminder({ title: sorted[0].title, time: sorted[0].time });
                 }
-
-                // 3. Mock Streak Data
                 setStreakData([1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1]);
-
-            } catch (error) {
-                console.error("Dashboard load failed:", error);
-            }
+            } catch (error) { console.error("Dashboard load failed:", error); }
         };
-
         loadDashboardData();
     }, []);
 
@@ -142,135 +124,182 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
             const today = new Date().toISOString().split('T')[0];
             await HabitService.toggleHabitCompletion(id, today, true);
             setHabits(prev => prev.map(h => h.id === id ? { ...h, completed: true } : h));
-            setStats(prev => {
-                const newCompleted = prev.completed + 1;
-                return {
-                    ...prev,
-                    completed: newCompleted,
-                    percentage: Math.round((newCompleted / prev.total) * 100)
-                };
-            });
-        } catch (error) {
-            console.error("Quick log failed:", error);
-        }
+            setStats(prev => { const newCompleted = prev.completed + 1; return { ...prev, completed: newCompleted, percentage: Math.round((newCompleted / prev.total) * 100) }; });
+        } catch (error) { console.error("Quick log failed:", error); }
     };
 
     return (
-        <div className={`min-h-screen bg-[#0a0000] p-4 md:p-8 ${isWild ? 'wild' : ''}`}>
-            {isWild && <div className="vignette fixed inset-0 pointer-events-none z-50 opacity-50 bg-red-500/5 mix-blend-overlay" />}
+        <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-20 px-4 md:px-8 space-y-12 max-w-5xl mx-auto animate-claude-in relative">
+            {isSearchOpen && <AdvancedSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />}
+            {/* SmartChat removed - Use CMD+K for unified search */}
 
-            <div className="max-w-6xl mx-auto space-y-8">
-                <header className="flex items-center justify-between border-b border-white/5 pb-6">
-                    <div className="space-y-1">
-                        <motion.h1
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            className="text-2xl font-black text-red-600 tracking-tighter uppercase italic"
-                        >
-                            Central Hub
-                        </motion.h1>
-                        <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="text-[9px] font-mono text-red-900/60 uppercase tracking-[0.4em]"
-                        >
-                            Operator: {user?.name || 'Unknown'} // Status: Optimal
-                        </motion.p>
+            {/* 1. Authentic RITU OS Header */}
+            <div className="w-full flex flex-col items-start space-y-4">
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="px-3 py-1 bg-secondary/50 border border-border/50 rounded-md text-[9px] font-mono text-muted-foreground/70"
+                >
+                    {currentTime.toLocaleString('en-IN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    })}
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+                    className="flex items-center gap-3"
+                >
+                    <div className="w-8 h-8 text-primary flex-shrink-0">
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+                            <path d="M12,2L14.4,9.5L22,12L14.4,14.5L12,22L9.6,14.5L2,12L9.6,9.5L12,2Z" />
+                        </svg>
                     </div>
-                </header>
+                    <h1 className="text-3xl md:text-4xl font-bold font-serif text-foreground tracking-tight">
+                        RITU OS
+                    </h1>
+                </motion.div>
+
+                {/* Buttons removed: Use CMD+K for search */}
+            </div>
+
+            {/* 2. Authentic Large Input - matching Image 1 */}
+            <div className="w-full max-w-3xl space-y-4">
+                <div className="claude-input-container relative min-h-[160px] flex flex-col">
+                    <textarea
+                        className="w-full bg-transparent resize-none outline-none text-lg text-foreground/80 placeholder:text-muted-foreground/60 p-2"
+                        placeholder="How can I help you today?"
+                        rows={3}
+                        onClick={() => setIsSearchOpen(true)}
+                        readOnly
+                    />
+                    <div className="mt-auto flex items-center justify-between">
+                        <button className="p-2 hover:bg-secondary rounded-lg transition-colors overflow-hidden group">
+                            <Plus className="w-6 h-6 text-foreground/40 group-hover:text-primary transition-colors" />
+                        </button>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-primary px-3 py-1.5 bg-primary/5 border border-primary/10 rounded-lg cursor-default">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                                </span>
+                                RITU CORE
+                            </div>
+                            {/* Chat button removed - Use CMD+K */}
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. Authentic Action Pills - matching Image 1 */}
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                    {[
+                        { icon: <Globe className="w-4 h-4" />, label: 'Dashboard', path: '/dashboard' },
+                        { icon: <BookOpen className="w-4 h-4" />, label: 'Learn', path: '/courses' },
+                        { icon: <StickyNote className="w-4 h-4" />, label: 'Knowledge', path: '/notes' },
+                        { icon: <TrendingUp className="w-4 h-4" />, label: 'Metrics', path: '/analytics' },
+                        { icon: <Search className="w-4 h-4 text-primary" />, label: "Terminal", action: () => setIsSearchOpen(true) },
+                    ].map((btn: any, i) => (
+                        <button
+                            key={i}
+                            onClick={() => btn.action ? btn.action() : navigate(btn.path)}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-secondary/50 border border-border/50 rounded-xl text-sm font-medium text-foreground/70 hover:bg-secondary hover:text-foreground transition-all"
+                        >
+                            {btn.icon}
+                            {btn.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* 4. Automated Dashboard Metrics (WidgetGrid) */}
+            <div className="w-full space-y-6 pt-12">
+                <div className="flex items-center gap-4 text-muted-foreground/40">
+                    <div className="flex-1 h-[1px] bg-border" />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Activity Pattern</span>
+                    <div className="flex-1 h-[1px] bg-border" />
+                </div>
 
                 <WidgetGrid
                     stats={stats}
                     nextReminder={nextReminder}
+                    allReminders={allReminders}
                     streakData={streakData}
                     habits={habits}
                     onLog={handleQuickLog}
                 />
-
-                <div className="space-y-4">
-                    <div className="flex items-center gap-2 px-2 border-l-2 border-red-600">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-red-900/80">Manual Override Modules</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {HUB_MODULES.map((mod, i) => {
-                            return (
-                                <motion.div
-                                    key={mod.id}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ duration: 0.3, delay: i * 0.05 }}
-                                    onClick={() => navigate(mod.path)}
-                                    className={`
-                                        group relative py-6 flex flex-col items-center justify-center gap-3
-                                        bg-[#050505] border border-white/5 rounded-2xl cursor-pointer
-                                        hover:border-red-500/30 hover:bg-white/[0.02] transition-all duration-300
-                                    `}
-                                >
-                                    <div className={`
-                                        w-12 h-12 rounded-xl flex items-center justify-center
-                                        ${mod.bg} ${mod.color}
-                                        transition-transform duration-300 group-hover:scale-105
-                                    `}>
-                                        <mod.icon strokeWidth={1.5} className="w-6 h-6" />
-                                    </div>
-
-                                    <div className="text-center">
-                                        <h2 className="text-xs font-black text-gray-200 group-hover:text-white uppercase tracking-wider transition-colors">
-                                            {mod.label}
-                                        </h2>
-                                        <p className="text-[8px] text-red-900/40 uppercase tracking-widest font-bold">
-                                            {mod.sub}
-                                        </p>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                    </div>
-                </div>
             </div>
+
+
         </div>
     );
 };
 
 // --- Kinetic Landing Components (Unauthenticated) ---
 
-const KineticLanding = ({ navigate, isWild }: { navigate: any, isWild: boolean }) => {
+// --- Zen Landing Components (Peaceful/Nature) ---
+
+const ClaudeLanding = ({ navigate }: { navigate: any }) => {
     return (
-        <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0a0000] overflow-hidden relative selection:bg-red-500 selection:text-white">
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.05)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)] pointer-events-none" />
-
-            <div className="relative z-10 flex flex-col items-center">
-                <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 1 }}
-                    className="relative"
-                >
-                    <h1 className="text-[12vw] md:text-[150px] font-black tracking-tighter leading-[0.8] text-red-600 select-none drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]">
-                        AWAKEN
+        <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background px-6">
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="max-w-2xl w-full text-center space-y-12"
+            >
+                <div className="space-y-6">
+                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-foreground leading-[1.1]">
+                        Focus on what matters.<br />
+                        <span className="text-primary">Leave the rest to us.</span>
                     </h1>
-                </motion.div>
-
-                <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.3, duration: 0.8 }}
-                    className="mt-8 flex flex-col items-center gap-6"
-                >
-                    <p className="text-sm md:text-base font-mono uppercase tracking-[0.5em] text-red-900/60 text-center max-w-md leading-relaxed">
-                        The Habit Is Not The Goal.<br />
-                        <span className="text-red-500">Consciousness Is.</span>
+                    <p className="text-lg md:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
+                        A helpful assistant for your daily rituals, knowledge, and growth.
+                        Simple, intuitive, and human-centric.
                     </p>
+                </div>
 
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <Button
                         onClick={() => navigate('/login')}
-                        className="group relative px-8 py-3 bg-red-600 text-white font-bold uppercase tracking-widest hover:bg-red-700 transition-colors rounded-none overflow-hidden"
+                        className="w-full sm:w-auto px-10 h-14 bg-primary text-white rounded-full text-lg font-medium hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
                     >
-                        <span className="relative z-10">Initiate Sequence</span>
+                        Get Started
                     </Button>
-                </motion.div>
+                    <Button
+                        onClick={() => navigate('/signup')}
+                        variant="ghost"
+                        className="w-full sm:w-auto px-10 h-14 rounded-full text-lg font-medium text-foreground hover:bg-secondary"
+                    >
+                        Create Account
+                    </Button>
+                </div>
+
+                <div className="pt-12 grid grid-cols-3 gap-8 opacity-40">
+                    <div className="flex flex-col items-center gap-2">
+                        <Activity className="w-5 h-5" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Habits</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2">
+                        <StickyNote className="w-5 h-5" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Notes</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2">
+                        <TrendingUp className="w-5 h-5" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Growth</span>
+                    </div>
+                </div>
+            </motion.div>
+
+            <div className="fixed bottom-8 text-[11px] text-muted-foreground/40 font-medium tracking-wide">
+                Built for clarity and focus.
             </div>
         </div>
     );
@@ -285,6 +314,6 @@ export default function HomePage() {
     if (user) {
         return <CentralHub navigate={navigate} isWild={isWild} user={user} />;
     } else {
-        return <KineticLanding navigate={navigate} isWild={isWild} />;
+        return <ClaudeLanding navigate={navigate} />;
     }
 }

@@ -16,8 +16,9 @@ import { HabitService } from '../services/habit.service';
 import {
     Check, Sun, CloudSun, Moon, Timer, Plus, Trash2,
     Calendar as CalendarIcon, StickyNote, Trophy, Activity,
-    Share2, TrendingUp, Target, Star, CalendarOff, Home, AlertCircle, BookOpen, Bell
+    Share2, TrendingUp, Target, Star, CalendarOff, Home, AlertCircle, BookOpen, Bell, Eye
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { SkipReasonModal } from '../components/tools/SkipReasonModal';
 import { SmartFeed } from '../components/dashboard/SmartFeed';
@@ -307,19 +308,12 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-8">
-                <div className="text-center space-y-6">
-                    <div className="flex items-center justify-center gap-3">
-                        <span className="text-4xl md:text-6xl font-black tracking-tighter text-white">RITU</span>
-                        <span className="bg-red-600 text-black px-2 py-0.5 rounded text-3xl md:text-5xl font-mono font-bold tracking-widest">OS</span>
-                    </div>
-
-                    <div className="w-64 h-1 bg-neutral-900 rounded-full overflow-hidden mx-auto">
-                        <div className="h-full bg-red-600 animate-[loading_1s_ease-in-out_infinite]" style={{ width: '50%' }} />
-                    </div>
-
-                    <div className="text-[10px] font-mono text-red-500/60 uppercase tracking-[0.2em] animate-pulse">
-                        System_Boot // Verifying_Neural_Links
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 animate-pulse">
+                <div className="text-center space-y-10">
+                    <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                    <div className="space-y-2">
+                        <h2 className="text-2xl font-bold tracking-tight text-foreground">Loading your workspace</h2>
+                        <p className="text-muted-foreground text-xs font-medium uppercase tracking-widest">Organizing rituals and progress</p>
                     </div>
                 </div>
             </div>
@@ -327,184 +321,176 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className={`min-h-screen bg-background relative selection:bg-red-500 selection:text-white ${isWild ? 'wild font-mono' : ''}`}>
-            {isWild && <div className="vignette pointer-events-none bg-red-900/5 mix-blend-overlay" />}
+        <div className="p-4 md:p-8 animate-claude-in">
+            <ConfirmModal {...confirmState} onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))} />
+            <FocusTimer isOpen={isFocusOpen} onClose={() => setIsFocusOpen(false)} />
+            <CreateHabitModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSave={handleCreateHabit} mode="create" />
+            <CreateHabitModal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} onSave={handleUpdateHabit} initialData={habitToEdit} mode="edit" />
+            <DayDetailModal isOpen={!!selectedDate} onClose={() => setSelectedDate(null)} date={selectedDate || ''} habits={habits} log={selectedDate ? logs[selectedDate] : ({} as any)} />
+            <LevelUpModal isOpen={showLevelUp} onClose={() => setShowLevelUp(false)} level={xpStats.level} />
+            {newAchievement && <NewAchievementModal isOpen={!!newAchievement} achievement={newAchievement} onClose={() => setNewAchievement(null)} />}
+            {noteModal && noteModal.isOpen && <NoteModal isOpen={noteModal.isOpen} onClose={() => setNoteModal(null)} onSave={handleSaveNote} initialNote={noteModal.note} />}
+            {skipModal && skipModal.isOpen && <SkipReasonModal isOpen={skipModal.isOpen} onClose={() => setSkipModal(null)} onConfirm={async (r) => { await HabitService.skipHabit(skipModal!.habitId, new Date().toISOString().split('T')[0], r); loadData(); setSkipModal(null); }} habitTitle={skipModal.title} />}
 
-            <div className="relative z-10 p-4 md:p-8">
-                <ConfirmModal {...confirmState} onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))} />
-                <FocusTimer isOpen={isFocusOpen} onClose={() => setIsFocusOpen(false)} />
-                <CreateHabitModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSave={handleCreateHabit} mode="create" />
-                <CreateHabitModal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} onSave={handleUpdateHabit} initialData={habitToEdit} mode="edit" />
-                <DayDetailModal isOpen={!!selectedDate} onClose={() => setSelectedDate(null)} date={selectedDate || ''} habits={habits} log={selectedDate ? logs[selectedDate] : undefined} />
-                <LevelUpModal isOpen={showLevelUp} onClose={() => setShowLevelUp(false)} level={xpStats.level} />
-                {newAchievement && <NewAchievementModal isOpen={!!newAchievement} achievement={newAchievement} onClose={() => setNewAchievement(null)} />}
-                {noteModal && <NoteModal isOpen={noteModal.isOpen} onClose={() => setNoteModal(null)} onSave={handleSaveNote} initialNote={noteModal.note} />}
-                {skipModal && <SkipReasonModal isOpen={skipModal.isOpen} onClose={() => setSkipModal(null)} onConfirm={async (r) => { await HabitService.skipHabit(skipModal.habitId, new Date().toISOString().split('T')[0], r); loadData(); setSkipModal(null); }} habitTitle={skipModal.title} />}
+            {reminderModal && reminderModal.isOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="relative w-full max-w-lg overflow-hidden translate-z-0">
+                        <div className="p-8 md:p-10 bg-card border border-border shadow-2xl rounded-[3rem]">
+                            <HabitReminder
+                                habit={reminderModal.habit}
+                                onClose={() => {
+                                    setReminderModal(null);
+                                    loadData();
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                {reminderModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
-                        <div className="relative w-full max-w-lg overflow-hidden translate-z-0">
-                            <div className="p-8 md:p-10">
-                                <HabitReminder
-                                    habit={reminderModal.habit}
-                                    onClose={() => {
-                                        setReminderModal(null);
-                                        loadData(); // Refresh reminders list
-                                    }}
-                                />
+            <div className="max-w-4xl mx-auto space-y-4">
+                {/* PWA Install Banner */}
+                <PWABanner />
+
+                {/* Header */}
+                <div className="flex flex-col gap-4 animate-claude-in">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex-1">
+                            <h1 className="text-4xl font-bold tracking-tight text-foreground mb-1">
+                                Daily Rituals
+                            </h1>
+                            <div className="flex items-center gap-3 text-muted-foreground text-sm font-medium">
+                                <span className="text-primary font-bold">{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="opacity-20 text-foreground">|</span>
+                                <span className="capitalize">{currentTime.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</span>
                             </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Button onClick={() => setIsCreateOpen(true)} className="claude-button bg-primary text-white shadow-lg shadow-primary/20 h-11 px-8">
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Ritual
+                            </Button>
+                            <Button variant="outline" size="icon" onClick={() => setIsFocusOpen(true)} className="w-11 h-11 rounded-2xl border-border" title="Focus Timer">
+                                <Timer className="w-5 h-5" />
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                        <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(xpStats.currentXP / xpStats.nextLevelXP) * 100}%` }}
+                            className="h-full bg-primary"
+                        />
+                    </div>
+                </div>
+
+                {/* Activity Pattern */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                        <h3 className="text-xl font-bold tracking-tight text-foreground">Activity Pattern</h3>
+                        <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold uppercase tracking-widest text-primary hover:bg-primary/5" onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}>
+                            <CalendarIcon className="w-4 h-4 mr-2" />
+                            History
+                        </Button>
+                    </div>
+                    <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm">
+                        <Heatmap logs={logs} onDayClick={setSelectedDate} />
+                    </div>
+                </div>
+
+                {/* Upcoming Quick View */}
+                {reminders.filter(r => r.isEnabled).length > 0 && (
+                    <div className="space-y-4 animate-claude-in">
+                        <div className="flex items-center justify-between px-2">
+                            <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/50 flex items-center gap-2">
+                                <Bell className="w-3.5 h-3.5 text-primary" />
+                                Upcoming
+                            </h3>
+                            <Button variant="ghost" size="sm" onClick={() => navigate('/reminders')} className="text-[10px] font-bold uppercase tracking-widest text-primary/60 hover:text-primary">
+                                Manage
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {reminders.filter(r => r.isEnabled).slice(0, 3).map(reminder => (
+                                <div key={reminder.id} className="p-5 bg-card border border-border rounded-3xl flex items-center justify-between group hover:border-primary/30 transition-all shadow-sm">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-foreground truncate">{reminder.title}</p>
+                                        <p className="text-xs font-medium text-primary mt-1">{reminder.time}</p>
+                                    </div>
+                                    <div className="p-2 bg-secondary rounded-xl group-hover:bg-primary group-hover:text-white transition-all">
+                                        <Bell className="w-4 h-4" />
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
 
-                <div className="max-w-4xl mx-auto space-y-6">
-                    {/* PWA Install Banner */}
-                    <PWABanner />
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 items-start">
+                    <div className="xl:col-span-2 space-y-8">
+                        <SmartFeed />
 
-                    {/* Header */}
-                    <div className={`flex flex-col gap-2 ${isWild ? 'animate-reveal' : ''}`}>
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-1">
-                                    <h1 className="text-2xl md:text-3xl font-black tracking-tighter uppercase flex items-center gap-2 text-foreground">
-                                        RITU
-                                        <span className="bg-red-600 text-black px-1.5 py-0.5 rounded-[4px] text-lg md:text-xl font-mono font-bold tracking-widest align-middle transform -translate-y-0.5">
-                                            OS
-                                        </span>
-                                    </h1>
-                                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold border self-start mt-1.5 ${isWild ? 'bg-red-500 text-black border-red-500' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>v2.0.4</span>
+                        {getUncategorized().length > 0 && (
+                            <HabitSection title="Other Protocols" icon={<AlertCircle className="w-4 h-4 text-gray-500" />} habits={getUncategorized()} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
+                        )}
+
+                        {/* ZERO STATE */}
+                        {habits.length === 0 && (
+                            <div className="p-16 bg-secondary/20 border-2 border-dashed border-border rounded-[3rem] text-center space-y-8 flex flex-col items-center justify-center min-h-[450px]">
+                                <div className="w-20 h-20 rounded-[2rem] bg-background flex items-center justify-center shadow-xl">
+                                    <Activity className="w-10 h-10 text-primary" />
                                 </div>
-                                <div className="flex items-center gap-3 text-muted-foreground text-[10px] font-mono tracking-wide">
-                                    <span className="text-red-500 font-bold">{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                    <span className="text-neutral-700 opacity-30">|</span>
-                                    <span className="uppercase opacity-60">{currentTime.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+                                <div className="space-y-3">
+                                    <h2 className="text-3xl font-bold tracking-tight text-foreground">
+                                        Your workspace is clear
+                                    </h2>
+                                    <p className="text-muted-foreground text-sm font-medium max-w-sm mx-auto leading-relaxed">
+                                        Ready to begin your journey? Start by establishing your first ritual or exploring the academy.
+                                    </p>
+                                </div>
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <Button
+                                        size="lg"
+                                        onClick={() => setIsCreateOpen(true)}
+                                        className="claude-button bg-primary text-white shadow-xl shadow-primary/20 px-8"
+                                    >
+                                        <Plus className="w-5 h-5 mr-2" />
+                                        Initialize Ritual
+                                    </Button>
+                                    <Button
+                                        size="lg"
+                                        variant="outline"
+                                        onClick={() => navigate('/courses')}
+                                        className="claude-button bg-background border-border px-8"
+                                    >
+                                        <BookOpen className="w-5 h-5 mr-2" />
+                                        Visit Academy
+                                    </Button>
                                 </div>
                             </div>
+                        )}
 
-                            <div className="flex items-center gap-2">
-                                <Button size="sm" onClick={() => setIsCreateOpen(true)} className={`h-9 text-[10px] font-black uppercase tracking-widest ${isWild ? 'rounded-none' : ''}`}>
-                                    <Plus className="w-3.5 h-3.5 mr-2" />
-                                    New Protocol
-                                </Button>
-                                <Button variant="outline" size="icon" onClick={() => setIsFocusOpen(true)} className={`w-9 h-9 ${isWild ? 'rounded-none border-2' : ''}`} title="Focus Mode">
-                                    <Timer className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        </div>
-                        <div className="w-full bg-muted/20 h-[2px] rounded-full overflow-hidden relative">
-                            <div className="absolute top-0 left-0 h-full bg-primary transition-all duration-700" style={{ width: `${(xpStats.currentXP / xpStats.nextLevelXP) * 100}%` }} />
-                        </div>
-                        <div className="flex items-center gap-4 text-[7px] font-black uppercase tracking-[0.2em] opacity-40">
-                            <span>Sequences: {habits.length}</span>
-                            <span>|</span>
-                            <span>Logs: {Object.keys(logs).length}</span>
-                            <span>|</span>
-                            <span>Status: {habits.length > 0 ? 'NOMINAL' : 'IDLE'}</span>
+                        <div className="space-y-12">
+                            <HabitSection title="Morning Rituals" icon={<Sun className="w-6 h-6 text-amber-500" />} habits={getHabitsByTime('morning')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
+                            <HabitSection title="Afternoon Flow" icon={<CloudSun className="w-6 h-6 text-blue-500" />} habits={getHabitsByTime('afternoon')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
+                            <HabitSection title="Evening Cooldown" icon={<Moon className="w-6 h-6 text-indigo-500" />} habits={getHabitsByTime('evening')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
+                            <HabitSection title="Anytime" icon={<Star className="w-6 h-6 text-clay/60" />} habits={getHabitsByTime('anytime')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
                         </div>
                     </div>
+                </div>
 
-                    {/* Consistency Map */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className={`text-lg font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>Consistency Map</h3>
-                            <Button variant="outline" size="sm" onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}><CalendarIcon className="w-4 h-4 mr-2" />History</Button>
-                        </div>
-                        <Heatmap logs={logs} onDayClick={setSelectedDate} />
+                {/* Debug View (Hidden unless no habits show up in main sections) */}
+                {habits.length > 0 && getHabitsByTime('morning').length === 0 && getHabitsByTime('afternoon').length === 0 && getHabitsByTime('evening').length === 0 && getHabitsByTime('anytime').length === 0 && getUncategorized().length === 0 && (
+                    <div className="p-8 border-4 border-dashed border-primary/20 bg-primary/5">
+                        <h2 className="text-xl font-black uppercase mb-4">Master Protocol List (Debug)</h2>
+                        <p className="text-xs mb-4 opacity-70">If your habit is here but not above, it's a categorization error.</p>
+                        <HabitSection title="All Detected Protocols" icon={<Activity className="w-5 h-5" />} habits={habits} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
                     </div>
+                )}
 
-                    {/* Upcoming Reminders Quick View */}
-                    {reminders.filter(r => r.isEnabled).length > 0 && (
-                        <div className="space-y-4 animate-reveal">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-black uppercase tracking-tighter flex items-center gap-2">
-                                    <Bell className="w-4 h-4 text-red-500 animate-pulse" />
-                                    Active Reminders
-                                </h3>
-                                <Button variant="ghost" size="sm" onClick={() => navigate('/reminders')} className="text-[10px] font-black uppercase tracking-widest opacity-50 hover:opacity-100">
-                                    [ Manage All ]
-                                </Button>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {reminders.filter(r => r.isEnabled).slice(0, 3).map(reminder => (
-                                    <div key={reminder.id} className="p-4 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between group hover:border-red-500/50 transition-all">
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-black uppercase truncate">{reminder.title}</p>
-                                            <p className="text-[10px] font-mono text-red-500 mt-1">{reminder.time}</p>
-                                        </div>
-                                        <Bell className="w-3 h-3 opacity-20 group-hover:opacity-100 transition-opacity" />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
-                        <div className="xl:col-span-2 space-y-12">
-                            <SmartFeed />
-
-                            {getUncategorized().length > 0 && (
-                                <HabitSection title="Uncategorized Protocols" icon={<AlertCircle className="w-5 h-5 text-gray-500" />} habits={getUncategorized()} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
-                            )}
-
-                            {/* ZERO STATE - Only show if absolutely no habits */}
-                            {habits.length === 0 && (
-                                <div className={`p-12 border-2 border-dashed rounded-3xl text-center space-y-6 flex flex-col items-center justify-center min-h-[400px]
-                                    ${isWild ? 'bg-black border-red-900/50' : 'bg-muted/5 border-muted-foreground/20'}
-                                `}>
-                                    <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${isWild ? 'bg-red-900/10 text-red-500' : 'bg-muted text-muted-foreground'}`}>
-                                        <Activity className="w-10 h-10 animate-pulse" />
-                                    </div>
-                                    <div>
-                                        <h2 className={`text-2xl font-black uppercase tracking-tighter ${isWild ? 'text-red-500' : 'text-foreground'}`}>
-                                            SYSTEM IDLE // NO PROTOCOLS
-                                        </h2>
-                                        <p className="text-sm font-mono text-muted-foreground mt-2 max-w-sm mx-auto uppercase tracking-wide">
-                                            Neural network awaiting instructions. Initialize primary directive or install learning module.
-                                        </p>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row gap-4">
-                                        <Button
-                                            size="lg"
-                                            onClick={() => setIsCreateOpen(true)}
-                                            className={isWild ? 'bg-red-600 text-black hover:bg-white rounded-none font-bold uppercase tracking-widest' : ''}
-                                        >
-                                            <Plus className="w-5 h-5 mr-2" />
-                                            Establish First Protocol
-                                        </Button>
-                                        <Button
-                                            size="lg"
-                                            variant="outline"
-                                            onClick={() => navigate('/settings?tab=data')}
-                                            className={isWild ? 'border-red-900 text-red-500 hover:bg-red-900/20 rounded-none uppercase tracking-widest' : ''}
-                                        >
-                                            <BookOpen className="w-5 h-5 mr-2" />
-                                            Install Modules
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="space-y-16">
-                                <HabitSection title="Morning Flow" icon={<Sun className="w-5 h-5 text-orange-500" />} habits={getHabitsByTime('morning')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
-                                <HabitSection title="Afternoon High" icon={<CloudSun className="w-5 h-5 text-blue-500" />} habits={getHabitsByTime('afternoon')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
-                                <HabitSection title="Night Fall" icon={<Moon className="w-5 h-5 text-indigo-500" />} habits={getHabitsByTime('evening')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
-                                <HabitSection title="Anytime Protocols" icon={<Star className="w-5 h-5 text-purple-500" />} habits={getHabitsByTime('anytime')} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Debug View (Hidden unless no habits show up in main sections) */}
-                    {habits.length > 0 && getHabitsByTime('morning').length === 0 && getHabitsByTime('afternoon').length === 0 && getHabitsByTime('evening').length === 0 && getHabitsByTime('anytime').length === 0 && getUncategorized().length === 0 && (
-                        <div className="p-8 border-4 border-dashed border-primary/20 bg-primary/5">
-                            <h2 className="text-xl font-black uppercase mb-4">Master Protocol List (Debug)</h2>
-                            <p className="text-xs mb-4 opacity-70">If your habit is here but not above, it's a categorization error.</p>
-                            <HabitSection title="All Detected Protocols" icon={<Activity className="w-5 h-5" />} habits={habits} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
-                        </div>
-                    )}
-
-                    <div className="pt-12 border-t-2 border-primary/20">
-                        <DailyCheckin onSave={handleSaveReflection} />
-                    </div>
+                <div className="pt-12 border-t-2 border-primary/20">
+                    <DailyCheckin onSave={handleSaveReflection} />
                 </div>
             </div>
         </div>
@@ -524,6 +510,8 @@ interface HabitSectionProps {
     isWild: boolean;
     reminders: Reminder[];
 }
+
+import { ThemedCard } from '../components/ui/ThemedCard';
 
 function HabitSection({ title, icon, habits, onToggle, onDelete, onEdit, onNote, onSkip, onReminder, isWild, reminders }: HabitSectionProps) {
     const [isOpen, setIsOpen] = useState(false);
@@ -553,56 +541,57 @@ function HabitSection({ title, icon, habits, onToggle, onDelete, onEdit, onNote,
 
             <div className="grid gap-4">
                 {visibleHabits.map(habit => (
-                    <div key={habit.id} className={`
-                        relative group flex flex-col p-6 transition-all border-2
-                        ${isWild ? 'rounded-none bg-black border-primary' : 'rounded-[2rem] bg-card border-border shadow-md'}
-                        ${habit.completedToday ? 'opacity-40 grayscale pointer-events-none' : 'hover:border-primary'}
-                    `}>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-6">
-                                <button onClick={() => onToggle(habit.id)} className={`w-8 h-8 flex items-center justify-center transition-all border-2 ${habit.completedToday ? 'bg-primary border-primary text-black' : 'border-primary text-transparent'}`}>
-                                    <Check className="w-6 h-6" />
+                    <ThemedCard
+                        key={habit.id}
+                        hoverable={!habit.completedToday}
+                        className={habit.completedToday ? 'opacity-40 grayscale pointer-events-none' : ''}
+                        noPadding
+                    >
+                        <div className="flex items-center justify-between p-4">
+
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => onToggle(habit.id)} className={`w-10 h-10 flex items-center justify-center transition-all rounded-xl border-2 ${habit.completedToday ? 'bg-primary border-primary text-white' : 'border-border hover:border-primary/50 text-transparent'}`}>
+                                    <Check className="w-5 h-5" />
                                 </button>
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <h3 className={`text-lg font-black uppercase tracking-tight ${habit.completedToday ? 'line-through' : ''}`}>{habit.title}</h3>
-                                        {habit.type === 'goal' && <Target className="w-3 h-3 text-primary" />}
+                                        <h3 className={`text-xl font-bold tracking-tight ${habit.completedToday ? 'line-through opacity-40 text-foreground' : 'text-foreground'}`}>{habit.title}</h3>
+                                        {habit.type === 'goal' && <Target className="w-4 h-4 text-primary" />}
                                     </div>
-                                    <div className="flex items-center gap-4 text-[10px] font-bold uppercase opacity-60">
-                                        <span>Streak: {habit.streak}D</span>
-                                        <span>Priority: {habit.priority}</span>
-                                        {habit.isLocked && <span className="text-primary animate-pulse">Locked</span>}
+                                    <div className="flex items-center gap-4 text-[11px] font-bold uppercase tracking-widest text-foreground/80">
+                                        <span className="flex items-center gap-1.5"><Activity className="w-3 h-3" /> {habit.streak} Day Streak</span>
                                         {reminders.find(r => r.habitId === habit.id && r.isEnabled) && (
-                                            <span className="text-red-500 flex items-center gap-1">
+                                            <span className="text-primary flex items-center gap-1.5">
                                                 <Bell className="w-3 h-3" />
                                                 {reminders.find(r => r.habitId === habit.id && r.isEnabled)?.time}
                                             </span>
                                         )}
+                                        {habit.isLocked && <span className="text-amber-600">Locked</span>}
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 opacity-100 transition-opacity">
-                                <button onClick={() => onReminder(habit)} className="p-2 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded-lg transition-all" title="Set Reminder"><Bell className="w-4 h-4" /></button>
-                                <button onClick={() => onSkip(habit)} className="p-2 hover:bg-primary hover:text-black transition-all rounded-lg" title="Skip Protocol"><CalendarOff className="w-4 h-4 text-muted-foreground hover:text-black" /></button>
-                                <button onClick={() => onNote(habit.id)} className="p-2 hover:bg-primary hover:text-black transition-all rounded-lg" title="Add Note"><StickyNote className="w-4 h-4 text-muted-foreground hover:text-black" /></button>
-                                <button onClick={() => onEdit(habit)} className="p-2 hover:bg-primary hover:text-black transition-all rounded-lg" title="Edit Sequence"><Plus className="w-4 h-4 rotate-45 text-muted-foreground hover:text-black" /></button>
-                                <button onClick={() => onDelete(habit.id)} className="p-2 hover:bg-primary hover:text-black transition-all rounded-lg" title="Archive"><Trash2 className="w-4 h-4 text-muted-foreground hover:text-black" /></button>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => onReminder(habit)} className="w-10 h-10 flex items-center justify-center bg-secondary text-foreground/60 hover:bg-primary hover:text-white rounded-xl transition-all" title="Reminders"><Bell className="w-4 h-4" /></button>
+                                <button onClick={() => onSkip(habit)} className="w-10 h-10 flex items-center justify-center hover:bg-secondary transition-all rounded-xl text-muted-foreground" title="Skip"><CalendarOff className="w-4 h-4" /></button>
+                                <button onClick={() => onNote(habit.id)} className="w-10 h-10 flex items-center justify-center hover:bg-secondary transition-all rounded-xl text-muted-foreground" title="Note"><StickyNote className="w-4 h-4" /></button>
+                                <button onClick={() => onEdit(habit)} className="w-10 h-10 flex items-center justify-center hover:bg-secondary transition-all rounded-xl text-muted-foreground" title="Edit"><Plus className="w-4 h-4 rotate-45" /></button>
+                                <button onClick={() => onDelete(habit.id)} className="w-10 h-10 flex items-center justify-center hover:bg-red-50 text-red-400 rounded-xl transition-all" title="Archive"><Trash2 className="w-4 h-4" /></button>
                             </div>
                         </div>
 
                         {/* Goal Progress Bar */}
                         {habit.type === 'goal' && (
-                            <div className="mt-4 space-y-1">
-                                <div className="flex justify-between text-[8px] uppercase font-black opacity-50 tracking-widest">
-                                    <span>Goal Progress</span>
-                                    <span>{habit.goalProgress}/{habit.goalDuration} Units</span>
+                            <div className="px-4 pb-3 space-y-1">
+                                <div className="flex justify-between text-[7px] uppercase font-black opacity-50 tracking-widest">
+                                    <span>Sync Progress</span>
+                                    <span>{habit.goalProgress}/{habit.goalDuration}</span>
                                 </div>
                                 <div className="h-0.5 w-full bg-muted/20 overflow-hidden">
                                     <div className="h-full bg-primary" style={{ width: `${Math.min(100, ((habit.goalProgress || 0) / (habit.goalDuration || 1)) * 100)}%` }} />
                                 </div>
                             </div>
                         )}
-                    </div>
+                    </ThemedCard>
                 ))}
             </div>
 

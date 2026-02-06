@@ -1,196 +1,71 @@
-
-import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence, useSpring, useMotionValue } from 'framer-motion';
-import { ArrowRight, Activity, Cpu, Shield, Zap } from 'lucide-react';
-// import { Button } from '../components/ui/Button';
-
-// Sound Engine using Web Audio API
-const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-
-const playTone = (freq: number, type: 'sine' | 'square' | 'sawtooth' | 'triangle', duration: number, vol: number = 0.1) => {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-
-    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-};
-
-const playHoverSound = () => {
-    // High tech chirp
-    playTone(800, 'sine', 0.1, 0.05);
-    setTimeout(() => playTone(1200, 'sine', 0.1, 0.03), 50);
-};
-
-const playEnterSound = () => {
-    // Heavy confirm sound
-    playTone(150, 'square', 0.3, 0.1);
-    playTone(100, 'sawtooth', 0.5, 0.1);
-};
+import { motion } from 'framer-motion';
 
 export default function LandingPage() {
     const navigate = useNavigate();
-    const [entered, setEntered] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    // Mouse parallax effect - Smoothed with Springs
-    const x = useMotionValue(0);
-    const y = useMotionValue(0);
-
-    const mouseX = useSpring(x, { stiffness: 50, damping: 20 });
-    const mouseY = useSpring(y, { stiffness: 50, damping: 20 });
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            const { clientX, clientY } = e;
-            const { innerWidth, innerHeight } = window;
-            const xPos = (clientX / innerWidth - 0.5) * 20; // Maximum movement in px
-            const yPos = (clientY / innerHeight - 0.5) * 20;
-            x.set(xPos);
-            y.set(yPos);
-        };
-
-        window.addEventListener("mousemove", handleMouseMove);
-        return () => window.removeEventListener("mousemove", handleMouseMove);
-    }, [x, y]);
-
-    const handleEnter = () => {
-        playEnterSound();
-        setEntered(true);
-        // Delay navigation to allow exit animation
-        setTimeout(() => {
-            navigate('/login');
-        }, 1500);
-    };
 
     return (
-        <div
-            ref={containerRef}
-            className="relative min-h-screen bg-black text-white overflow-hidden font-cinzel selection:bg-red-500 selection:text-black"
-        >
-            {/* Background Grid / Noise */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none opacity-20" />
-            <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
+        <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden font-['Cinzel'] selection:bg-primary/30 selection:text-foreground">
 
-            {/* Vignette */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)] pointer-events-none" />
-
-            <AnimatePresence>
-                {!entered ? (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
-                        transition={{ duration: 0.8 }}
-                        className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4"
-                    >
-                        {/* Hero Content */}
-                        <motion.div
-                            style={{ x: mouseX, y: mouseY }}
-                            className="text-center space-y-12"
+            {/* Hero Section */}
+            <main className="flex-grow flex flex-col items-center justify-center px-4 relative z-10 pb-20">
+                <div className="max-w-3xl mx-auto text-center space-y-8">
+                    <div className="space-y-4 relative">
+                        <motion.h1
+                            className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1] font-['Cinzel_Decorative']"
+                            style={{ filter: 'url(#water-4d)' }}
+                            animate={{ opacity: [0.9, 1, 0.9] }}
+                            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                         >
-                            <motion.div
-                                initial={{ y: 50, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                transition={{ duration: 1, ease: "easeOut" }}
-                                className="relative"
+                            Build Your Life,<br />
+                            <span className="text-primary/80">Like Building a Home</span>
+                        </motion.h1>
+
+                        {/* 4D Water Drop Subtitle */}
+                        <div className="relative">
+                            {/* Hidden SVG Filter Definition */}
+                            <svg className="absolute w-0 h-0">
+                                <defs>
+                                    <filter id="water-4d">
+                                        <feTurbulence type="fractalNoise" baseFrequency="0.01 0.01" numOctaves="2" result="warp">
+                                            <animate attributeName="baseFrequency" values="0.01 0.01;0.02 0.04;0.01 0.01" dur="8s" repeatCount="indefinite" />
+                                        </feTurbulence>
+                                        <feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="4" in="SourceGraphic" in2="warp" />
+                                    </filter>
+                                </defs>
+                            </svg>
+
+                            <motion.p
+                                className="text-xl md:text-2xl text-muted-foreground font-light max-w-xl mx-auto leading-relaxed"
+                                style={{ filter: 'url(#water-4d)' }}
+                                animate={{ opacity: [0.8, 1, 0.8] }}
+                                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                             >
-                                <div className="flex items-center justify-center gap-4 mb-6">
-                                    <Activity className="w-12 h-12 text-red-500 animate-pulse" />
-                                    <span className="text-xs uppercase tracking-[0.5em] text-red-500 font-bold">System Online</span>
-                                </div>
-
-                                <h1 className="text-6xl md:text-8xl font-normal tracking-[0.2em] uppercase relative group leading-tight">
-                                    <span className="relative z-10">Habit</span>
-                                    <br />
-                                    <span className="relative z-10 text-transparent stroke-white stroke-[1px]" style={{ WebkitTextStroke: '1px white' }}>Tracker</span>
-                                </h1>
-                            </motion.div>
-
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.5, duration: 1 }}
-                                className="max-w-md mx-auto text-neutral-400 uppercase tracking-widest text-xs leading-loose"
-                            >
-                                <p>Optimizing human performance protocols.</p>
-                                <p>Initialize sequence to synchronize neural pathways.</p>
-                            </motion.div>
-
-                            <motion.div
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ delay: 1, duration: 0.5 }}
-                                className="pt-8"
-                            >
-                                <button
-                                    onMouseEnter={playHoverSound}
-                                    onClick={handleEnter}
-                                    className="group relative px-12 py-4 bg-transparent border border-white/20 hover:border-red-500/50 text-white overflow-hidden transition-all duration-300"
-                                >
-                                    <div className="absolute inset-0 w-0 bg-red-600 transition-all duration-[250ms] ease-out group-hover:w-full opacity-10" />
-                                    <div className="relative flex items-center gap-4 uppercase tracking-[0.2em] text-sm font-bold">
-                                        <span>Initialize</span>
-                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                    </div>
-
-                                    {/* Corner Accents */}
-                                    <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-white/50 group-hover:border-red-500 transition-colors" />
-                                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-white/50 group-hover:border-red-500 transition-colors" />
-                                </button>
-                            </motion.div>
-                        </motion.div>
-
-                        {/* Floating UI Elements (Decorations) */}
-                        <div className="absolute bottom-8 left-8 text-[10px] text-neutral-600 uppercase tracking-widest">
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-green-500 rounded-full animate-ping" />
-                                Server Status: Nominal
-                            </div>
-                            <div className="mt-2">ver 2.4.0-WILD</div>
+                                One habit, one brick at a time.
+                            </motion.p>
                         </div>
+                    </div>
 
-                        <div className="absolute top-8 right-8 flex gap-4 text-neutral-600">
-                            <Cpu className="w-5 h-5 opacity-20" />
-                            <Shield className="w-5 h-5 opacity-20" />
-                            <Zap className="w-5 h-5 opacity-20" />
-                        </div>
+                    <div className="pt-8">
+                        <button
+                            onClick={() => navigate('/signup')}
+                            className="bg-primary text-primary-foreground px-12 py-5 rounded-full font-bold text-xl shadow-lg hover:shadow-xl hover:-translate-y-[1px] transition-all duration-300 ease-out font-['Cinzel']"
+                        >
+                            Start Your Journey
+                        </button>
+                    </div>
+                </div>
+            </main>
 
-                    </motion.div>
-                ) : (
-                    // Transition State (Optional: could show a loading bar or warp speed effect here)
-                    <motion.div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                    >
-                        <div className="w-64 h-1 bg-neutral-900 overflow-hidden relative">
-                            <motion.div
-                                className="absolute top-0 left-0 h-full bg-red-600"
-                                initial={{ width: "0%" }}
-                                animate={{ width: "100%" }}
-                                transition={{ duration: 1.2, ease: "easeInOut" }}
-                            />
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* CSS for scanlines or other effects if needed */}
-            {/* CSS for scanlines or other effects if needed */}
-            {/* <style>{`
-                 // Glitch keyframes removed
-            `}</style> */}
-        </div >
+            {/* Footer Minimal - Static Black */}
+            <footer className="relative z-10 py-8 text-center">
+                <p
+                    className="text-[10px] uppercase tracking-[0.2em] font-medium cursor-default inline-block text-foreground"
+                    style={{ fontFamily: '"Times New Roman", Times, serif' }}
+                >
+                    developed by 1984bcworks
+                </p>
+            </footer>
+        </div>
     );
 }

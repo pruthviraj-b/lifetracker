@@ -1,328 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700&family=Inter:wght@400;500;600;700&family=Cinzel:wght@400;500;600;700;800;900&family=Cinzel+Decorative:wght@400;700;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    /* Primary Components (Default Green) */
-    --primary-h: 142;
-    --primary-s: 71%;
-    --primary-l: 45%;
+    /* Claude AI Signature Palette - Refined from Images */
+    --primary-h: 15;
+    --primary-s: 45%;
+    /* Softer coral */
+    --primary-l: 60%;
 
-    /* Construct Primary from components */
     --primary: var(--primary-h) var(--primary-s) var(--primary-l);
-    --primary-foreground: var(--primary-h) var(--primary-s) 5%;
+    --primary-foreground: 0 0% 100%;
 
+    --background-ivory: 34 25% 98%;
+    /* Authentic Claude Parchment */
+    --text-slate: 240 5% 15%;
+
+    --font-serif: 'Fraunces', serif;
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-cinzel: 'Cinzel', serif;
+    --font-cinzel-decorative: 'Cinzel Decorative', cursive;
+  }
+
+  .light,
+  [data-theme='light'],
+  :root {
+    --background: var(--background-ivory);
+    --foreground: 240 5% 10%;
+    /* Darker for better contrast */
+
+    --card: 0 0% 100%;
+    --card-foreground: var(--text-slate);
+
+    --popover: 0 0% 100%;
+    --popover-foreground: var(--text-slate);
+
+    --secondary: 34 20% 95%;
+    /* Subtle beige for buttons */
+    --secondary-foreground: var(--text-slate);
+
+    --muted: 34 20% 95%;
+    --muted-foreground: 240 5% 35%;
+    /* Dark gray for better contrast */
+
+    --accent: 15 45% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 34 15% 90%;
+    --input: 34 15% 90%;
+    --ring: var(--primary);
+
+    font-family: var(--font-sans);
+  }
+
+  .dark,
+  [data-theme='dark'] {
+    --background: 240 5% 10%;
+    --foreground: 34 25% 98%;
+
+    --card: 240 5% 12%;
+    --card-foreground: 34 25% 98%;
+
+    --popover: 240 5% 12%;
+    --popover-foreground: 40 10% 98%;
+
+    --secondary: 240 5% 16%;
+    --secondary-foreground: 40 10% 98%;
+
+    --muted: 240 5% 16%;
+    --muted-foreground: 240 5% 65%;
+
+    --accent: 15 65% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 5% 18%;
+    --input: 240 5% 18%;
     --ring: var(--primary);
   }
 
-  /* Dark Theme (Default) */
-  .dark,
-  [data-theme='dark'] {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-
-    --card: 0 0% 3%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 0 0% 3%;
-    --popover-foreground: 0 0% 98%;
-
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217 33% 20%;
-    --input: 217 33% 17%;
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "ss01";
+    background-color: hsl(var(--background));
   }
 
-  /* Light Theme */
-  .light,
-  [data-theme='light'] {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+  h1,
+  .font-serif {
+    font-family: var(--font-serif);
+  }
+}
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
+@layer components {
+  .claude-card {
+    @apply bg-card border border-border rounded-[2rem] shadow-sm hover:shadow-md transition-all duration-300;
   }
 
-  /* High Contrast */
-  .high-contrast {
-    --border: 0 0% 100%;
-    --input: 0 0% 100%;
-    --muted-foreground: 0 0% 100%;
-    --primary: 0 0% 100% !important;
-    --primary-foreground: 0 0% 0% !important;
+  .claude-input-container {
+    @apply bg-card border border-border rounded-[1.5rem] px-6 py-4 shadow-sm hover:border-primary/30 transition-all duration-300 focus-within:ring-2 focus-within:ring-primary/10;
   }
 
-  /* Font Sizes */
-  [data-font-size='sm'] {
-    font-size: 14px;
+  .claude-button-secondary {
+    @apply bg-secondary border border-border/50 text-foreground/80 rounded-xl px-4 py-2 text-sm font-medium hover:bg-secondary/70 hover:text-foreground transition-all duration-200 flex items-center gap-2;
   }
 
-  [data-font-size='md'] {
-    font-size: 16px;
-  }
-
-  [data-font-size='lg'] {
-    font-size: 18px;
-  }
-
-  [data-font-size='xl'] {
-    font-size: 20px;
-  }
-
-  /* Wild Mode - Immersive Noir Brutalism */
-  .wild,
-  [data-theme='wild'] {
-    --background: 0 0% 0%;
-    --foreground: 0 100% 50%;
-    /* Vibrant Red */
-
-    --card: 0 0% 0%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 0 0% 2%;
-    --popover-foreground: 0 0% 100%;
-
-    --primary: 0 100% 50%;
-    --primary-foreground: 0 0% 0%;
-
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 0 100% 50%;
-
-    --muted: 0 0% 5%;
-    --muted-foreground: 0 0% 60%;
-
-    --accent: 0 100% 50%;
-    --accent-foreground: 0 0% 0%;
-
-    --border: 0 0% 15%;
-    --input: 0 0% 5%;
-
-    --radius: 0px !important;
-
-    font-family: 'Inter', 'Space Mono', monospace;
-    letter-spacing: -0.05em;
-  }
-
-  /* Grain Texture Removed for Stability */
-  /* .wild::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    opacity: 0.15;
-    pointer-events: none;
-    z-index: 9998;
-    mix-blend-mode: overlay;
-  } */
-
-  /* Scanlines - Improved for Mobile */
-  .wild::after {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(to bottom,
-        rgba(18, 16, 16, 0) 50%,
-        rgba(0, 0, 0, 0.05) 50%);
-    background-size: 100% 2px;
-    z-index: 9999;
-    pointer-events: none;
-    opacity: 0.5;
-  }
-
-  /* Immersive Vignette */
-  .wild .vignette {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8);
-    pointer-events: none;
-    z-index: 1;
+  .active-nav-item {
+    @apply bg-secondary text-foreground font-semibold;
   }
 }
 
 @layer utilities {
   .glass {
-    @apply bg-white/50 backdrop-blur-lg border border-white/20;
-  }
-
-  .system-reflection {
-    position: relative;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .system-reflection::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-    background-size: 200% 100%;
-    background-position: 100% 0;
-    transition: background-position 0.6s;
-    pointer-events: none;
-  }
-
-  .system-reflection:active {
-    transform: scale(0.98);
-  }
-
-  .system-reflection:active::after {
-    background-position: -100% 0;
-  }
-
-  .wild .system-reflection:active {
-    box-shadow: 0 0 20px var(--primary);
-    border-color: var(--primary);
+    @apply bg-white/70 backdrop-blur-xl border border-white/20;
   }
 }
 
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes pulse-gold {
-  0% {
-    box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4);
-  }
-
-  70% {
-    box-shadow: 0 0 0 10px rgba(234, 179, 8, 0);
-  }
-
-  100% {
-    box-shadow: 0 0 0 0 rgba(234, 179, 8, 0);
-  }
-}
-
-@keyframes slide-up {
+@keyframes fade-in-up {
   from {
-    transform: translateY(20px);
     opacity: 0;
+    transform: translateY(12px) scale(0.98);
   }
 
   to {
-    transform: translateY(0);
     opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
-@keyframes scan {
-  from {
-    background-position: 0 0;
-  }
-
-  to {
-    background-position: 0 100%;
-  }
-}
-
-@keyframes glitch {
-  0% {
-    transform: translate(0);
-    clip-path: inset(45% 0 45% 0);
-  }
-
-  5% {
-    transform: translate(-5px, 0);
-    clip-path: inset(10% 0 80% 0);
-  }
-
-  10% {
-    transform: translate(5px, 0);
-    clip-path: inset(80% 0 10% 0);
-  }
-
-  15% {
-    transform: translate(-5px, 0);
-    clip-path: inset(40% 0 40% 0);
-  }
-
-  20% {
-    transform: translate(0);
-    clip-path: inset(45% 0 45% 0);
-  }
-
-  100% {
-    transform: translate(0);
-    clip-path: inset(45% 0 45% 0);
-  }
-}
-
-@keyframes reveal {
-  from {
-    clip-path: inset(0 100% 0 0);
-    transform: translateX(-10px);
-  }
-
-  to {
-    clip-path: inset(0 0 0 0);
-    transform: translateX(0);
-  }
-}
-
-.animate-reveal {
-  animation: reveal 0.8s cubic-bezier(0.77, 0, 0.175, 1) forwards;
-}
-
-.animate-pulse-gold {
-  animation: pulse-gold 2s infinite;
-}
-
-.animate-slide-up {
-  animation: slide-up 0.5s ease-out forwards;
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground antialiased overflow-x-hidden;
-    font-feature-settings: "rlig" 1, "calt" 1;
-  }
+.animate-claude-in {
+  animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

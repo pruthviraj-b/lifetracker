@@ -45,7 +45,7 @@ export function Heatmap({ logs, daysToShow = 365, className, onDayClick }: Heatm
 
     return (
         <div className={cn(
-            "p-6 border-4 shadow-sm overflow-x-auto relative group",
+            "p-4 border-2 shadow-sm overflow-x-auto relative group",
             isWild ? "bg-[#050505] border-red-600 rounded-none shadow-[0_0_30px_rgba(220,38,38,0.1)]" : "bg-card text-card-foreground rounded-xl",
             className
         )}>
@@ -57,9 +57,9 @@ export function Heatmap({ logs, daysToShow = 365, className, onDayClick }: Heatm
                 </>
             )}
 
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
                 <div className="space-y-1">
-                    <h3 className={cn("font-black text-xl uppercase tracking-tighter flex items-center gap-2", isWild ? "text-red-600" : "")}>
+                    <h3 className={cn("font-black text-base uppercase tracking-tighter flex items-center gap-2", isWild ? "text-red-600" : "")}>
                         {isWild ? "NEURAL_CONSISTENCY_GRID" : "Consistency Map"}
                     </h3>
                     {isWild && <p className="text-[10px] font-mono text-red-900/80 tracking-widest uppercase">Visualizing_Daily_Adherence_Protocols</p>}
@@ -68,17 +68,17 @@ export function Heatmap({ logs, daysToShow = 365, className, onDayClick }: Heatm
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className={cn("uppercase text-[10px] font-bold", isWild && "text-red-900")}>Min</span>
                     <div className="flex gap-[2px]">
-                        <div className={cn("w-3 h-3", isWild ? "bg-white/5 rounded-none" : "bg-muted/50 rounded-sm")} />
-                        <div className={cn("w-3 h-3", isWild ? "bg-red-900/30 rounded-none" : "bg-primary/20 rounded-sm")} />
-                        <div className={cn("w-3 h-3", isWild ? "bg-red-800/60 rounded-none" : "bg-primary/40 rounded-sm")} />
-                        <div className={cn("w-3 h-3", isWild ? "bg-red-600 rounded-none" : "bg-primary/60 rounded-sm")} />
-                        <div className={cn("w-3 h-3", isWild ? "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)] rounded-none" : "bg-primary rounded-sm")} />
+                        <div className={cn("w-2.5 h-2.5", isWild ? "bg-white/5 rounded-none" : "bg-muted/50 rounded-sm")} />
+                        <div className={cn("w-2.5 h-2.5", isWild ? "bg-red-900/30 rounded-none" : "bg-primary/20 rounded-sm")} />
+                        <div className={cn("w-2.5 h-2.5", isWild ? "bg-red-800/60 rounded-none" : "bg-primary/40 rounded-sm")} />
+                        <div className={cn("w-2.5 h-2.5", isWild ? "bg-red-600 rounded-none" : "bg-primary/60 rounded-sm")} />
+                        <div className={cn("w-2.5 h-2.5", isWild ? "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)] rounded-none" : "bg-primary rounded-sm")} />
                     </div>
                     <span className={cn("uppercase text-[10px] font-bold", isWild && "text-red-500")}>Max</span>
                 </div>
             </div>
 
-            <div className="flex flex-wrap gap-[3px] justify-center md:justify-start">
+            <div className="flex flex-wrap gap-[2px] justify-center md:justify-start">
                 {dates.map((date, i) => {
                     const dateStr = formatDate(date);
                     const intensity = getIntensity(dateStr);
@@ -102,7 +102,7 @@ export function Heatmap({ logs, daysToShow = 365, className, onDayClick }: Heatm
                             onClick={() => onDayClick?.(dateStr)}
                             title={`${dateStr}: ${logs[dateStr]?.completedHabitIds.length || 0} completions`}
                             className={cn(
-                                "w-3 h-3 transition-colors cursor-pointer relative",
+                                "w-2.5 h-2.5 transition-colors cursor-pointer relative",
                                 !isWild && "rounded-sm hover:scale-125 hover:z-10",
                                 isWild && "rounded-none hover:border hover:border-white z-0 hover:z-20",
                                 intensity === 0 && (isWild ? "bg-white/5" : "bg-muted/20 hover:bg-muted"),

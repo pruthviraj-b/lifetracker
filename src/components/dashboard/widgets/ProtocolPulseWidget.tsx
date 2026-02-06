@@ -1,16 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Clock } from 'lucide-react';
+import { Reminder } from '../../../types/reminder';
+import { useNavigate } from 'react-router-dom';
 
 interface ProtocolPulseWidgetProps {
     nextReminder: {
         title: string;
         time: string;
     } | null;
+    allReminders?: Reminder[];
 }
 
-export const ProtocolPulseWidget: React.FC<ProtocolPulseWidgetProps> = ({ nextReminder }) => {
+export const ProtocolPulseWidget: React.FC<ProtocolPulseWidgetProps> = ({ nextReminder, allReminders }) => {
+    const navigate = useNavigate();
     const [timeLeft, setTimeLeft] = useState<string>('--:--:--');
 
     useEffect(() => {
@@ -36,38 +39,54 @@ export const ProtocolPulseWidget: React.FC<ProtocolPulseWidgetProps> = ({ nextRe
     }, [nextReminder]);
 
     return (
-        <div className="relative group p-4 bg-white/[0.02] border border-white/5 hover:border-yellow-500/30 transition-all duration-500 overflow-hidden h-full flex flex-col justify-between">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(234,179,8,0.05),transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity" />
-
-            <div className="flex justify-between items-start">
+        <div
+            onClick={() => navigate('/reminders')}
+            className="bg-card border border-border p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col justify-between cursor-pointer hover:border-primary/30"
+        >
+            <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
-                    <Zap className="w-3 h-3 text-yellow-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-yellow-900/60">Protocol Pulse</span>
+                    <Zap className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-semibold text-foreground">System Timeline</span>
                 </div>
-                <div className="px-1.5 py-0.5 bg-yellow-500/10 border border-yellow-500/20 rounded text-[8px] font-black text-yellow-500 uppercase">Active</div>
             </div>
 
-            <div className="py-2">
-                {nextReminder ? (
-                    <>
-                        <h3 className="text-xl font-black italic tracking-tighter truncate text-white/90">
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+                {allReminders && allReminders.length > 0 ? (
+                    <div className="space-y-2">
+                        {allReminders.slice(0, 3).map((r, i) => (
+                            <div key={r.id} className={`flex items-start justify-between ${i === 0 ? 'opacity-100' : 'opacity-40'}`}>
+                                <div className="space-y-0.5">
+                                    <h3 className="text-[12px] font-medium text-foreground truncate max-w-[120px]">
+                                        {r.title}
+                                    </h3>
+                                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                                        <Clock className="w-2.5 h-2.5" />
+                                        <span className="text-[9px] font-medium tracking-wide">{r.time}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : nextReminder ? (
+                    <div className="space-y-1">
+                        <h3 className="text-[12px] font-medium text-foreground truncate">
                             {nextReminder.title}
                         </h3>
-                        <div className="flex items-center gap-2 text-muted-foreground mt-1">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
                             <Clock className="w-3 h-3" />
-                            <span className="text-[10px] font-mono tracking-widest uppercase">Scheduled Pulse @ {nextReminder.time}</span>
+                            <span className="text-[10px] font-medium">Next: {nextReminder.time}</span>
                         </div>
-                    </>
+                    </div>
                 ) : (
-                    <div className="text-muted-foreground italic text-[10px] uppercase font-bold opacity-30">
-                        No protocols queued in matrix
+                    <div className="text-muted-foreground text-[10px] text-center py-4">
+                        System idle
                     </div>
                 )}
             </div>
 
-            <div className="bg-black/40 border border-white/5 p-2 rounded flex items-center justify-between">
-                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">T-Minus</span>
-                <span className="text-lg font-black font-mono text-yellow-500/80 tracking-tighter tabular-nums">
+            <div className="bg-secondary/30 border border-border p-2 rounded-xl flex items-center justify-between mt-2">
+                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">In</span>
+                <span className="text-base font-bold text-primary tabular-nums">
                     {timeLeft}
                 </span>
             </div>

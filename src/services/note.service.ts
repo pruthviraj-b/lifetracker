@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { Note, CreateNoteInput, NoteFolder } from '../types/note';
+import { MultiverseService } from './multiverse.service';
 
 export const NoteService = {
     async getNotes(): Promise<Note[]> {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import {
+    StickyNote,
     Plus,
     Search,
     Pin,
@@ -26,19 +27,17 @@ import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 
 const COLOR_CLASSES: Record<string, string> = {
-    yellow: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500',
-    blue: 'bg-blue-500/10 border-blue-500/20 text-blue-500',
-    green: 'bg-green-500/10 border-green-500/20 text-green-500',
-    purple: 'bg-purple-500/10 border-purple-500/20 text-purple-500',
-    pink: 'bg-pink-500/10 border-pink-500/20 text-pink-500',
-    gray: 'bg-gray-500/10 border-gray-500/20 text-gray-500',
+    yellow: 'bg-amber-50 text-amber-700 border-amber-100',
+    blue: 'bg-blue-50 text-blue-700 border-blue-100',
+    green: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    purple: 'bg-purple-50 text-purple-700 border-purple-100',
+    pink: 'bg-pink-50 text-pink-700 border-pink-100',
+    gray: 'bg-stone-50 text-stone-700 border-stone-100',
 };
 
 export default function NotesPage() {
     const navigate = useNavigate();
     const { showToast } = useToast();
-    const { preferences } = useTheme();
-    const isWild = preferences.wild_mode;
     const [notes, setNotes] = useState<Note[]>([]);
     const [folders, setFolders] = useState<NoteFolder[]>([]);
     const [loading, setLoading] = useState(true);
@@ -63,13 +62,7 @@ export default function NotesPage() {
             setNotes(data);
         } catch (error: any) {
             console.error(error);
-            // Don't alert on load, just console error to avoid spamming
-            // But if it's a 404/403 it's useful to know
-            if (error.message?.includes('relation "notes" does not exist')) {
-                showToast('Database Error', "Table 'notes' is missing. Run the SQL schema to fix.", { type: 'error' });
-            } else {
-                showToast('Error', 'Failed to load notes', { type: 'error' });
-            }
+            showToast('Error', 'Failed to load notes', { type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -81,7 +74,7 @@ export default function NotesPage() {
             setFolders(data);
         } catch (error) {
             console.error(error);
-            showToast('Error', 'Failed to fetch folders', { type: 'error' });
+            showToast('Error', 'Failed to fetch collections', { type: 'error' });
         }
     };
 
@@ -93,9 +86,9 @@ export default function NotesPage() {
             setNewFolderName('');
             setIsCreatingFolder(false);
             fetchFolders();
-            showToast('Success', 'Folder created', { type: 'success' });
+            showToast('Success', 'Collection created', { type: 'success' });
         } catch (error) {
-            showToast('Error', 'Failed to create folder', { type: 'error' });
+            showToast('Error', 'Failed to create collection', { type: 'error' });
         }
     };
 
@@ -105,9 +98,9 @@ export default function NotesPage() {
             await NoteService.deleteFolder(id);
             if (selectedFolderId === id) setSelectedFolderId(null);
             fetchFolders();
-            showToast('Success', 'Folder deleted', { type: 'success' });
+            showToast('Success', 'Collection deleted', { type: 'success' });
         } catch (error) {
-            showToast('Error', 'Failed to delete folder', { type: 'error' });
+            showToast('Error', 'Failed to delete collection', { type: 'error' });
         }
     };
 
@@ -119,19 +112,19 @@ export default function NotesPage() {
                 await NoteService.createNote(noteData as CreateNoteInput);
             }
             await fetchNotes();
-            showToast('Success', editingNote ? 'Note updated successfully' : 'Note created successfully', { type: 'success' });
+            showToast('Success', editingNote ? 'Note updated' : 'Note added', { type: 'success' });
         } catch (error: any) {
             console.error(error);
             showToast('Error', error.message || 'Failed to save note', { type: 'error' });
         }
     };
 
-    const handleDeleteNote = async (id: string) => { // Removed e: React.MouseEvent from signature
+    const handleDeleteNote = async (id: string) => {
         if (!confirm('Are you sure you want to delete this note?')) return;
         try {
             await NoteService.deleteNote(id);
-            fetchNotes(); // Changed from setNotes(prev => prev.filter(n => n.id !== id));
-            showToast('Success', 'Note deleted successfully', { type: 'success' });
+            fetchNotes();
+            showToast('Success', 'Note deleted', { type: 'success' });
         } catch (error) {
             console.error(error);
             showToast('Error', 'Failed to delete note', { type: 'error' });
@@ -142,11 +135,9 @@ export default function NotesPage() {
         e.stopPropagation();
         try {
             await NoteService.updateNote(note.id, { isPinned: !note.isPinned });
-            await fetchNotes(); // Changed from loadNotes();
-            showToast('Success', note.isPinned ? 'Note unpinned' : 'Note pinned', { type: 'success' });
+            await fetchNotes();
         } catch (error) {
             console.error(error);
-            showToast('Error', 'Failed to toggle pin', { type: 'error' });
         }
     };
 
@@ -159,304 +150,273 @@ export default function NotesPage() {
     });
 
     return (
-        <div className={`min-h-screen bg-background relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : 'font-sans'}`}>
-            {isWild && <div className="vignette pointer-events-none" />}
-
-            <div className="relative z-10 p-4 md:p-8 max-w-7xl mx-auto space-y-12">
-                <div className="flex flex-col md:flex-row gap-8">
-                    {/* Sidebar */}
-                    <div className="w-full md:w-64 space-y-8">
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Folders</h3>
-                                <button
-                                    onClick={() => setIsCreatingFolder(!isCreatingFolder)}
-                                    className="p-1 hover:bg-muted rounded-lg transition-colors"
-                                >
-                                    <FolderPlus className="w-4 h-4" />
-                                </button>
-                            </div>
-
-                            {isCreatingFolder && (
-                                <form onSubmit={handleCreateFolder} className="animate-in slide-in-from-top-2 duration-200">
-                                    <input
-                                        autoFocus
-                                        value={newFolderName}
-                                        onChange={(e) => setNewFolderName(e.target.value)}
-                                        placeholder="Folder name..."
-                                        className="w-full bg-muted border-none rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
-                                    />
-                                </form>
-                            )}
-
-                            <div className="space-y-1">
-                                <button
-                                    onClick={() => setSelectedFolderId(null)}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${!selectedFolderId ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
-                                >
-                                    <FolderIcon className="w-4 h-4" />
-                                    All Notes
-                                </button>
-                                {folders.map(folder => (
-                                    <div key={folder.id} className="group flex items-center">
-                                        <button
-                                            onClick={() => setSelectedFolderId(folder.id)}
-                                            className={`flex-1 flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${selectedFolderId === folder.id ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
-                                        >
-                                            <FolderIcon className="w-4 h-4" />
-                                            {folder.name}
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteFolder(folder.id)}
-                                            className="opacity-0 group-hover:opacity-100 p-1 hover:text-destructive transition-all"
-                                        >
-                                            <Trash2 className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
+        <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-12 animate-claude-in">
+            <div className="flex flex-col md:flex-row gap-12">
+                {/* Sidebar */}
+                <div className="w-full md:w-64 space-y-10 shrink-0">
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between px-2">
+                            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">Collections</h3>
+                            <button
+                                onClick={() => setIsCreatingFolder(!isCreatingFolder)}
+                                className="p-1.5 hover:bg-secondary rounded-lg transition-colors"
+                            >
+                                <FolderPlus className="w-4 h-4 text-primary" />
+                            </button>
                         </div>
 
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Categories</h3>
-                            <div className="flex flex-wrap md:flex-col gap-2">
-                                {['all', 'general', 'work', 'personal', 'idea', 'list', 'learning'].map(cat => (
+                        {isCreatingFolder && (
+                            <form onSubmit={handleCreateFolder} className="px-2">
+                                <input
+                                    autoFocus
+                                    value={newFolderName}
+                                    onChange={(e) => setNewFolderName(e.target.value)}
+                                    placeholder="New collection..."
+                                    className="claude-input w-full text-sm"
+                                />
+                            </form>
+                        )}
+
+                        <div className="space-y-1">
+                            <button
+                                onClick={() => setSelectedFolderId(null)}
+                                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-all ${!selectedFolderId ? 'bg-primary/10 text-primary rounded-2xl' : 'text-muted-foreground hover:bg-secondary rounded-2xl'}`}
+                            >
+                                <FolderIcon className="w-4 h-4" />
+                                All Notes
+                            </button>
+                            {folders.map(folder => (
+                                <div key={folder.id} className="group flex items-center">
                                     <button
-                                        key={cat}
-                                        onClick={() => setSelectedCategory(cat)}
-                                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all text-left ${selectedCategory === cat
-                                            ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                                            }`}
+                                        onClick={() => setSelectedFolderId(folder.id)}
+                                        className={`flex-1 flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-all ${selectedFolderId === folder.id ? 'bg-primary/10 text-primary rounded-2xl' : 'text-muted-foreground hover:bg-secondary rounded-2xl'}`}
                                     >
-                                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                                        <FolderIcon className="w-4 h-4" />
+                                        {folder.name}
                                     </button>
-                                ))}
-                            </div>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteFolder(folder.id);
+                                        }}
+                                        className="opacity-0 group-hover:opacity-100 p-2 hover:text-red-500 transition-all"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Main Content */}
-                    <div className="flex-1 space-y-4">
-                        <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 ${isWild ? 'animate-reveal' : ''}`}>
-                            <div className="flex items-center gap-3">
-                                <Button variant="ghost" className={`rounded-full w-9 h-9 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
-                                    <Home className="w-4 h-4" />
-                                </Button>
-                                <div>
-                                    <h1 className={`text-2xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>Neural Notes</h1>
-                                    <p className="text-muted-foreground text-[8px] uppercase font-bold tracking-widest opacity-60">Cognitive Backup Sequence</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    onClick={() => {
-                                        setEditingNote(null);
-                                        setIsModalOpen(true);
-                                    }}
-                                    className={`h-10 px-6 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-transform ${isWild ? 'rounded-none border-2 animate-pulse' : 'rounded-xl'}`}
+                    <div className="space-y-6">
+                        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 px-2">Categories</h3>
+                        <div className="flex flex-wrap md:flex-col gap-2 px-2">
+                            {['all', 'general', 'work', 'personal', 'idea', 'list', 'learning'].map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setSelectedCategory(cat)}
+                                    className={`px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-all text-left rounded-xl ${selectedCategory === cat
+                                        ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                        : 'bg-secondary text-muted-foreground hover:bg-secondary/70'
+                                        }`}
                                 >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Initialize Note
-                                </Button>
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
 
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setIsFlashcardModalOpen(true)}
-                                    className={`h-10 w-10 p-0 flex items-center justify-center ${isWild ? 'rounded-none border-2' : 'rounded-xl'}`}
-                                    title="Create Flashcard"
-                                >
-                                    <Zap className="w-4 h-4" />
-                                </Button>
+                {/* Main Content */}
+                <div className="flex-1 space-y-8">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-primary/10 rounded-2xl">
+                                <StickyNote className="w-8 h-8 text-primary" />
+                            </div>
+                            <div>
+                                <h1 className="text-4xl font-bold tracking-tight text-foreground">Knowledge Base</h1>
+                                <p className="text-muted-foreground text-sm">Organize your thoughts and resources.</p>
                             </div>
                         </div>
+                        <div className="flex items-center gap-3">
+                            <Button
+                                onClick={() => {
+                                    setEditingNote(null);
+                                    setIsModalOpen(true);
+                                }}
+                                className="claude-button px-8 h-12 bg-primary text-white shadow-lg shadow-primary/20"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                New Note
+                            </Button>
 
-                        <div className="relative group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                            <Input
-                                placeholder="Scan mind_logs..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className={`pl-12 h-14 bg-card border-2 focus:border-primary/20 text-lg shadow-sm ${isWild ? 'rounded-none border-primary/20' : 'rounded-2xl border-transparent'}`}
-                            />
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsFlashcardModalOpen(true)}
+                                className="w-12 h-12 p-0 flex items-center justify-center rounded-2xl border-border"
+                                title="Create Flashcard"
+                            >
+                                <Zap className="w-5 h-5 text-primary" />
+                            </Button>
                         </div>
+                    </div>
 
-                        {loading ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="h-64 rounded-3xl bg-muted animate-pulse border" />
-                                ))}
-                            </div>
-                        ) : filteredNotes.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredNotes.map(note => {
-                                    // Calculate Progress
-                                    const totalTasks = (note.content.match(/\[[ x]\]/g) || []).length;
-                                    const completedTasks = (note.content.match(/\[x\]/g) || []).length;
-                                    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+                    <div className="relative group">
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                        <Input
+                            placeholder="Search your knowledge base..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-16 h-16 bg-card border border-border rounded-3xl text-lg focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-sm"
+                        />
+                    </div>
 
-                                    const handleCheckboxClick = async (lineIndex: number, currentChecked: boolean) => {
-                                        const lines = note.content.split('\n');
-                                        // ReactMarkdown line numbers are 1-based, array is 0-based.
-                                        // Often the position might be slightly off due to wrapping, but for simple lists it works.
-                                        // We need to find the line. Use the index passed from the renderer?
-                                        // Actually, let's toggle based on content match if line is tricky? 
-                                        // No, node.position.start.line is best.
+                    {loading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {[1, 2, 3, 4, 5, 6].map(i => (
+                                <div key={i} className="h-64 animate-pulse bg-secondary rounded-[2rem]" />
+                            ))}
+                        </div>
+                    ) : filteredNotes.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {filteredNotes.map(note => {
+                                const totalTasks = (note.content.match(/\[[ x]\]/g) || []).length;
+                                const completedTasks = (note.content.match(/\[x\]/g) || []).length;
+                                const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-                                        const targetLine = lines[lineIndex - 1];
-                                        if (!targetLine) return; // Error safety
+                                const handleCheckboxClick = async (lineIndex: number) => {
+                                    const lines = note.content.split('\n');
+                                    const targetLine = lines[lineIndex - 1];
+                                    if (!targetLine) return;
 
-                                        // Toggle [ ] <-> [x]
-                                        const newContent = lines.map((line, idx) => {
-                                            if (idx === lineIndex - 1) {
-                                                return line.includes('[x]') ? line.replace('[x]', '[ ]') : line.replace('[ ]', '[x]');
-                                            }
-                                            return line;
-                                        }).join('\n');
+                                    const newContent = lines.map((line, idx) => {
+                                        if (idx === lineIndex - 1) {
+                                            return line.includes('[x]') ? line.replace('[x]', '[ ]') : line.replace('[ ]', '[x]');
+                                        }
+                                        return line;
+                                    }).join('\n');
 
-                                        // Optimistic Update (optional, but UI needs it)
-                                        // For now, just save and let fetchNotes refresh. 
-                                        // To make it instant, we might need local state update or fast re-fetch.
-                                        // Let's do instant Fire-and-Forget update + Refresh
+                                    try {
+                                        await NoteService.updateNote(note.id, { content: newContent });
+                                        fetchNotes();
+                                    } catch (e) {
+                                        console.error(e);
+                                    }
+                                };
 
-                                        try {
-                                            await NoteService.updateNote(note.id, { content: newContent });
-                                            fetchNotes(); // Refresh UI
-                                        } catch (e) { console.error(e); }
-                                    };
-
-                                    return (
-                                        <div
-                                            key={note.id}
-                                            onClick={() => {
-                                                setEditingNote(note);
-                                                setIsModalOpen(true);
-                                            }}
-                                            className={`group relative bg-card border-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${isWild ? 'rounded-none border-primary/20 hover:border-primary hover:bg-primary/5' : 'hover:bg-muted/30 border-transparent hover:border-primary/10 rounded-[2rem] p-6'}`}
-                                        >
-                                            {note.isPinned && (
-                                                <div className="absolute top-4 right-4 text-primary animate-in zoom-in duration-300">
-                                                    <Pin className="w-5 h-5 fill-current" />
+                                return (
+                                    <div
+                                        key={note.id}
+                                        onClick={() => {
+                                            setEditingNote(note);
+                                            setIsModalOpen(true);
+                                        }}
+                                        className="claude-card group p-8 flex flex-col h-full cursor-pointer"
+                                    >
+                                        <div className="flex-1 space-y-6">
+                                            <div className="flex items-start justify-between">
+                                                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${COLOR_CLASSES[note.color] || COLOR_CLASSES.gray}`}>
+                                                    {note.category}
                                                 </div>
-                                            )}
-
-                                            {/* Progress Bar */}
-                                            {totalTasks > 0 && (
-                                                <div className="absolute top-0 left-0 right-0 h-1.5 bg-muted/50 overflow-hidden rounded-t-[2rem]">
-                                                    <div
-                                                        className="h-full bg-gradient-to-r from-blue-500 to-primary transition-all duration-500 ease-out"
-                                                        style={{ width: `${progress}%` }}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            <div className="mb-6">
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${COLOR_CLASSES[note.color]}`}>
-                                                        {note.category}
-                                                    </div>
-                                                    {totalTasks > 0 && (
-                                                        <div className="text-[10px] font-bold text-muted-foreground">
-                                                            {progress}% Done
-                                                        </div>
+                                                <div className="flex items-center gap-2">
+                                                    {note.isPinned && (
+                                                        <Pin className="w-4 h-4 text-primary fill-current" />
                                                     )}
                                                     {note.type === 'youtube' && (
-                                                        <div className="flex items-center gap-1 text-red-500 bg-red-500/10 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">
-                                                            <Youtube className="w-3 h-3" />
-                                                            Video Note
-                                                        </div>
+                                                        <Youtube className="w-4 h-4 text-red-500" />
                                                     )}
-                                                </div>
-
-                                                <h3 className="text-xl font-bold mb-3 line-clamp-1">{note.title}</h3>
-                                                <div className="text-muted-foreground text-sm line-clamp-4 leading-relaxed whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none notes-markdown">
-                                                    <ReactMarkdown
-                                                        remarkPlugins={[remarkGfm]}
-                                                        components={{
-                                                            input: (props: any) => {
-                                                                if (props.type === 'checkbox') {
-                                                                    return (
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={props.checked}
-                                                                            onChange={(e) => {
-                                                                                e.stopPropagation(); // Prevent card click
-                                                                                // node.position.start.line
-                                                                                if (props.node && props.node.position) {
-                                                                                    handleCheckboxClick(props.node.position.start.line, props.checked);
-                                                                                }
-                                                                            }}
-                                                                            onClick={(e) => e.stopPropagation()} // Extra safety
-                                                                            className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer align-middle mr-2 mt-0.5"
-                                                                        />
-                                                                    );
-                                                                }
-                                                                return <input {...props} />;
-                                                            }
-                                                        }}
-                                                    >
-                                                        {note.content}
-                                                    </ReactMarkdown>
                                                 </div>
                                             </div>
 
-                                            <div className="mt-6 pt-4 border-t flex items-center justify-between text-[11px] text-muted-foreground font-medium">
-                                                <div className="flex items-center gap-1.5">
-                                                    <Clock className="w-3 h-3" />
-                                                    {new Date(note.updatedAt).toLocaleDateString()}
-                                                    {note.timestamp_seconds !== undefined && (
-                                                        <span className="ml-2 flex items-center gap-1 text-primary">
-                                                            <Play className="w-3 h-3" />
-                                                            {Math.floor(note.timestamp_seconds / 60)}:{(note.timestamp_seconds % 60).toString().padStart(2, '0')}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                            <h3 className="text-xl font-bold text-foreground leading-tight line-clamp-2">
+                                                {note.title}
+                                            </h3>
 
-                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation(); // Prevent opening note modal
-                                                            togglePin(note, e);
-                                                        }}
-                                                        className="p-2 hover:bg-primary/10 hover:text-primary rounded-xl transition-colors"
-                                                    >
-                                                        {note.isPinned ? <Pin className="w-4 h-4" /> : <Pin className="w-4 h-4 opacity-40" />}
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation(); // Prevent opening note modal
-                                                            handleDeleteNote(note.id);
-                                                        }}
-                                                        className="p-2 hover:bg-destructive/10 hover:text-destructive rounded-xl transition-colors"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
+                                            <div className="text-muted-foreground text-sm line-clamp-4 leading-relaxed prose prose-stone prose-sm dark:prose-invert max-w-none">
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        input: (props: any) => {
+                                                            if (props.type === 'checkbox') {
+                                                                return (
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={props.checked}
+                                                                        onChange={(e) => {
+                                                                            e.stopPropagation();
+                                                                            if (props.node && props.node.position) {
+                                                                                handleCheckboxClick(props.node.position.start.line);
+                                                                            }
+                                                                        }}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer align-middle mr-2"
+                                                                    />
+                                                                );
+                                                            }
+                                                            return <input {...props} />;
+                                                        }
+                                                    }}
+                                                >
+                                                    {note.content}
+                                                </ReactMarkdown>
                                             </div>
                                         </div>
-                                    );
-                                })}
+
+                                        <div className="mt-8 pt-6 border-t border-border flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                                            <div className="flex items-center gap-2">
+                                                <Clock className="w-3.5 h-3.5" />
+                                                <span>{new Date(note.updatedAt).toLocaleDateString()}</span>
+                                                {progress > 0 && <span className="text-primary ml-2">{progress}% Done</span>}
+                                            </div>
+
+                                            <div className="flex items-center gap-2 lg:opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        togglePin(note, e);
+                                                    }}
+                                                    className="p-2 hover:bg-secondary rounded-xl transition-all"
+                                                >
+                                                    <Pin className={`w-4 h-4 ${note.isPinned ? 'text-primary fill-current' : ''}`} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteNote(note.id);
+                                                    }}
+                                                    className="p-2 hover:bg-red-50 text-muted-foreground hover:text-red-500 rounded-xl transition-all"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="text-center py-24 bg-secondary/30 border-2 border-dashed border-border rounded-[3rem] flex flex-col items-center justify-center gap-6">
+                            <div className="bg-primary/10 p-6 rounded-3xl">
+                                <StickyNote className="w-12 h-12 text-primary" />
                             </div>
-                        ) : (
-                            <div className="text-center py-24 bg-muted/20 rounded-3xl border-2 border-dashed">
-                                <div className="bg-background w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
-                                    <Search className="w-8 h-8 text-muted-foreground" />
-                                </div>
-                                <h3 className="text-xl font-bold mb-2">No notes found</h3>
-                                <p className="text-muted-foreground mb-8">Try adjusting your search or filters.</p>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                        setSearchQuery('');
-                                        setSelectedCategory('all');
-                                        setSelectedFolderId(null);
-                                    }}
-                                >
-                                    Clear all filters
-                                </Button>
+                            <div className="space-y-2">
+                                <h3 className="text-2xl font-bold text-foreground">No notes discovered yet</h3>
+                                <p className="text-muted-foreground max-w-sm mx-auto">Build your personal workspace by adding your first note or connecting a resource.</p>
                             </div>
-                        )}
-                    </div>
+                            <Button
+                                variant="outline"
+                                className="claude-button px-10 h-14 bg-background border-border"
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    setSelectedCategory('all');
+                                    setSelectedFolderId(null);
+                                }}
+                            >
+                                Clear All Filters
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
 

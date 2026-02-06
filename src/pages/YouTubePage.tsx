@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import {
@@ -24,12 +24,17 @@ import {
     Award,
     CheckCircle2,
     Lock,
-    Home
+    Home,
+    Bell
 } from 'lucide-react';
+import { ReminderService } from '../services/reminder.service';
+import { ReminderModal } from '../components/tools/ReminderModal';
+import { Reminder } from '../types/reminder';
 import { YouTubeService } from '../services/youtube.service';
 import { LearningService } from '../services/learning.service';
 import { CourseService } from '../services/course.service';
 import { HabitService } from '../services/habit.service';
+import { MultiverseService } from '../services/multiverse.service';
 import { useTheme } from '../context/ThemeContext';
 import {
     YouTubeVideo,
@@ -52,8 +57,11 @@ function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
+import { ThemedCard } from '../components/ui/ThemedCard';
+
 export default function YouTubePage() {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { showToast } = useToast();
     const { preferences } = useTheme();
     const isWild = preferences.wild_mode;
@@ -75,6 +83,10 @@ export default function YouTubePage() {
     const [addType, setAddType] = useState<'video' | 'folder' | 'resource' | 'course'>('video');
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
     const [movingItem, setMovingItem] = useState<{ id: string, type: 'video' | 'resource' } | null>(null);
+
+    // Reminder State
+    const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
+    const [prefilledReminder, setPrefilledReminder] = useState<Partial<Reminder> | undefined>(undefined);
 
     // Selection state
     const [selectedVideo, setSelectedVideo] = useState<YouTubeVideo | null>(null);
@@ -98,38 +110,86 @@ export default function YouTubePage() {
     }, []);
 
     useEffect(() => {
+        const fetchUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.email) setUserEmail(user.email);
+        };
+        fetchUser();
+    }, []);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const [v, f, r, c, h] = await Promise.all([
+                YouTubeService.getVideos(),
+                LearningService.getFolders(),
+                LearningService.getResources(),
+                CourseService.getCourses(),
+                HabitService.getHabits()
+            ]);
+            setVideos(v);
+            setFolders(f);
+            setResources(r);
+            setCourses(c);
+            setHabits(h);
+        } catch (error: any) {
+            console.error(error);
+            showToast('Error', 'Failed to load library', { type: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Deep Link Handler
+    useEffect(() => {
+        if (!loading && videos.length > 0) {
+            const videoIdParam = searchParams.get('videoId');
+            if (videoIdParam) {
+                const video = videos.find(v => v.id === videoIdParam);
+                if (video) {
+                    setSelectedVideo(video);
+                    // Clear param to avoid re-opening
+                    setSearchParams({}, { replace: true });
+                }
+            }
+        }
+    }, [loading, videos, searchParams, setSearchParams]);
+
+    useEffect(() => {
+        if (!loading && resources.length > 0) {
+            const resourceIdParam = searchParams.get('resourceId');
+            if (resourceIdParam) {
+                const res = resources.find(r => r.id === resourceIdParam);
+                if (res && res.url) {
+                    window.open(res.url, '_blank');
+                    // Clear param
+                    setSearchParams({}, { replace: true });
+                }
+            }
+        }
+    }, [loading, resources, searchParams, setSearchParams]);
+
+    useEffect(() => {
+        if (!loading && folders.length > 0) {
+            const folderIdParam = searchParams.get('folderId');
+            if (folderIdParam) {
+                const folder = folders.find(f => f.id === folderIdParam);
+                if (folder) {
+                    setActiveFolderId(folder.id);
+                    // Clear param
+                    setSearchParams({}, { replace: true });
+                }
+            }
+        }
+    }, [loading, folders, searchParams, setSearchParams]);
+
+    useEffect(() => {
         if (activeCourseId) {
             loadCourseStats(activeCourseId);
         } else {
             setActiveCourseStats(null);
         }
     }, [activeCourseId, videos]);
-
-    const loadData = async () => {
-        try {
-            setLoading(true);
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) setUserEmail(user.email || '');
-
-            const [vData, fData, rData, hData, cData] = await Promise.all([
-                YouTubeService.getVideos(),
-                LearningService.getFolders(),
-                LearningService.getResources(),
-                HabitService.getHabits(),
-                CourseService.getCourses()
-            ]);
-            setVideos(vData);
-            setFolders(fData);
-            setResources(rData);
-            setHabits(hData);
-            setCourses(cData);
-        } catch (error: any) {
-            console.error(error);
-            showToast('Error', 'Failed to load library data.', { type: 'error' });
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const loadCourseStats = async (courseId: string) => {
         try {
@@ -145,48 +205,72 @@ export default function YouTubePage() {
         try {
             if (addType === 'video') {
                 if (!newVideoUrl) return;
-                const videoId = await YouTubeService.addVideo({
+                const v = await YouTubeService.addVideo({
                     url: newVideoUrl,
+                    folderId: targetFolderId || undefined,
                     habitId: targetHabitId || undefined,
-                    folderId: targetFolderId || undefined
+                    courseId: targetCourseId || undefined
                 });
-                if (targetCourseId) {
-                    await CourseService.addVideoToCourse(videoId.id, targetCourseId, videos.filter(v => v.courseId === targetCourseId).length);
+
+                // MULTIVERSE LINK: Video -> Habit
+                if (targetHabitId) {
+                    await MultiverseService.createLink({
+                        sourceType: 'video',
+                        sourceId: v.id,
+                        targetType: 'habit',
+                        targetId: targetHabitId,
+                        relationType: 'reference'
+                    });
                 }
-                showToast('Success', 'Video added to library', { type: 'success' });
+                setNewVideoUrl('');
             } else if (addType === 'folder') {
                 if (!newFolderName) return;
                 await LearningService.createFolder({ name: newFolderName });
-                showToast('Success', 'Folder created', { type: 'success' });
+                setNewFolderName('');
             } else if (addType === 'resource') {
                 if (!newResTitle) return;
-                await LearningService.createResource({
+                const r = await LearningService.createResource({
                     title: newResTitle,
                     url: newResUrl,
                     type: newResType,
                     folderId: targetFolderId || undefined,
                     habitId: targetHabitId || undefined
                 });
-                showToast('Success', 'Resource added', { type: 'success' });
+
+                // MULTIVERSE LINK: Resource -> Habit
+                if (targetHabitId) {
+                    await MultiverseService.createLink({
+                        sourceType: 'note', // Treat links as notes/references
+                        sourceId: r.id,
+                        targetType: 'habit',
+                        targetId: targetHabitId,
+                        relationType: 'reference'
+                    });
+                }
+
+                setNewResTitle('');
+                setNewResUrl('');
             } else if (addType === 'course') {
                 if (!newCourseTitle) return;
                 await CourseService.createCourse({
                     title: newCourseTitle,
                     folderId: targetFolderId || undefined
                 });
-                showToast('Success', 'Course created', { type: 'success' });
+                setNewCourseTitle('');
             }
 
             resetForm();
             setIsAddModalOpen(false);
             loadData();
+            showToast('Success', 'Matrix updated', { type: 'success' });
         } catch (error: any) {
-            showToast('Error', error.message || 'Operation failed', { type: 'error' });
+            console.error("Inject Node Failed:", error);
+            showToast('Error', 'Update failed: ' + (error.message || 'Unknown error'), { type: 'error' });
         }
     };
 
     const handleDelete = async (id: string, type: 'video' | 'resource' | 'folder' | 'course') => {
-        if (!confirm(`Are you sure you want to delete this ${type}?`)) return;
+        if (!confirm('Abort this module?')) return;
 
         try {
             if (type === 'video') await YouTubeService.deleteVideo(id);
@@ -198,27 +282,48 @@ export default function YouTubePage() {
                 await CourseService.deleteCourse(id);
                 if (activeCourseId === id) setActiveCourseId(null);
             }
-            showToast('Deleted', `${type} removed from library`, { type: 'success' });
             loadData();
+            showToast('Success', 'Module purged', { type: 'success' });
         } catch (error: any) {
-            showToast('Error', error.message || 'Delete failed', { type: 'error' });
+            showToast('Error', 'Purge failed', { type: 'error' });
         }
     };
 
-    const handleMove = async (folderId: string | null) => {
+    const handleMove = async (newFolderId: string | null) => {
         if (!movingItem) return;
         try {
             if (movingItem.type === 'video') {
-                await YouTubeService.moveVideoToFolder(movingItem.id, folderId);
+                await YouTubeService.moveVideoToFolder(movingItem.id, newFolderId);
             } else {
-                await LearningService.moveResourceToFolder(movingItem.id, folderId);
+                await LearningService.updateResource(movingItem.id, { folderId: newFolderId || undefined });
             }
-            showToast('Moved', 'Item moved successfully', { type: 'success' });
             setIsMoveModalOpen(false);
             setMovingItem(null);
             loadData();
+            showToast('Success', 'Spatial relocation complete', { type: 'success' });
         } catch (error: any) {
-            showToast('Error', error.message || 'Move failed', { type: 'error' });
+            showToast('Error', 'Relocation failed', { type: 'error' });
+        }
+    };
+
+    const handleOpenReminder = (item: any, type: 'video' | 'course' | 'resource' | 'folder') => {
+        setPrefilledReminder({
+            title: `Study: ${item.title || item.name || 'Untitled'}`,
+            videoId: type === 'video' ? item.id : undefined,
+            courseId: type === 'course' ? item.id : undefined,
+            resourceId: type === 'resource' ? item.id : undefined,
+            folderId: type === 'folder' ? item.id : undefined
+        });
+        setIsReminderModalOpen(true);
+    };
+
+    const handleSaveReminder = async (data: any) => {
+        try {
+            await ReminderService.createReminder({ ...data, isEnabled: true });
+            showToast('Success', 'Temporal trigger initialized', { type: 'success' });
+            setIsReminderModalOpen(false);
+        } catch (error: any) {
+            showToast('Error', 'Protocol failure: ' + error.message, { type: 'error' });
         }
     };
 
@@ -243,336 +348,346 @@ export default function YouTubePage() {
     const filteredResources = resources.filter(r => {
         const matchesSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesFolder = activeFolderId ? r.folderId === activeFolderId : true;
-        const matchesCourse = activeCourseId ? r.courseId === activeCourseId : true;
-        return matchesSearch && matchesFolder && matchesCourse;
+        return matchesSearch && matchesFolder;
     });
 
     const activeFolder = folders.find(f => f.id === activeFolderId);
     const activeCourse = courses.find(c => c.id === activeCourseId);
 
+    const displayedFolders = folders.filter(f =>
+        f.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const displayedCourses = courses.filter(c => {
+        const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesFolder = activeFolderId ? c.folderId === activeFolderId : true;
+        return matchesSearch && matchesFolder;
+    });
+
     return (
-        <div className={`min-h-screen bg-background relative selection:bg-primary selection:text-black flex flex-col md:flex-row ${isWild ? 'wild font-mono' : 'font-sans'}`}>
-            {isWild && <div className="vignette pointer-events-none" />}
-
-            {/* Sidebar */}
-            <div className={`w-full md:w-56 border-b md:border-b-0 md:border-r bg-card/30 flex flex-col shrink-0 relative z-10 ${isWild ? 'border-primary/20' : ''}`}>
-                <div className={`p-4 border-b flex items-center justify-between ${isWild ? 'border-primary/20' : ''}`}>
-                    <h2 className={`font-bold text-xs flex items-center gap-2 ${isWild ? 'text-primary animate-glitch' : ''}`}>
-                        <Folder className="w-3.5 h-3.5" />
-                        Intelligence Store
-                    </h2>
-                    <Button variant="ghost" size="sm" onClick={() => {
-                        setAddType('folder');
-                        setIsAddModalOpen(true);
-                    }} className={`h-7 w-7 p-0 ${isWild ? 'rounded-none hover:bg-primary/10' : ''}`}>
-                        <Plus className="w-3.5 h-3.5" />
+        <div className="p-4 md:p-8 space-y-12 max-w-7xl mx-auto">
+            {/* Header Area */}
+            <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-6 ${isWild ? 'animate-reveal' : ''}`}>
+                <div className="flex items-center gap-4">
+                    <Button variant="ghost" className={`rounded-full w-10 h-10 p-0 ${isWild ? 'rounded-none border-2 border-primary/20' : ''}`} onClick={() => navigate('/')}>
+                        <Home className="w-5 h-5" />
                     </Button>
+                    <div>
+                        <h1 className={`text-3xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>Archive Matrix</h1>
+                        <p className="text-muted-foreground text-[8px] uppercase font-bold tracking-[0.3em] opacity-60">Neural Storage & Analysis</p>
+                    </div>
                 </div>
-                <div className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-                    <button
-                        onClick={() => {
-                            setActiveFolderId(null);
-                            setActiveCourseId(null);
-                        }}
-                        className={cn(
-                            "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                            (!activeFolderId && !activeCourseId) ? "bg-primary/10 text-primary" : "hover:bg-muted"
-                        )}
+
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="relative flex-1 md:w-64">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Scan matrix..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className={`pl-11 h-11 bg-card border-2 ${isWild ? 'rounded-none border-primary/20' : 'rounded-xl border-transparent'}`}
+                        />
+                    </div>
+                    <Button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className={`h-11 px-8 text-[11px] font-black uppercase tracking-widest ${isWild ? 'rounded-none border-2 shadow-[0_0_15px_rgba(255,0,0,0.15)]' : 'rounded-xl'}`}
                     >
-                        <LayoutGrid className="w-3.5 h-3.5" />
-                        All Content
-                    </button>
-
-                    <div className="pt-3 pb-1.5 px-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 flex items-center justify-between">
-                        <span>Curriculum</span>
-                        <button onClick={() => { setAddType('course'); setIsAddModalOpen(true); }} className="hover:text-primary"><Plus className="w-3 h-3" /></button>
-                    </div>
-                    {courses.map(course => (
-                        <button
-                            key={course.id}
-                            onClick={() => {
-                                setActiveCourseId(course.id);
-                                setActiveFolderId(null);
-                            }}
-                            className={cn(
-                                "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors group",
-                                activeCourseId === course.id ? "bg-primary/10 text-primary" : "hover:bg-muted"
-                            )}
-                        >
-                            <div className="flex items-center gap-2.5 truncate">
-                                <GraduationCap className={cn("w-3.5 h-3.5", activeCourseId === course.id ? "text-primary" : "text-muted-foreground")} />
-                                <span className="truncate">{course.title}</span>
-                            </div>
-                        </button>
-                    ))}
-
-                    <div className="pt-3 pb-1.5 px-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">
-                        Collections
-                    </div>
-                    {folders.map(f => (
-                        <div key={f.id} className="group relative">
-                            <button
-                                onClick={() => {
-                                    setActiveFolderId(f.id);
-                                    setActiveCourseId(null);
-                                }}
-                                className={cn(
-                                    "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                                    activeFolderId === f.id ? "bg-primary/10 text-primary" : "hover:bg-muted"
-                                )}
-                            >
-                                <div className="flex items-center gap-2.5 truncate">
-                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: f.color }} />
-                                    <span className="truncate">{f.name}</span>
-                                </div>
-                                <span className="text-[9px] opacity-40 group-hover:hidden">
-                                    {videos.filter(v => v.folderId === f.id).length + resources.filter(r => r.folderId === f.id).length}
-                                </span>
-                            </button>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); handleDelete(f.id, 'folder'); }}
-                                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 hover:bg-red-500/10 hover:text-red-500 rounded hidden group-hover:block"
-                            >
-                                <Trash2 className="w-3 h-3" />
-                            </button>
-                        </div>
-                    ))}
-                </div>
-                <div className="p-3 border-t">
-                    <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-xs" onClick={() => navigate('/home')}>
-                        <Home className="w-3.5 h-3.5 mr-2" />
-                        Back to Home
+                        <Plus className="w-4 h-4 mr-2" />
+                        Inject Node
                     </Button>
                 </div>
             </div>
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col min-w-0 relative z-10">
-                {/* Header */}
-                <div className={`p-4 md:py-4 md:px-6 border-b bg-card/30 flex flex-col md:flex-row md:items-center justify-between gap-4 ${isWild ? 'border-primary/20 animate-reveal' : ''}`}>
-                    <div className="flex items-center gap-3">
-                        <Button variant="ghost" className={`rounded-full w-9 h-9 p-0 ${isWild ? 'rounded-none border-2' : ''}`} onClick={() => navigate('/')}>
-                            <Home className="w-4 h-4" />
+            {/* Breadcrumbs & Special Controls */}
+            {(activeFolderId || activeCourseId) && (
+                <div className="flex flex-wrap items-center gap-3 animate-in slide-in-from-left-4">
+                    <button
+                        onClick={() => { setActiveFolderId(null); setActiveCourseId(null); }}
+                        className="flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-muted transition-colors"
+                    >
+                        <LayoutGrid className="w-4 h-4" /> Root_Matrix
+                    </button>
+                    {activeFolderId && activeFolder && (
+                        <div className="flex items-center gap-3">
+                            <ChevronRight className="w-4 h-4 opacity-30" />
+                            <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                                <Folder className="w-4 h-4" /> {activeFolder.name}
+                            </div>
+                        </div>
+                    )}
+                    {activeCourseId && activeCourse && (
+                        <div className="flex items-center gap-3">
+                            <ChevronRight className="w-4 h-4 opacity-30" />
+                            <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                                <GraduationCap className="w-4 h-4" /> {activeCourse.title}
+                            </div>
+                        </div>
+                    )}
+                    {activeCourseStats?.completionPercentage === 100 && (
+                        <Button
+                            size="sm"
+                            className="ml-auto bg-green-500 text-black hover:bg-green-400 font-black h-8 px-4 rounded-lg uppercase text-[10px]"
+                            onClick={() => setShowCertificate(true)}
+                        >
+                            <Award className="w-4 h-4 mr-2" /> Verify Sequence
                         </Button>
-                        <div>
-                            <h1 className={`text-2xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>
-                                {activeCourse ? activeCourse.title : activeFolder ? activeFolder.name : "Ritual Intelligence"}
-                                {activeCourse && <GraduationCap className="inline-block ml-2 w-5 h-5 text-primary" />}
-                            </h1>
-                            <p className="text-[8px] text-muted-foreground uppercase font-bold tracking-widest opacity-60">
-                                {activeCourse ? "Neural Sequence Progression" : activeFolder ? "Segmented Tactical Knowledge" : "Universal Asset Repository"}
+                    )}
+                </div>
+            )}
+
+            {/* Matrix Content */}
+            <div className="min-h-[400px]">
+                {loading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {[1, 2, 3, 4, 5, 6].map(i => (
+                            <div key={i} className={`h-48 animate-pulse bg-muted/20 ${isWild ? 'rounded-none border-2 border-primary/10' : 'rounded-[2rem]'}`} />
+                        ))}
+                    </div>
+                ) : (filteredVideos.length === 0 && filteredResources.length === 0 && displayedFolders.length === 0 && displayedCourses.length === 0) ? (
+                    <div className="text-center py-20 bg-card rounded-3xl border border-dashed flex flex-col items-center justify-center space-y-6">
+                        <div className="p-5 bg-primary/10 rounded-3xl">
+                            <GraduationCap className="w-12 h-12 text-primary" />
+                        </div>
+                        <div className="space-y-2">
+                            <h2 className="text-xl font-bold">Your curriculum path is open</h2>
+                            <p className="text-muted-foreground max-w-xs mx-auto text-sm">
+                                Create a course or collection to start organizing your mastery journey.
                             </p>
                         </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row items-center gap-2">
-                        <div className="relative w-full sm:w-auto flex-1 md:flex-none">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                            <Input
-                                placeholder="Scan intelligence..."
-                                className={`pl-8 w-full md:w-56 h-9 text-xs bg-muted/30 ${isWild ? 'rounded-none border-primary/20' : 'border rounded-lg'}`}
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                        <Button size="sm" onClick={() => {
-                            setAddType('video');
-                            setIsAddModalOpen(true);
-                        }} className={`w-full sm:w-auto shadow-lg h-9 px-4 text-[10px] font-black uppercase tracking-widest shrink-0 ${isWild ? 'rounded-none shadow-primary/20' : 'shadow-primary/20 rounded-lg'}`}>
-                            <Plus className="w-3.5 h-3.5 mr-1.5" />
-                            <span>Add Asset</span>
+                        <Button onClick={() => setIsAddModalOpen(true)} className="rounded-xl">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add First Content
                         </Button>
                     </div>
-                </div>
-
-                {/* Course Progress Banner */}
-                {activeCourse && activeCourseStats && (
-                    <div className="px-6 py-4 bg-primary/5 border-b flex flex-wrap items-center gap-8">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-primary/10 rounded-2xl">
-                                <Award className="w-6 h-6 text-primary" />
-                            </div>
-                            <div>
-                                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Completion</div>
-                                <div className="text-lg font-bold">{activeCourseStats.completionPercentage}% Complete</div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-blue-500/10 rounded-2xl">
-                                <Clock className="w-6 h-6 text-blue-500" />
-                            </div>
-                            <div>
-                                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Time Remaining</div>
-                                <div className="text-lg font-bold">{formatWatchTime(activeCourseStats.remainingDurationSeconds)}</div>
-                            </div>
-                        </div>
-                        <div className="flex-1 min-w-[200px] max-w-xs space-y-2">
-                            <div className="flex justify-between text-[10px] font-bold text-muted-foreground">
-                                <span>{activeCourseStats.completedVideos} / {activeCourseStats.totalVideos} Lessons</span>
-                            </div>
-                            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                                <div className="h-full bg-primary transition-all duration-500" style={{ width: `${activeCourseStats.completionPercentage}%` }} />
-                            </div>
-                        </div>
-                        {activeCourseStats.completionPercentage === 100 && (
-                            <Button
-                                onClick={() => setShowCertificate(true)}
-                                className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/20 rounded-xl px-6 h-12"
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {/* Folders Display */}
+                        {!activeFolderId && !activeCourseId && displayedFolders.map(folder => (
+                            <ThemedCard
+                                key={folder.id}
+                                interactive
+                                onClick={() => setActiveFolderId(folder.id)}
+                                className="group h-full relative"
                             >
-                                <Award className="w-5 h-5 mr-2" />
-                                Claim Certificate
-                            </Button>
-                        )}
-                    </div>
-                )}
-
-                {/* Content Grid */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-muted/10">
-                    {loading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {[1, 2, 3].map(i => <div key={i} className="aspect-video bg-muted animate-pulse rounded-3xl" />)}
-                        </div>
-                    ) : (filteredVideos.length === 0 && filteredResources.length === 0) ? (
-                        <div className="text-center py-20 bg-card rounded-3xl border border-dashed flex flex-col items-center justify-center space-y-6">
-                            <div className="p-5 bg-primary/10 rounded-3xl">
-                                <GraduationCap className="w-12 h-12 text-primary" />
-                            </div>
-                            <div className="space-y-2">
-                                <h2 className="text-xl font-bold">Your curriculum path is open</h2>
-                                <p className="text-muted-foreground max-w-xs mx-auto text-sm">
-                                    Create a course or collection to start organizing your mastery journey.
-                                </p>
-                            </div>
-                            <Button onClick={() => setIsAddModalOpen(true)} className="rounded-xl">
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add First Content
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {/* Videos */}
-                            {filteredVideos.map((video, idx) => (
-                                <div key={video.id} className="group bg-card border rounded-3xl overflow-hidden hover:border-primary/50 transition-all hover:shadow-2xl shadow-sm relative">
-                                    <div className="aspect-video relative overflow-hidden bg-black/5">
-                                        <img src={video.thumbnailUrl} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                            <Button size="sm" className="rounded-xl px-4" onClick={() => setSelectedVideo(video)}>
-                                                <Play className="w-4 h-4 mr-2 fill-current" />
-                                                Study
-                                            </Button>
-                                            <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setPreviewVideo(video)}>
-                                                <Eye className="w-4 h-4" />
-                                            </Button>
+                                <div className="space-y-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className="p-3 bg-primary/10 rounded-xl">
+                                            <Folder className="w-6 h-6 text-primary" />
                                         </div>
-                                        <div className="absolute top-2 left-2">
-                                            <div className="px-3 py-1 bg-black/80 backdrop-blur-md rounded-lg text-white font-bold text-xs flex items-center gap-2">
-                                                <span className="opacity-60 text-[10px]">{idx + 1}</span>
-                                                {video.status === 'watched' ? <CheckCircle2 className="w-3 h-3 text-green-500" /> : <Play className="w-3 h-3 text-primary" />}
-                                            </div>
-                                        </div>
-                                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center gap-2">
                                             <button
-                                                onClick={() => { setMovingItem({ id: video.id, type: 'video' }); setIsMoveModalOpen(true); }}
-                                                className="p-1.5 bg-background/80 blur-none rounded-lg hover:text-primary transition-colors shadow-sm"
+                                                onClick={(e) => { e.stopPropagation(); handleOpenReminder(folder, 'folder'); }}
+                                                className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors group-hover:opacity-100 opacity-0"
                                             >
-                                                <Move className="w-3 h-3" />
+                                                <Bell className="w-4 h-4" />
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(video.id, 'video')}
-                                                className="p-1.5 bg-background/80 blur-none rounded-lg hover:text-red-500 transition-colors shadow-sm"
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(folder.id, 'folder'); }}
+                                                className="p-1.5 hover:bg-red-500/10 hover:text-red-500 rounded-lg transition-colors group-hover:opacity-100 opacity-0"
                                             >
-                                                <Trash2 className="w-3 h-3" />
+                                                <Trash2 className="w-4 h-4" />
                                             </button>
-                                        </div>
-                                        <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/80 rounded text-[10px] font-bold text-white flex items-center gap-1">
-                                            <Youtube className="w-3 h-3 text-red-500" />
-                                            {formatWatchTime(video.watchProgress)}
                                         </div>
                                     </div>
-                                    <div className="p-5 space-y-4">
-                                        <h3 className="font-bold line-clamp-1 leading-tight text-lg">{video.title}</h3>
-                                        <div className="flex items-center justify-between">
-                                            <div className="text-[10px] text-muted-foreground flex items-center gap-1 font-medium bg-muted px-2 py-1 rounded-md">
-                                                <History className="w-3 h-3" />
-                                                Lesson {idx + 1}
-                                            </div>
-                                            {video.habitId && (
-                                                <div className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded-full border border-primary/20">
-                                                    {habits.find(h => h.id === video.habitId)?.title}
-                                                </div>
-                                            )}
-                                        </div>
-                                        {/* Progress Bar */}
-                                        <div className="space-y-1">
-                                            <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase">
-                                                <span>Progress</span>
-                                                <span>{Math.round((video.watchProgress / (video.durationSeconds || 1)) * 100)}%</span>
-                                            </div>
-                                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-primary transition-all"
-                                                    style={{ width: `${Math.min(100, (video.watchProgress / (video.durationSeconds || 1)) * 100)}%` }}
-                                                />
-                                            </div>
-                                        </div>
+                                    <div className="space-y-1">
+                                        <h3 className="text-xl font-black uppercase tracking-tight truncate">{folder.name}</h3>
+                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                                            Cluster Segment
+                                        </p>
                                     </div>
                                 </div>
-                            ))}
+                            </ThemedCard>
+                        ))}
 
-                            {/* Resources */}
-                            {filteredResources.map(res => (
-                                <div key={res.id} className="group bg-card border rounded-3xl p-6 hover:border-blue-500/50 transition-all hover:shadow-2xl shadow-sm space-y-5 relative">
+                        {/* Courses Display */}
+                        {!activeFolderId && !activeCourseId && displayedCourses.map(course => (
+                            <ThemedCard
+                                key={course.id}
+                                interactive
+                                onClick={() => setActiveCourseId(course.id)}
+                                className="group h-full relative border-green-500/20"
+                            >
+                                <div className="space-y-4">
                                     <div className="flex items-start justify-between">
-                                        <div className="p-3 bg-blue-500/10 rounded-2xl">
-                                            {res.type === 'link' && <ExternalLink className="w-6 h-6 text-blue-500" />}
-                                            {res.type === 'article' && <FileText className="w-6 h-6 text-blue-500" />}
-                                            {(res.type === 'document' || res.type === 'other') && <BookOpen className="w-6 h-6 text-blue-500" />}
+                                        <div className="p-3 bg-green-500/10 rounded-xl">
+                                            <GraduationCap className="w-6 h-6 text-green-500" />
                                         </div>
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center gap-2">
                                             <button
-                                                onClick={() => { setMovingItem({ id: res.id, type: 'resource' }); setIsMoveModalOpen(true); }}
-                                                className="p-1.5 bg-muted rounded-lg hover:text-primary transition-colors"
+                                                onClick={(e) => { e.stopPropagation(); handleOpenReminder(course, 'course'); }}
+                                                className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors group-hover:opacity-100 opacity-0"
                                             >
-                                                <Move className="w-3 h-3" />
+                                                <Bell className="w-4 h-4" />
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(res.id, 'resource')}
-                                                className="p-1.5 bg-muted rounded-lg hover:text-red-500 transition-colors"
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(course.id, 'course'); }}
+                                                className="p-1.5 hover:bg-red-500/10 hover:text-red-500 rounded-lg transition-colors group-hover:opacity-100 opacity-0"
                                             >
-                                                <Trash2 className="w-3 h-3" />
+                                                <Trash2 className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <h3 className="font-bold text-lg leading-tight line-clamp-2 min-h-[3.5rem]">{res.title}</h3>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted px-2 py-0.5 rounded">{res.type}</span>
-                                            <span className={cn(
-                                                "text-[10px] font-bold rounded-full px-2 py-0.5",
-                                                res.status === 'read' ? "bg-green-500/10 text-green-500" : "bg-blue-500/10 text-blue-500"
-                                            )}>{res.status}</span>
+                                        <h3 className="text-xl font-black uppercase tracking-tight line-clamp-2 leading-tight">{course.title}</h3>
+                                        {course.isCompleted && (
+                                            <div className="inline-flex items-center gap-2 text-[10px] font-black text-green-500 uppercase">
+                                                <CheckCircle2 className="w-3 h-3" /> Sequence Complete
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </ThemedCard>
+                        ))}
+
+                        {/* Videos */}
+                        {filteredVideos.map(video => (
+                            <ThemedCard
+                                key={video.id}
+                                noPadding
+                                className="group h-full flex flex-col overflow-hidden"
+                            >
+                                <div
+                                    className="relative aspect-video bg-muted cursor-pointer group-hover:opacity-90 transition-opacity"
+                                    onClick={() => setSelectedVideo(video)}
+                                >
+                                    <img src={video.thumbnailUrl} className="w-full h-full object-cover" alt="" />
+                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                                        <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-black">
+                                            <Play className="w-6 h-6 fill-current" />
                                         </div>
                                     </div>
-                                    <Button
-                                        variant="outline"
-                                        className="w-full rounded-xl border-dashed"
-                                        onClick={() => res.url && window.open(res.url, '_blank')}
-                                    >
-                                        <ExternalLink className="w-4 h-4 mr-2" />
-                                        Open Link
-                                    </Button>
-                                    {res.habitId && (
-                                        <div className="absolute bottom-6 right-6">
-                                            <div className="px-2 py-0.5 bg-muted text-muted-foreground text-[8px] font-bold rounded-full">
-                                                {habits.find(h => h.id === res.habitId)?.title}
+                                    <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/80 text-[10px] font-mono font-bold rounded">
+                                        {Math.floor(video.durationSeconds / 60)}:{(video.durationSeconds % 60).toString().padStart(2, '0')}
+                                    </div>
+                                </div>
+
+                                <div className="p-6 space-y-4 flex-1 flex flex-col">
+                                    <div className="flex-1 space-y-2">
+                                        <h3 className="text-lg font-black uppercase tracking-tight line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                                            {video.title}
+                                        </h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase">
+                                                <Eye className="w-3.5 h-3.5" /> {formatWatchTime(video.watchProgress)}
+                                            </div>
+                                            {video.habitId && (
+                                                <div className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-black uppercase rounded-full border border-primary/20">
+                                                    {habits.find(h => h.id === video.habitId)?.title}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Progress */}
+                                    <div className="space-y-1.5">
+                                        <div className="flex justify-between text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">
+                                            <span>Progress</span>
+                                            <span>{Math.round((video.watchProgress / (video.durationSeconds || 1)) * 100)}%</span>
+                                        </div>
+                                        <div className="h-1 bg-muted overflow-hidden">
+                                            <div
+                                                className="h-full bg-primary transition-all"
+                                                style={{ width: `${Math.min(100, (video.watchProgress / (video.durationSeconds || 1)) * 100)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full">
+                                                <Youtube className="w-3 h-3 text-red-500" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-red-500">Neural Stream</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleOpenReminder(video, 'video'); }}
+                                                    className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
+                                                >
+                                                    <Bell className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setMovingItem({ id: video.id, type: 'video' });
+                                                        setIsMoveModalOpen(true);
+                                                    }}
+                                                    className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
+                                                >
+                                                    <Move className="w-4 h-4 text-muted-foreground" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(video.id, 'video'); }}
+                                                    className="p-1.5 hover:bg-red-500/10 hover:text-red-500 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4 text-muted-foreground" />
+                                                </button>
                                             </div>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                            </ThemedCard>
+                        ))}
+
+                        {/* Resources/Links */}
+                        {filteredResources.map(res => (
+                            <ThemedCard
+                                key={res.id}
+                                interactive
+                                onClick={() => res.url && window.open(res.url, '_blank')}
+                                className="group h-full flex flex-col relative"
+                            >
+                                <div className="space-y-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className={`flex items-center gap-2 px-3 py-1 border rounded-full ${res.type === 'link' ? 'bg-blue-500/10 border-blue-500/20 text-blue-500' : 'bg-green-500/10 border-green-500/20 text-green-500'}`}>
+                                            {res.type === 'link' ? <ExternalLink className="w-3 h-3" /> : <GraduationCap className="w-3 h-3" />}
+                                            <span className="text-[9px] font-black uppercase tracking-widest">{res.type}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleOpenReminder(res, 'resource'); }}
+                                                className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
+                                            >
+                                                <Bell className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setMovingItem({ id: res.id, type: 'resource' });
+                                                    setIsMoveModalOpen(true);
+                                                }}
+                                                className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
+                                            >
+                                                <Move className="w-4 h-4 text-muted-foreground" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(res.id, 'resource'); }}
+                                                className="p-1.5 hover:bg-red-500/10 hover:text-red-500 rounded-lg transition-colors"
+                                            >
+                                                <Trash2 className="w-4 h-4 text-muted-foreground" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <h3 className="text-lg font-black uppercase tracking-tight line-clamp-2 leading-tight group-hover:text-blue-500 transition-colors">{res.title}</h3>
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{res.type}</div>
+                                            <div className={cn(
+                                                "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full",
+                                                res.status === 'read' ? "bg-green-500/10 text-green-500" : "bg-blue-500/10 text-blue-500"
+                                            )}>{res.status}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 pt-4 border-t border-primary/5">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                        <ExternalLink className="w-3.5 h-3.5" /> Handshake Protocol
+                                    </div>
+                                </div>
+                            </ThemedCard>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Combined Add Modal */}
@@ -766,6 +881,17 @@ export default function YouTubePage() {
                     onClose={() => setShowCertificate(false)}
                 />
             )}
+
+            <ReminderModal
+                isOpen={isReminderModalOpen}
+                onClose={() => setIsReminderModalOpen(false)}
+                onSave={handleSaveReminder}
+                initialData={prefilledReminder as any}
+                habits={habits}
+                videos={videos}
+                courses={courses}
+                resources={resources}
+            />
         </div>
     );
 }

@@ -34,6 +34,14 @@ export const ReminderService = {
         if (reminder.habitId && uuidRegex.test(reminder.habitId)) {
             payload.habit_id = reminder.habitId;
         }
+        if (reminder.videoId && uuidRegex.test(reminder.videoId)) {
+            payload.video_id = reminder.videoId;
+        }
+        if (reminder.courseId && uuidRegex.test(reminder.courseId)) payload.course_id = reminder.courseId;
+        if (reminder.resourceId && uuidRegex.test(reminder.resourceId)) {
+            payload.resource_id = reminder.resourceId;
+        }
+        if (reminder.folderId && uuidRegex.test(reminder.folderId)) payload.folder_id = reminder.folderId;
 
         if (reminder.notificationType) {
             payload.notification_type = reminder.notificationType;
@@ -76,6 +84,10 @@ export const ReminderService = {
             days: r.days || [],
             date: r.date,
             habitId: r.habit_id,
+            videoId: r.video_id,
+            courseId: r.course_id,
+            resourceId: r.resource_id,
+            folderId: r.folder_id,
             notificationType: r.notification_type || 'in-app',
             isEnabled: r.is_enabled,
             lastTriggered: r.last_triggered
@@ -100,6 +112,12 @@ export const ReminderService = {
                 payload.habit_id = null;
             }
         }
+        if (updates.videoId !== undefined) {
+            payload.video_id = (updates.videoId && uuidRegex.test(updates.videoId)) ? updates.videoId : null;
+        }
+        if (updates.courseId !== undefined) payload.course_id = (updates.courseId && uuidRegex.test(updates.courseId)) ? updates.courseId : null;
+        if (updates.resourceId !== undefined) payload.resource_id = (updates.resourceId && uuidRegex.test(updates.resourceId)) ? updates.resourceId : null;
+        if (updates.folderId !== undefined) payload.folder_id = (updates.folderId && uuidRegex.test(updates.folderId)) ? updates.folderId : null;
 
         try {
             const { error } = await supabase

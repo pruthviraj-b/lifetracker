@@ -3,9 +3,12 @@ import { YouTubeVideo, VideoNote, AddVideoInput } from '../types/youtube';
 
 export const YouTubeService = {
     parseVideoId(url: string): string | null {
-        const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[7].length === 11) ? match[7] : null;
+        if (!url) return null;
+        const cleanUrl = url.trim();
+        // Supports: regular watch URLs, shorts, embeds, live streams, youtu.be shortlinks, and mobile URLs
+        const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/|live\/)|youtu\.be\/)([^"&?\/\s]{11})/;
+        const match = cleanUrl.match(regExp);
+        return match ? match[1] : null;
     },
 
     async fetchMetadata(videoId: string) {
@@ -37,25 +40,33 @@ export const YouTubeService = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        const { data, error } = await supabase
-            .from('youtube_videos')
-            .insert({
-                user_id: user.id,
-                url: input.url,
-                video_id: videoId,
-                title: metadata.title,
-                thumbnail_url: metadata.thumbnailUrl,
-                habit_id: input.habitId,
-                folder_id: input.folderId,
-                course_id: input.courseId,
-                difficulty: input.difficulty || 'beginner',
-                status: 'unwatched'
-            })
-            .select()
-            .single();
+        try {
+            const { data, error } = await supabase
+                .from('youtube_videos')
+                .insert({
+                    user_id: user.id,
+                    url: input.url,
+                    video_id: videoId,
+                    title: metadata.title,
+                    thumbnail_url: metadata.thumbnailUrl,
+                    habit_id: input.habitId,
+                    folder_id: input.folderId,
+                    course_id: input.courseId,
+                    difficulty: input.difficulty || 'beginner',
+                    status: 'unwatched'
+                })
+                .select()
+                .single();
 
-        if (error) throw error;
-        return this.mapVideo(data);
+            if (error) {
+                console.error("YouTubeService.addVideo DB Error:", error);
+                throw error;
+            }
+            return this.mapVideo(data);
+        } catch (err: any) {
+            console.error("YouTubeService.addVideo Exception:", err);
+            throw err;
+        }
     },
 
     async getFolders(): Promise<any[]> {
@@ -102,6 +113,20 @@ export const YouTubeService = {
         return (data || []).map(v => this.mapVideo(v));
     },
 
+    async getVideoDetails(id: string): Promise<YouTubeVideo | null> {
+        const { data, error } = await supabase
+            .from('youtube_videos')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) {
+            console.error("YouTubeService.getVideoDetails Error:", error);
+            return null;
+        }
+        return this.mapVideo(data);
+    },
+
     async updateProgress(id: string, progress: number, status: string, duration?: number): Promise<void> {
         const updateData: any = {
             watch_progress: progress,
@@ -114,7 +139,11 @@ export const YouTubeService = {
             .from('youtube_videos')
             .update(updateData)
             .eq('id', id);
-        if (error) throw error;
+
+        if (error) {
+            console.error("YouTubeService.updateProgress Error:", error);
+            throw error;
+        }
     },
 
     async addNote(videoId: string, timestamp: number, content: string): Promise<VideoNote> {
@@ -132,7 +161,10 @@ export const YouTubeService = {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error("YouTubeService.addNote Error:", error);
+            throw error;
+        }
         return this.mapNote(data);
     },
 

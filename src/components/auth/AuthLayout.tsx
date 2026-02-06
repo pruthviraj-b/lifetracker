@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { ThemedCard } from '../ui/ThemedCard';
 
 interface AuthLayoutProps {
     children: ReactNode;
@@ -8,26 +9,26 @@ interface AuthLayoutProps {
 }
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
-    const { preferences } = useTheme();
-    const isWild = preferences.wild_mode;
-
     return (
-        <div className={`flex min-h-screen flex-col items-center justify-center p-4 relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : 'font-sans'}`}>
-            {isWild && <div className="vignette pointer-events-none" />}
-
-            <div className="w-full max-w-[400px] space-y-6 relative z-10">
-                <div className="flex flex-col space-y-2 text-center">
-                    <h1 className={`text-2xl font-semibold tracking-tight text-white ${isWild ? 'animate-glitch uppercase tracking-tighter font-black' : ''}`}>
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-background overflow-hidden">
+            <div className="w-full max-w-[440px] space-y-12 relative z-10 transition-all duration-500 animate-claude-in">
+                <div className="flex flex-col space-y-4 text-center">
+                    <h1 className="text-5xl font-bold tracking-tight text-foreground">
                         {title}
                     </h1>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-base text-muted-foreground max-w-xs mx-auto">
                         {subtitle}
                     </p>
                 </div>
 
-                {/* Card-like container */}
-                <div className={`border p-6 shadow-sm text-card-foreground ${isWild ? 'bg-black border-primary rounded-none shadow-primary/20' : 'bg-card border-border rounded-xl'}`}>
+                <div className="bg-card border border-border p-10 space-y-8 rounded-[2rem] shadow-sm">
                     {children}
+                </div>
+
+                <div className="text-center opacity-30 italic">
+                    <p className="text-xs font-medium text-muted-foreground">
+                        Simple. Intuitive. Human.
+                    </p>
                 </div>
             </div>
         </div>

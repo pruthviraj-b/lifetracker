@@ -30,7 +30,6 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const HomePage = lazy(() => import('./pages/HomePage'));
 const NotesPage = lazy(() => import('./pages/NotesPage'));
 const RemindersPage = lazy(() => import('./pages/RemindersPage'));
-const StillNotDonePage = lazy(() => import('./pages/StillNotDonePage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const YouTubePage = lazy(() => import('./pages/YouTubePage'));
@@ -43,9 +42,9 @@ const LessonPlayerPage = lazy(() => import('./pages/courses/LessonPlayerPage').t
 
 // Loading fallback component
 const PageLoader = () => (
-    <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-8">
-        <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-red-500 font-mono text-sm tracking-widest animate-pulse">SYSTEM LOADING...</p>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 animate-pulse">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-6" />
+        <p className="text-foreground/60 font-medium text-sm tracking-wide">Preparing your workspace...</p>
     </div>
 );
 
@@ -154,7 +153,6 @@ function App() {
                                         <Route path="/courses/:id" element={<CourseDetailsPage />} />
                                         <Route path="/youtube" element={<YouTubePage />} />
                                         <Route path="/reminders" element={<RemindersPage />} />
-                                        <Route path="/still-not-done" element={<StillNotDonePage />} />
                                     </Route>
 
                                     {/* Immersive Protected Routes (No Sidebar) */}

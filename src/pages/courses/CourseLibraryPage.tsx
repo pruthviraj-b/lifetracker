@@ -209,6 +209,8 @@ const NeuralInstaller = ({ onInstallComplete }: { onInstallComplete: () => void 
     );
 };
 
+import { ThemedCard } from '../../components/ui/ThemedCard';
+
 export const CourseLibraryPage: React.FC = () => {
     const navigate = useNavigate();
     const { preferences } = useTheme();
@@ -241,15 +243,13 @@ export const CourseLibraryPage: React.FC = () => {
     );
 
     return (
-        <div className={`min-h-screen bg-background text-foreground p-6 md:p-12 space-y-12 relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : ''}`}>
-            {isWild && <div className="vignette pointer-events-none" />}
-
+        <div className="p-6 md:p-12 space-y-12">
             {/* Hero Header */}
             <div className="space-y-2 max-w-4xl pt-4">
                 <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase relative inline-block">
                     Academy
                     <span className="absolute -top-2 -right-6 opacity-20 rotate-12">
-                        <Zap className="w-8 h-8 fill-yellow-400 text-yellow-500" />
+                        <Zap className="w-8 h-8 fill-primary/40 text-primary" />
                     </span>
                 </h1>
                 <p className="text-base text-muted-foreground font-light tracking-wide max-w-2xl">
@@ -275,65 +275,67 @@ export const CourseLibraryPage: React.FC = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.1 }}
-                        whileHover={{ y: -10, scale: 1.02 }}
-                        onClick={() => navigate(`/courses/${course.id}`)}
-                        className="group relative bg-[#0A0A0A] border border-white/10 rounded-3xl overflow-hidden cursor-pointer hover:shadow-[0_0_40px_rgba(139,92,246,0.3)] transition-all duration-500"
+                        className="h-full"
                     >
-                        {/* Dynamic Gradient Border on Hover */}
-                        <div className="absolute inset-0 border-2 border-transparent group-hover:border-purple-500/50 rounded-3xl transition-colors duration-500 pointer-events-none" />
+                        <ThemedCard
+                            noPadding
+                            interactive
+                            onClick={() => navigate(`/courses/${course.id}`)}
+                            className="h-full group flex flex-col"
+                        >
+                            {/* Thumbnail / Header */}
+                            <div className="h-48 bg-gradient-to-br from-gray-900 to-black relative overflow-hidden">
+                                {/* Abstract Cyber Grid Background */}
+                                <div className="absolute inset-0 opacity-20"
+                                    style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}
+                                />
 
-                        {/* Thumbnail / Header */}
-                        <div className="h-48 bg-gradient-to-br from-gray-900 to-black relative overflow-hidden">
-                            {/* Abstract Cyber Grid Background */}
-                            <div className="absolute inset-0 opacity-20"
-                                style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-                            />
+                                {course.thumbnail_url ? (
+                                    <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                ) : (
+                                    <div className="flex items-center justify-center h-full">
+                                        <BookOpen className="w-16 h-16 text-white/10" />
+                                    </div>
+                                )}
 
-                            {course.thumbnail_url ? (
-                                <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                            ) : (
-                                <div className="flex items-center justify-center h-full">
-                                    <BookOpen className="w-16 h-16 text-white/10" />
+                                {/* Level Badge */}
+                                <div className="absolute top-4 right-4 bg-black/80 backdrop-blur border border-white/10 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-white shadow-xl">
+                                    {course.difficulty_level}
                                 </div>
-                            )}
-
-                            {/* Level Badge */}
-                            <div className="absolute top-4 right-4 bg-black/80 backdrop-blur border border-white/10 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-white shadow-xl">
-                                {course.difficulty_level}
                             </div>
-                        </div>
 
-                        {/* Content */}
-                        <div className="p-6 space-y-4 relative z-10">
-                            <h3 className="text-2xl font-black uppercase leading-tight group-hover:text-purple-400 transition-colors">
-                                {course.title}
-                            </h3>
+                            {/* Content */}
+                            <div className="p-6 flex-1 flex flex-col space-y-4">
+                                <h3 className="text-2xl font-black uppercase leading-tight group-hover:text-primary transition-colors">
+                                    {course.title}
+                                </h3>
 
-                            <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
-                                {course.description}
-                            </p>
+                                <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+                                    {course.description}
+                                </p>
 
-                            {/* Tags */}
-                            <div className="flex flex-wrap gap-2 pt-2">
-                                {course.tags?.map(t => (
-                                    <span key={t} className="text-[10px] uppercase font-bold text-muted-foreground bg-secondary/50 px-2 py-1 rounded border border-white/5">
-                                        #{t}
+                                {/* Tags */}
+                                <div className="flex flex-wrap gap-2 pt-2">
+                                    {course.tags?.map(t => (
+                                        <span key={t} className="text-[10px] uppercase font-bold text-muted-foreground bg-secondary/50 px-2 py-1 rounded border border-white/5">
+                                            #{t}
+                                        </span>
+                                    ))}
+                                </div>
+
+                                {/* Footer Stats */}
+                                <div className="pt-4 mt-auto border-t border-white/5 flex items-center justify-between text-xs font-mono text-muted-foreground">
+                                    <span className="flex items-center gap-1.5">
+                                        <Clock className="w-3.5 h-3.5" />
+                                        {course.duration_weeks} WEEKS
                                     </span>
-                                ))}
+                                    <span className="flex items-center gap-1.5 text-primary group-hover:animate-pulse">
+                                        <Trophy className="w-3.5 h-3.5" />
+                                        OPEN ACCESS
+                                    </span>
+                                </div>
                             </div>
-
-                            {/* Footer Stats */}
-                            <div className="pt-4 mt-2 border-t border-white/5 flex items-center justify-between text-xs font-mono text-muted-foreground">
-                                <span className="flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5" />
-                                    {course.duration_weeks} WEEKS
-                                </span>
-                                <span className="flex items-center gap-1.5 text-green-500 group-hover:animate-pulse">
-                                    <Trophy className="w-3.5 h-3.5" />
-                                    OPEN ACCESS
-                                </span>
-                            </div>
-                        </div>
+                        </ThemedCard>
                     </motion.div>
                 ))}
 

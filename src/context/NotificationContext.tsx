@@ -79,6 +79,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 // Clear existing sync for this ID first to avoid duplicates
                 NotificationManagerInstance.cancelNotification(reminder.id);
 
+                let notificationUrl = '/reminders';
+                if (reminder.habitId) notificationUrl = '/protocols';
+                else if (reminder.videoId) notificationUrl = `/youtube?videoId=${reminder.videoId}`;
+                else if (reminder.courseId) notificationUrl = reminder.courseId ? `/courses/${reminder.courseId}` : '/courses';
+                else if (reminder.resourceId) notificationUrl = `/youtube?resourceId=${reminder.resourceId}`;
+
                 NotificationManagerInstance.scheduleNotification(
                     reminder.title,
                     targetDate,
@@ -88,7 +94,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                         data: {
                             reminderId: reminder.id,
                             habitId: reminder.habitId,
-                            url: reminder.habitId ? '/protocols' : '/reminders'
+                            videoId: reminder.videoId,
+                            courseId: reminder.courseId,
+                            resourceId: reminder.resourceId,
+                            url: notificationUrl
                         }
                     } as any
                 );
@@ -177,6 +186,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     setLocalTriggerHistory(prev => ({ ...prev, [reminder.id]: nowIsoMin }));
 
                     // 1. Browser Notification (Native Push)
+                    let notificationUrl = '/reminders';
+                    if (reminder.habitId) notificationUrl = '/protocols';
+                    else if (reminder.videoId) notificationUrl = `/youtube?videoId=${reminder.videoId}`;
+                    else if (reminder.courseId) notificationUrl = reminder.courseId ? `/courses/${reminder.courseId}` : '/courses';
+                    else if (reminder.resourceId) notificationUrl = `/youtube?resourceId=${reminder.resourceId}`;
+                    else if (reminder.folderId) notificationUrl = `/youtube?folderId=${reminder.folderId}`;
+
                     NotificationManagerInstance.showNotification(
                         reminder.title,
                         {
@@ -184,9 +200,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                             tag: reminder.id, // Tag by reminder ID to avoid duplicates
                             renotify: true,  // Overwrite existing notification with new alert
                             data: {
-                                url: reminder.habitId ? `/protocols` : '/reminders',
+                                url: notificationUrl,
                                 reminderId: reminder.id,
-                                habitId: reminder.habitId // Critical for SW completion action
+                                habitId: reminder.habitId,
+                                videoId: reminder.videoId,
+                                courseId: reminder.courseId,
+                                resourceId: reminder.resourceId,
+                                folderId: reminder.folderId
                             },
                         } as any
                     );

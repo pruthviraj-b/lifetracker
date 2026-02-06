@@ -29,6 +29,8 @@ type SettingsTab =
     | 'privacy' | 'billing' | 'connections' | 'stats'
     | 'help' | 'data' | 'habits' | 'goals';
 
+import { ThemedCard } from '../components/ui/ThemedCard';
+
 export default function SettingsPage() {
     const navigate = useNavigate();
     const { logout } = useAuth();
@@ -37,18 +39,17 @@ export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState<SettingsTab | null>(null);
 
     const menuItems: { id: SettingsTab; label: string; icon: React.ReactNode; group: string; description: string }[] = [
-        { id: 'profile', label: 'My Profile', icon: <User className="w-6 h-6" />, group: 'Account', description: 'Manage your biological identity and public presence.' },
-        { id: 'account', label: 'Security & Login', icon: <Shield className="w-6 h-6" />, group: 'Account', description: 'Update encryption keys and access protocols.' },
-        { id: 'billing', label: 'Billing & Plan', icon: <CreditCard className="w-6 h-6" />, group: 'Account', description: 'Manage credit allocation and subscription status.' },
-        { id: 'preferences', label: 'Appearance', icon: <Layout className="w-6 h-6" />, group: 'App Settings', description: 'Adjust visual interfaces and neuro-theming.' },
-        { id: 'habits', label: 'Habit Config', icon: <Settings className="w-6 h-6" />, group: 'App Settings', description: 'Configure behavioral tracking parameters.' },
-        { id: 'notifications', label: 'Notifications', icon: <Bell className="w-6 h-6" />, group: 'App Settings', description: 'Manage neural alerts and timing.' },
-        { id: 'stats', label: 'Statistics', icon: <PieChart className="w-6 h-6" />, group: 'Data', description: 'Review system performance and biometric data.' },
-        { id: 'goals', label: 'Goals', icon: <Target className="w-6 h-6" />, group: 'Data', description: 'Set long-term objective directives.' },
-        { id: 'connections', label: 'Integrations', icon: <LinkIcon className="w-6 h-6" />, group: 'Data', description: 'Sync with external data banks and tools.' },
-        { id: 'data', label: 'Data & Export', icon: <Database className="w-6 h-6" />, group: 'Data', description: 'Manage local data and cloud redundancy.' },
-        { id: 'privacy', label: 'Privacy', icon: <Shield className="w-6 h-6" />, group: 'Legal', description: 'View data protection protocols.' },
-        { id: 'help', label: 'Help & Support', icon: <HelpCircle className="w-6 h-6" />, group: 'Support', description: 'Access documentation and tech support.' },
+        { id: 'profile', label: 'My Profile', icon: <User className="w-5 h-5" />, group: 'Account', description: 'Manage your biological identity.' },
+        { id: 'account', label: 'Security & Login', icon: <Shield className="w-5 h-5" />, group: 'Account', description: 'Update encryption keys.' },
+        { id: 'preferences', label: 'Appearance', icon: <Layout className="w-5 h-5" />, group: 'App Settings', description: 'Adjust neuro-theming.' },
+        { id: 'habits', label: 'Habit Config', icon: <Settings className="w-5 h-5" />, group: 'App Settings', description: 'Configure behavioral tracking.' },
+        { id: 'notifications', label: 'Notifications', icon: <Bell className="w-5 h-5" />, group: 'App Settings', description: 'Manage neural alerts.' },
+        { id: 'stats', label: 'Statistics', icon: <PieChart className="w-5 h-5" />, group: 'Data', description: 'Review system performance.' },
+        { id: 'goals', label: 'Goals', icon: <Target className="w-5 h-5" />, group: 'Data', description: 'Set long-term directives.' },
+        { id: 'connections', label: 'Integrations', icon: <LinkIcon className="w-5 h-5" />, group: 'Data', description: 'Sync with external banks.' },
+        { id: 'data', label: 'Data & Export', icon: <Database className="w-5 h-5" />, group: 'Data', description: 'Manage local data.' },
+        { id: 'privacy', label: 'Privacy', icon: <Shield className="w-5 h-5" />, group: 'Legal', description: 'View protection protocols.' },
+        { id: 'help', label: 'Help & Support', icon: <HelpCircle className="w-5 h-5" />, group: 'Support', description: 'Access tech support.' },
     ];
 
     useEffect(() => {
@@ -79,111 +80,101 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className={`min-h-screen bg-background text-foreground p-4 md:p-6 space-y-6 relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : ''}`}>
-            {isWild && <div className="vignette pointer-events-none" />}
-
-            {/* Back Button & Header */}
-            <div className="flex flex-col items-center justify-center text-center space-y-4 max-w-4xl mx-auto">
-                <Button
-                    variant="ghost"
-                    className={`rounded-full w-10 h-10 p-0 bg-white/5 border border-white/10 ${isWild ? 'rounded-none border-2 border-primary' : ''}`}
-                    onClick={() => activeTab ? setActiveTab(null) : navigate('/home')}
-                >
-                    {activeTab ? <X className="w-5 h-5" /> : <Home className="w-5 h-5" />}
-                </Button>
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-black tracking-tighter uppercase relative inline-block">
-                        System Configuration
-                        <span className="absolute -top-3 -right-8 opacity-10 rotate-12">
-                            <Settings className="w-8 h-8" />
-                        </span>
-                    </h1>
-                    <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-60 mt-2">
-                        {activeTab
-                            ? `Modifying Protocol: ${menuItems.find(i => i.id === activeTab)?.label}`
-                            : 'Select a system module to reconfigure core protocols'
-                        }
-                    </p>
+        <div className="p-4 md:p-8 space-y-12 max-w-7xl mx-auto">
+            {/* Header Area */}
+            <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-6 ${isWild ? 'animate-reveal' : ''}`}>
+                <div className="flex items-center gap-4">
+                    <Button
+                        variant="ghost"
+                        className={`rounded-full w-10 h-10 p-0 ${isWild ? 'rounded-none border-2 border-primary/20' : ''}`}
+                        onClick={() => activeTab ? setActiveTab(null) : navigate('/')}
+                    >
+                        {activeTab ? <X className="w-5 h-5" /> : <Home className="w-5 h-5" />}
+                    </Button>
+                    <div>
+                        <h1 className={`text-3xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>System_Config</h1>
+                        <p className="text-muted-foreground text-[8px] uppercase font-bold tracking-[0.3em] opacity-60">Neural Protocol Configuration</p>
+                    </div>
                 </div>
+
+                {activeTab && (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-[10px] font-black uppercase tracking-widest animate-in slide-in-from-right-4">
+                        Modifying Node: {activeTab.toUpperCase()}
+                    </div>
+                )}
             </div>
 
             <AnimatePresence mode="wait">
                 {!activeTab ? (
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto pb-24"
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                     >
                         {menuItems.map((item, idx) => (
-                            <motion.div
+                            <ThemedCard
                                 key={item.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.05 }}
-                                whileHover={{ y: -5, scale: 1.02 }}
+                                interactive
                                 onClick={() => setActiveTab(item.id)}
-                                className="group relative bg-[#0A0A0A] border border-white/10 rounded-3xl p-6 cursor-pointer hover:shadow-[0_0_40px_rgba(139,92,246,0.2)] transition-all duration-500 overflow-hidden"
+                                className="group h-full flex flex-col p-6 space-y-4"
                             >
-                                {/* Abstract Cyber Background */}
-                                <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity"
-                                    style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '15px 15px' }}
-                                />
-
-                                <div className="relative z-10 space-y-4">
-                                    <div className={`
-                                        w-12 h-12 rounded-2xl flex items-center justify-center transition-all
-                                        ${isWild ? 'bg-primary/20 text-primary border border-primary/50' : 'bg-white/5 border border-white/10 text-white group-hover:bg-primary group-hover:text-white'}
-                                    `}>
-                                        {item.icon}
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-black uppercase tracking-tight group-hover:text-primary transition-colors">
-                                            {item.label}
-                                        </h3>
-                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest leading-relaxed mt-1">
-                                            {item.description}
-                                        </p>
-                                    </div>
-                                    <div className="pt-4 flex items-center justify-between text-[10px] font-mono opacity-50">
-                                        <span>PROTOCOL.{item.id.toUpperCase()}</span>
-                                        <span className="group-hover:translate-x-1 transition-transform">→</span>
-                                    </div>
+                                <div className={`
+                                    w-12 h-12 flex items-center justify-center transition-all
+                                    ${isWild ? 'rounded-none border-2 border-primary/20 text-primary' : 'rounded-2xl bg-primary/10 border border-primary/20 text-primary'}
+                                `}>
+                                    {item.icon}
                                 </div>
-                            </motion.div>
+
+                                <div className="space-y-1">
+                                    <h3 className="text-lg font-black uppercase tracking-tight group-hover:text-primary transition-colors">
+                                        {item.label}
+                                    </h3>
+                                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest leading-relaxed opacity-60">
+                                        {item.description}
+                                    </p>
+                                </div>
+
+                                <div className="pt-4 flex items-center justify-between text-[8px] font-black uppercase tracking-[0.2em] opacity-40 border-t border-primary/5">
+                                    <span>PROTOCOL.{item.id.toUpperCase()}</span>
+                                    <span className="group-hover:translate-x-1 transition-transform">→</span>
+                                </div>
+                            </ThemedCard>
                         ))}
 
-                        {/* Logout Card */}
-                        <motion.div
-                            whileHover={{ scale: 1.02 }}
+                        {/* Terminate Session Node */}
+                        <ThemedCard
                             onClick={() => logout()}
-                            className="col-span-1 md:col-span-2 lg:col-span-3 mt-8 border-2 border-dashed border-red-500/20 rounded-3xl p-12 text-center group cursor-pointer hover:border-red-500/50 hover:bg-red-500/5 transition-all"
+                            className="col-span-full md:col-span-2 lg:col-span-3 xl:col-span-4 mt-8 flex flex-col items-center justify-center p-12 text-center group border-red-500/20 hover:border-red-500/50 hover:bg-red-500/5"
                         >
-                            <LogOut className="w-12 h-12 mx-auto mb-4 text-red-500 group-hover:scale-125 transition-transform" />
-                            <h3 className="text-2xl font-black uppercase text-red-500">Terminate Session</h3>
-                            <p className="text-xs font-bold text-red-500/60 uppercase tracking-widest mt-2">Disconnect from neural network and clear cache</p>
-                        </motion.div>
+                            <LogOut className="w-10 h-10 mb-4 text-red-500 group-hover:scale-125 transition-transform" />
+                            <h3 className="text-2xl font-black uppercase tracking-tighter text-red-500">Terminate_Session</h3>
+                            <p className="text-[10px] font-black text-red-500/60 uppercase tracking-widest mt-2 max-w-sm">
+                                Disconnect from neural network and purge local encryption keys.
+                            </p>
+                        </ThemedCard>
                     </motion.div>
                 ) : (
                     <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="max-w-4xl mx-auto pb-24"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="max-w-4xl mx-auto"
                     >
-                        <div className="bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden min-h-[60vh]">
-                            {/* Content Header (Mobile) */}
-                            <div className="flex md:hidden items-center gap-4 mb-8 pb-8 border-b border-white/5">
-                                <div className="p-4 bg-primary/10 rounded-2xl text-primary">
+                        <ThemedCard className="p-8 md:p-12 min-h-[60vh] relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+
+                            <div className="md:hidden flex items-center gap-4 mb-8 pb-8 border-b border-white/5">
+                                <div className="p-3 bg-primary/10 rounded-xl text-primary">
                                     {menuItems.find(i => i.id === activeTab)?.icon}
                                 </div>
-                                <h2 className="text-2xl font-black uppercase tracking-tighter">
+                                <h2 className="text-xl font-black uppercase tracking-tighter">
                                     {menuItems.find(i => i.id === activeTab)?.label}
                                 </h2>
                             </div>
 
                             {renderContent()}
-                        </div>
+                        </ThemedCard>
                     </motion.div>
                 )}
             </AnimatePresence>

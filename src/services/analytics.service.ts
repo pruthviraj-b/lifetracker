@@ -23,6 +23,12 @@ export interface HabitStat {
     total: number;
 }
 
+export interface MultiverseStats {
+    totalNodes: number;
+    totalLinks: number;
+    linkDensity: number;
+}
+
 export const AnalyticsService = {
     // Helper to get date range
     getDateRange(days: number) {
@@ -141,5 +147,27 @@ export const AnalyticsService = {
         a.href = url;
         a.download = `habit-tracker-export-${end}.csv`;
         a.click();
+    },
+
+    async getMultiverseStats(): Promise<MultiverseStats> {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { totalNodes: 0, totalLinks: 0, linkDensity: 0 };
+
+        const [habits, videos, courses, links] = await Promise.all([
+            supabase.from('habits').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+            supabase.from('youtube_videos').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+            supabase.from('learning_courses').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+            supabase.from('multiverse_links').select('id', { count: 'exact', head: true }).eq('user_id', user.id)
+        ]);
+
+        const totalNodes = (habits.count || 0) + (videos.count || 0) + (courses.count || 0);
+        const totalLinks = links.count || 0;
+        const linkDensity = totalNodes > 0 ? (totalLinks / totalNodes) * 100 : 0;
+
+        return {
+            totalNodes,
+            totalLinks,
+            linkDensity
+        };
     }
 };
