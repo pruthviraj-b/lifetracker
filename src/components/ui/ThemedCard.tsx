@@ -29,7 +29,7 @@ export const ThemedCard: React.FC<ThemedCardProps> = ({
         : '';
 
     const interactiveStyles = interactive ? 'active:scale-[0.98] cursor-pointer' : '';
-    const paddingStyles = noPadding ? '' : 'p-6 md:p-8';
+    const paddingStyles = noPadding ? '' : 'p-4 md:p-8';
 
     return (
         <div

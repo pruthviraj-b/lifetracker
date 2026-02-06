@@ -12,7 +12,7 @@ export default function LandingPage() {
                 <div className="max-w-3xl mx-auto text-center space-y-8">
                     <div className="space-y-4 relative">
                         <motion.h1
-                            className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1] font-['Cinzel_Decorative']"
+                            className="text-4xl md:text-7xl font-bold tracking-tight leading-[1.1] font-['Cinzel_Decorative']"
                             style={{ filter: 'url(#water-4d)' }}
                             animate={{ opacity: [0.9, 1, 0.9] }}
                             transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
@@ -36,7 +36,7 @@ export default function LandingPage() {
                             </svg>
 
                             <motion.p
-                                className="text-xl md:text-2xl text-muted-foreground font-light max-w-xl mx-auto leading-relaxed"
+                                className="text-lg md:text-2xl text-muted-foreground font-light max-w-xl mx-auto leading-relaxed"
                                 style={{ filter: 'url(#water-4d)' }}
                                 animate={{ opacity: [0.8, 1, 0.8] }}
                                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -49,7 +49,7 @@ export default function LandingPage() {
                     <div className="pt-8">
                         <button
                             onClick={() => navigate('/signup')}
-                            className="bg-primary text-primary-foreground px-12 py-5 rounded-full font-bold text-xl shadow-lg hover:shadow-xl hover:-translate-y-[1px] transition-all duration-300 ease-out font-['Cinzel']"
+                            className="bg-primary text-primary-foreground px-8 md:px-12 py-4 md:py-5 rounded-full font-bold text-lg md:text-xl shadow-lg hover:shadow-xl hover:-translate-y-[1px] transition-all duration-300 ease-out font-['Cinzel']"
                         >
                             Start Your Journey
                         </button>

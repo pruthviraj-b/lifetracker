@@ -129,7 +129,7 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
     };
 
     return (
-        <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-20 px-4 md:px-8 space-y-12 max-w-5xl mx-auto animate-claude-in relative">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-12 md:pt-20 px-4 md:px-8 space-y-8 md:space-y-12 max-w-5xl mx-auto animate-claude-in relative">
             {isSearchOpen && <AdvancedSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />}
             {/* SmartChat removed - Use CMD+K for unified search */}
 
@@ -163,7 +163,7 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
                             <path d="M12,2L14.4,9.5L22,12L14.4,14.5L12,22L9.6,14.5L2,12L9.6,9.5L12,2Z" />
                         </svg>
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-bold font-serif text-foreground tracking-tight">
+                    <h1 className="text-2xl md:text-4xl font-bold font-serif text-foreground tracking-tight">
                         RITU OS
                     </h1>
                 </motion.div>
@@ -173,7 +173,7 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
 
             {/* 2. Authentic Large Input - matching Image 1 */}
             <div className="w-full max-w-3xl space-y-4">
-                <div className="claude-input-container relative min-h-[160px] flex flex-col">
+                <div className="claude-input-container relative min-h-[120px] md:min-h-[160px] flex flex-col">
                     <textarea
                         className="w-full bg-transparent resize-none outline-none text-lg text-foreground/80 placeholder:text-muted-foreground/60 p-2"
                         placeholder="How can I help you today?"
@@ -256,16 +256,16 @@ const ClaudeLanding = ({ navigate }: { navigate: any }) => {
                 className="max-w-2xl w-full text-center space-y-12"
             >
                 <div className="space-y-6">
-                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-foreground leading-[1.1]">
+                    <h1 className="text-4xl md:text-7xl font-bold tracking-tight text-foreground leading-[1.1]">
                         Focus on what matters.<br />
                         <span className="text-primary">Leave the rest to us.</span>
                     </h1>
-                    <p className="text-lg md:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
+                    <p className="text-base md:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
                         A helpful assistant for your daily rituals, knowledge, and growth.
                         Simple, intuitive, and human-centric.
                     </p>
                 </div>
-
+                beach
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <Button
                         onClick={() => navigate('/login')}
@@ -282,7 +282,7 @@ const ClaudeLanding = ({ navigate }: { navigate: any }) => {
                     </Button>
                 </div>
 
-                <div className="pt-12 grid grid-cols-3 gap-8 opacity-40">
+                <div className="pt-12 grid grid-cols-1 sm:grid-cols-3 gap-8 opacity-40">
                     <div className="flex flex-col items-center gap-2">
                         <Activity className="w-5 h-5" />
                         <span className="text-[10px] font-bold uppercase tracking-widest">Habits</span>
