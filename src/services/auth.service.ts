@@ -58,7 +58,7 @@ export const AuthService = {
                 data: {
                     name,
                 },
-                emailRedirectTo: window.location.origin, // Ensure redirect goes to current host (e.g. 192.168.x.x)
+                emailRedirectTo: window.location.origin,
             },
         });
 
@@ -67,42 +67,13 @@ export const AuthService = {
             throw new Error(error.message);
         }
 
-        if (data.user) {
-            // Attempt to create public profile immediately
-            // This handles cases where database triggers might be missing or failing
-            const { error: profileError } = await supabase
-                .from('users')
-                .insert([
-                    {
-                        id: data.user.id,
-                        email: email,
-                        name: name,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    }
-                ])
-                .select()
-                .single();
-
-            if (profileError) {
-                console.error("Profile creation error:", profileError);
-                // If it's a duplicate key, that's fine (trigger might have worked)
-                // If it's permission denied, RLS might be blocking
-                if (!profileError.message.includes('duplicate key')) {
-                    // We log it but don't block auth if the user was created in Auth
-                    // Unless the app STRICTLY requires the profile to login? 
-                    // Many apps do. Let's return success but warn.
-                }
-            }
-        }
+        // OPTIMIZATION: Profile creation is now handled by the 'handle_new_user' Database Trigger.
+        // We do NOT manually insert here to avoid RLS conflicts and improve speed.
 
         if (!data.user) {
-            // Note: If email confirmation is enabled, we might not get a session immediately.
-            // For now, we assume implicit login or handle it gracefully.
             throw new Error('Registration successful! Please check your email to confirm your account.');
         }
 
-        // If auto-login happens after signup (Supabase default usually), session exists.
         const token = data.session?.access_token || '';
 
         return {
