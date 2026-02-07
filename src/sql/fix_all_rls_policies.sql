@@ -3,6 +3,19 @@
 -- Run this script in Supabase SQL Editor to fix "Not Saving" issues.
 -- ==========================================
 
+-- 0. Ensure user_id column exists on all tables (Fix for missing column errors)
+ALTER TABLE IF EXISTS habits ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE IF EXISTS habit_logs ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE IF EXISTS notes ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE IF EXISTS youtube_videos ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE IF EXISTS video_notes ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE IF EXISTS learning_folders ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE IF EXISTS learning_resources ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE IF EXISTS learning_channels ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE IF EXISTS courses ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE IF EXISTS enrollments ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE IF EXISTS lesson_progress ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+
 -- 1. Enable RLS on all tables
 ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS habits ENABLE ROW LEVEL SECURITY;
