@@ -21,11 +21,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Initialize session and listen for auth changes
     useEffect(() => {
+        // Safety timeout to prevent infinite loading
+        const timeoutId = setTimeout(() => {
+            console.warn("Auth check timed out - forcing UI render");
+            setIsLoading(false);
+        }, 3000);
+
         // Initial check
         AuthService.checkSession().then(currentUser => {
+            // Only update if we haven't timed out (optional check, but setState is safe)
             setUser(currentUser);
             setIsLoading(false);
-        }).catch(() => setIsLoading(false));
+            clearTimeout(timeoutId);
+        }).catch((err) => {
+            console.error("Session check failed", err);
+            setIsLoading(false);
+            clearTimeout(timeoutId);
+        });
 
         // Realtime listener for OAuth redirects and session updates
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -36,9 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setUser(null);
             }
             setIsLoading(false);
+            clearTimeout(timeoutId);
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            subscription.unsubscribe();
+            clearTimeout(timeoutId);
+        };
     }, []);
 
     const login = async (credentials: LoginCredentials) => {
