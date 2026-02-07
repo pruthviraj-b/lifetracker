@@ -9,11 +9,14 @@ LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public -- Run as admin, use public schema
 AS $$
 BEGIN
-  INSERT INTO public.users (id, email, name, created_at, updated_at)
+  INSERT INTO public.users (id, email, name, avatar_url, created_at, updated_at)
   VALUES (
     new.id,
     new.email,
-    COALESCE(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+    -- Try to get name from metadata (Name or Full Name for Google), default to email prefix
+    COALESCE(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+    -- Try to get avatar (for Google)
+    new.raw_user_meta_data->>'avatar_url',
     NOW(),
     NOW()
   )
@@ -49,8 +52,12 @@ CREATE TABLE IF NOT EXISTS public.users (
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
 -- Allow users to read/update their own data
+DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
 CREATE POLICY "Users can view own profile" ON public.users FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
 CREATE POLICY "Users can update own profile" ON public.users FOR UPDATE USING (auth.uid() = id);
 
 -- Allow insert if it matches ID (for the manual insert fallback)
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.users;
 CREATE POLICY "Users can insert own profile" ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
