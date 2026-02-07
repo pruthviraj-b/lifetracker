@@ -167,7 +167,7 @@ export const AuthService = {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin + '/home',
+                redirectTo: window.location.origin + '/dashboard',
                 // scopes: 'https://www.googleapis.com/auth/calendar', // REMOVED to avoid Verification Warning during signup
                 queryParams: {
                     access_type: 'offline',
