@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { AuthService } from '../services/auth.service'; // Added
+import { AuthService } from '../services/auth.service';
 import { AuthLayout } from '../components/auth/AuthLayout';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-
 import { useTheme } from '../context/ThemeContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SignupPage() {
     const { register } = useAuth();
+    const navigate = useNavigate();
     const { preferences } = useTheme();
-    const isWild = preferences.wild_mode;
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -27,24 +28,18 @@ export default function SignupPage() {
 
         // Validation Rules
         if (formData.name.trim().length < 2) {
-            setError('Please enter a valid name (at least 2 characters).');
+            setError('IDENTITY NAME INVALID (>2 CHARS)');
             return;
         }
 
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(formData.email)) {
-            setError('Please enter a valid email address.');
-            return;
-        }
-
-        // Block extremely short domains or obvious fakes (simple heuristic)
-        if (formData.email.split('@')[0].length < 3) {
-            setError('Email username is too short.');
+            setError('COMMUNICATION ID INVALID (EMAIL)');
             return;
         }
 
         if (formData.password.length < 8) {
-            setError('Password must be at least 8 characters for your security.');
+            setError('SECURITY KEY TOO WEAK (>8 CHARS)');
             return;
         }
 
@@ -52,22 +47,26 @@ export default function SignupPage() {
 
         try {
             await register(formData);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to create account');
+            // On success, we might redirect or show a "Confirm Email" message
+            // Depending on Supabase settings. Usually, AuthContext sets user and we go to dashboard.
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message || 'IDENTITY CREATION FAILED');
             setLoading(false);
         }
     };
 
     return (
         <AuthLayout
-            title="Create Account"
-            subtitle="Join the journey of mindful growth."
+            title="Designation Required"
+            subtitle="Initialize your neural profile."
         >
-            <div className="space-y-6 transition-all duration-300">
+            <div className="space-y-6">
+                {/* Google Sign Up Button */}
                 <Button
                     type="button"
                     variant="outline"
-                    className="claude-button w-full border-border hover:bg-secondary text-foreground flex items-center justify-center gap-3 h-12"
+                    className="w-full h-12 border-2 border-primary/20 hover:bg-primary/5 text-foreground flex items-center justify-center gap-3 font-bold uppercase tracking-wider transition-all duration-300"
                     onClick={async () => {
                         try {
                             setLoading(true);
@@ -97,77 +96,82 @@ export default function SignupPage() {
                             d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                         />
                     </svg>
-                    Continue with Google
+                    Initialize with Google
                 </Button>
 
                 <div className="relative">
                     <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-border" />
+                        <span className="w-full border-t border-border/50" />
                     </div>
-                    <div className="relative flex justify-center text-xs">
-                        <span className="bg-card px-4 text-muted-foreground font-medium">or email</span>
+                    <div className="relative flex justify-center text-xs uppercase tracking-widest font-black">
+                        <span className="bg-card px-4 text-muted-foreground">Or Manual Registration</span>
                     </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-foreground ml-1">Your Name</label>
+                            <label className="text-xs font-black uppercase tracking-widest text-primary ml-1">Codename</label>
                             <Input
-                                placeholder="Jane Doe"
+                                placeholder="OPERATOR NAME"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 required
                                 disabled={loading}
-                                className="claude-input w-full"
+                                className="h-12 border-2 border-border/50 focus:border-primary font-mono bg-background/50"
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-foreground ml-1">Email</label>
+                            <label className="text-xs font-black uppercase tracking-widest text-primary ml-1">Identity (Email)</label>
                             <Input
                                 type="email"
-                                placeholder="name@example.com"
+                                placeholder="ACCESS ID (EMAIL)"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 required
                                 disabled={loading}
-                                className="claude-input w-full"
+                                className="h-12 border-2 border-border/50 focus:border-primary font-mono bg-background/50"
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-foreground ml-1">Password</label>
+                            <label className="text-xs font-black uppercase tracking-widest text-primary ml-1">Encryption Key</label>
                             <Input
                                 type="password"
                                 placeholder="••••••••"
                                 value={formData.password}
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                 required
-                                minLength={6}
+                                minLength={8}
                                 disabled={loading}
-                                className="claude-input w-full"
+                                className="h-12 border-2 border-border/50 focus:border-primary font-mono bg-background/50"
                             />
                         </div>
                     </div>
 
                     {error && (
-                        <div className="p-4 text-xs font-semibold text-destructive bg-destructive/5 border border-destructive/10 rounded-xl animate-claude-in">
-                            {error}
-                        </div>
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="p-4 text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl uppercase tracking-wider"
+                        >
+                            ⚠ {error}
+                        </motion.div>
                     )}
 
                     <Button
                         type="submit"
-                        className="claude-button w-full h-12 bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20"
+                        className="w-full h-14 bg-primary text-primary-foreground text-lg font-black uppercase tracking-widest hover:brightness-110 shadow-lg shadow-primary/20 transition-all duration-300"
                         isLoading={loading}
+                        disabled={loading}
                     >
-                        Create Account
+                        {loading ? 'Processing...' : 'Generate Identity'}
                     </Button>
                 </form>
 
-                <div className="text-center text-sm font-medium text-muted-foreground pt-4">
-                    Already have an account?{' '}
-                    <Link to="/login" className="text-primary hover:underline underline-offset-4 font-semibold">
-                        Sign in instead
+                <div className="text-center text-xs font-medium text-muted-foreground pt-4">
+                    PROFILE EXISTS?{' '}
+                    <Link to="/login" className="text-primary hover:text-primary/80 underline underline-offset-4 font-bold uppercase tracking-wider ml-1">
+                        ACCESS EXISTING MATRIX
                     </Link>
                 </div>
             </div>

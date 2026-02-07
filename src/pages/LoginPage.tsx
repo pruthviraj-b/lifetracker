@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { AuthService } from '../services/auth.service'; // Added
+import { AuthService } from '../services/auth.service';
 import { AuthLayout } from '../components/auth/AuthLayout';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { useTheme } from '../context/ThemeContext'; // Added
+import { useTheme } from '../context/ThemeContext';
+import { motion } from 'framer-motion';
 
 export default function LoginPage() {
     const { login } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const { preferences } = useTheme(); // Added
-    const isWild = preferences.wild_mode; // Added
+    const { preferences } = useTheme();
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -28,32 +29,28 @@ export default function LoginPage() {
 
         try {
             await login(formData);
-            // Redirect to the page they were trying to access, or default to homepage
-            const from = (location.state as any)?.from?.pathname || '/home';
+            // Default redirect: Go to dashboard/home, or where they were trying to go
+            const from = (location.state as any)?.from?.pathname || '/dashboard';
             navigate(from, { replace: true });
         } catch (err: any) {
-            // Display the specific error message from the service
+            console.error(err);
             const msg = err.message || 'Failed to sign in';
             setError(msg);
             setLoading(false);
-
-            // Auto-shake or highlight logic could be added here
-            if (msg.includes("confirm your email")) {
-                // Optional: Trigger a toast or separate UI hint
-            }
         }
     };
 
     return (
         <AuthLayout
-            title="Sign In"
-            subtitle="Welcome back. We've missed you."
+            title="Welcome Back"
+            subtitle="Access your neural matrix."
         >
-            <div className="space-y-6 transition-all duration-300">
+            <div className="space-y-6">
+                {/* Google Login Button */}
                 <Button
                     type="button"
                     variant="outline"
-                    className="claude-button w-full border-border hover:bg-secondary text-foreground flex items-center justify-center gap-3 h-12"
+                    className="w-full h-12 border-2 border-primary/20 hover:bg-primary/5 text-foreground flex items-center justify-center gap-3 font-bold uppercase tracking-wider transition-all duration-300"
                     onClick={async () => {
                         try {
                             setLoading(true);
@@ -88,50 +85,50 @@ export default function LoginPage() {
 
                 <div className="relative">
                     <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-border" />
+                        <span className="w-full border-t border-border/50" />
                     </div>
-                    <div className="relative flex justify-center text-xs">
-                        <span className="bg-card px-4 text-muted-foreground font-medium">or email</span>
+                    <div className="relative flex justify-center text-xs uppercase tracking-widest font-black">
+                        <span className="bg-card px-4 text-muted-foreground">Or access via secure ID</span>
                     </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-foreground ml-1">Email or Phone</label>
+                            <label className="text-xs font-black uppercase tracking-widest text-primary ml-1">Identity (Email)</label>
                             <Input
                                 type="text"
-                                placeholder="name@example.com"
+                                placeholder="ACCESS ID"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 required
                                 disabled={loading}
-                                className="claude-input w-full"
+                                className="h-12 border-2 border-border/50 focus:border-primary font-mono bg-background/50"
                             />
                         </div>
                         <div className="space-y-2">
                             <div className="flex items-center justify-between ml-1">
-                                <label className="text-xs font-semibold text-foreground">Password</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-primary">Key (Password)</label>
                                 <button
                                     type="button"
                                     onClick={async () => {
                                         if (!formData.email || !formData.email.includes('@')) {
-                                            setError('Please enter your email to reset password.');
+                                            setError('Enter identity email to reset key.');
                                             return;
                                         }
                                         try {
                                             setLoading(true);
                                             await AuthService.resetPassword(formData.email);
-                                            setError('Reset link sent! Check your email.'); // Abuse error field for success msg or add new state
+                                            setError('Reset link dispatched to secure comms.');
                                         } catch (err: any) {
                                             setError(err.message);
                                         } finally {
                                             setLoading(false);
                                         }
                                     }}
-                                    className="text-[10px] font-medium text-primary hover:underline cursor-pointer"
+                                    className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
                                 >
-                                    Forgot Password?
+                                    Lost Key?
                                 </button>
                             </div>
                             <Input
@@ -141,37 +138,50 @@ export default function LoginPage() {
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                 required
                                 disabled={loading}
-                                className="claude-input w-full"
+                                className="h-12 border-2 border-border/50 focus:border-primary font-mono bg-background/50"
                             />
                         </div>
                     </div>
 
                     {error && (
-                        <div className="p-4 text-xs font-semibold text-destructive bg-destructive/5 border border-destructive/10 rounded-xl animate-claude-in">
-                            {error}
-                            {error.includes("confirm") && (
-                                <p className="mt-2 text-[10px] text-muted-foreground font-normal border-t border-destructive/10 pt-2">
-                                    Tip: Verification emails often land in <strong>Spam</strong> or <strong>Promotions</strong>.
-                                    Please search for "Supabase" or your app name.
-                                </p>
-                            )}
-                        </div>
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="p-4 text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl"
+                        >
+                            ⚠ {error}
+                        </motion.div>
                     )}
 
                     <Button
                         type="submit"
-                        className="claude-button w-full h-12 bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20"
+                        className="w-full h-14 bg-primary text-primary-foreground text-lg font-black uppercase tracking-widest hover:brightness-110 shadow-lg shadow-primary/20 transition-all duration-300"
                         isLoading={loading}
+                        disabled={loading}
                     >
-                        {loading ? 'Signing in...' : 'Sign In'}
+                        {loading ? 'Authenticating...' : 'Initialize Session'}
                     </Button>
                 </form>
 
-                <div className="text-center text-sm font-medium text-muted-foreground pt-4">
-                    New to the app?{' '}
-                    <Link to="/signup" className="text-primary hover:underline underline-offset-4 font-semibold">
-                        Create an account
-                    </Link>
+                <div className="text-center text-xs font-medium text-muted-foreground pt-4 flex flex-col gap-4">
+                    <div>
+                        NO IDENTIFICATION?{' '}
+                        <Link to="/signup" className="text-primary hover:text-primary/80 underline underline-offset-4 font-bold uppercase tracking-wider ml-1">
+                            INITIALIZE NEW IDENTITY
+                        </Link>
+                    </div>
+
+                    <button
+                        onClick={() => {
+                            if (confirm('SYSTEM RESET: This will clear all local session data. Proceed?')) {
+                                localStorage.clear();
+                                window.location.reload();
+                            }
+                        }}
+                        className="text-[10px] uppercase tracking-widest text-muted-foreground/40 hover:text-destructive transition-colors"
+                    >
+                        ⚠ FORCE SYSTEM RESET
+                    </button>
                 </div>
             </div>
         </AuthLayout>

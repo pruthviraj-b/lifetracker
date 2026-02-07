@@ -63,15 +63,13 @@ export const NoteService = {
         });
     },
 
-    async createNote(note: CreateNoteInput): Promise<Note> {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) throw new Error('No user logged in');
+    async createNote(note: CreateNoteInput, userId: string): Promise<Note> {
+        if (!userId) throw new Error('User ID is required');
 
         const { data, error } = await supabase
             .from('notes')
             .insert({
-                user_id: user.id,
+                user_id: userId,
                 title: note.title,
                 content: note.content,
                 category: note.category,
@@ -140,13 +138,11 @@ export const NoteService = {
         }));
     },
 
-    async createFolder(name: string, color: string = 'gray', icon: string = 'folder'): Promise<NoteFolder> {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) throw new Error('No user logged in');
+    async createFolder(name: string, userId: string, color: string = 'gray', icon: string = 'folder'): Promise<NoteFolder> {
+        if (!userId) throw new Error('No user logged in');
         const { data, error } = await supabase
             .from('note_folders')
-            .insert({ user_id: user.id, name, color, icon })
+            .insert({ user_id: userId, name, color, icon })
             .select()
             .single();
         if (error) throw error;

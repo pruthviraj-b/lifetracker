@@ -11,6 +11,7 @@ ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP
 
 -- STEP 2: Add user_id to all feature tables
 ALTER TABLE IF EXISTS habits ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE IF EXISTS reminders ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
 ALTER TABLE IF EXISTS habit_logs ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
 ALTER TABLE IF EXISTS notes ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
 ALTER TABLE IF EXISTS youtube_videos ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
@@ -58,6 +59,7 @@ CREATE POLICY "users_delete_own" ON users FOR DELETE USING (auth.uid() = id);
 
 -- STEP 6: Create PERMISSIVE policies for all feature tables (simplified)
 CREATE POLICY "habits_all" ON habits FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "reminders_all" ON reminders FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "habit_logs_all" ON habit_logs FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "notes_all" ON notes FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "youtube_videos_all" ON youtube_videos FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);

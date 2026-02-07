@@ -2,15 +2,20 @@ import { supabase } from '../lib/supabase';
 import { Reminder } from '../types/reminder';
 
 export const ReminderService = {
-    async getReminders(): Promise<Reminder[]> {
+    async getReminders(userId?: string): Promise<Reminder[]> {
+        const uid = userId || (await supabase.auth.getUser()).data.user?.id;
+        if (!uid) return [];
+
         const { data, error } = await supabase
             .from('reminders')
             .select('*')
+            .eq('user_id', uid)
             .order('created_at', { ascending: true });
 
         if (error) {
             console.error('Error fetching reminders:', error);
-            throw error;
+            // Don't throw, just return empty to prevent blocking dashboard
+            return [];
         }
 
         return (data || []).map((r: any) => this.mapReminder(r));

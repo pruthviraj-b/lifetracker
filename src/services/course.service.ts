@@ -85,15 +85,13 @@ export const CourseService = {
 
     // --- User Progress ---
 
-    async enrollInCourse(courseId: string): Promise<Enrollment> {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) throw new Error('Not authenticated');
+    async enrollInCourse(courseId: string, userId: string): Promise<Enrollment> {
+        if (!userId) throw new Error('Not authenticated');
 
         const { data, error } = await supabase
             .from('enrollments')
             .insert({
-                user_id: user.id,
+                user_id: userId,
                 course_id: courseId,
                 progress_percent: 0,
                 started_at: new Date().toISOString()
@@ -121,16 +119,14 @@ export const CourseService = {
         return data || null;
     },
 
-    async markLessonComplete(lessonId: string, courseId: string): Promise<void> {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) throw new Error('Not authenticated');
+    async markLessonComplete(lessonId: string, courseId: string, userId: string): Promise<void> {
+        if (!userId) throw new Error('Not authenticated');
 
         // 1. Upsert Lesson Progress
         const { error: progressError } = await supabase
             .from('lesson_progress')
             .upsert({
-                user_id: user.id,
+                user_id: userId,
                 lesson_id: lessonId,
                 status: 'completed',
                 completed_at: new Date().toISOString()
@@ -139,14 +135,14 @@ export const CourseService = {
         if (progressError) throw progressError;
 
         // 2. Recalculate Course Progress
-        await this.updateCourseProgress(user.id, courseId);
+        await this.updateCourseProgress(userId, courseId);
 
         // --- 🔗 DEEP SYNC: HABITS ---
         // Attempt to find a habit that matches the course title and mark it done
         try {
             const { data: course } = await supabase.from('courses').select('title').eq('id', courseId).single();
             if (course) {
-                const habits = await HabitService.getHabits(user.id);
+                const habits = await HabitService.getHabits(userId);
                 // Fuzzy match: If habit title contains course keyword (e.g. "Python")
                 const matchingHabit = habits.find(h =>
                     course.title.toLowerCase().includes(h.title.toLowerCase()) ||
@@ -156,7 +152,7 @@ export const CourseService = {
 
                 if (matchingHabit && !matchingHabit.completedToday) {
                     const today = new Date().toISOString().split('T')[0];
-                    await HabitService.toggleHabitCompletion(matchingHabit.id, today, true);
+                    await HabitService.toggleHabitCompletion(matchingHabit.id, today, true, userId);
                     console.log(`🔗 Auto-completed habit: ${matchingHabit.title}`);
                 }
             }
@@ -248,25 +244,17 @@ export const CourseService = {
         return data;
     },
 
-    async updateLessonJournal(lessonId: string, notes: string, resources: any[]): Promise<void> {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) throw new Error("Unauthorized");
+    async updateLessonJournal(lessonId: string, notes: string, resources: any[], userId: string): Promise<void> {
+        if (!userId) throw new Error("Unauthorized");
 
         // 1. Check if exists to preserve status
         const { data: existing } = await supabase
             .from('lesson_progress')
             .select('status')
-            .eq('user_id', user.id)
-            .eq('lesson_id', lessonId)
-            .single();
-
-        const status = existing?.status;
-        console.log("💾 SAVING JOURNAL:", { lessonId, notesLength: notes?.length, resourcesCount: resources?.length });
 
         // A. Save to Database
         const payload = {
-            user_id: user.id,
+            user_id: userId,
             lesson_id: lessonId,
             status: 'in_progress', // Default status if just saving notes
             notes: notes,
@@ -306,7 +294,7 @@ export const CourseService = {
                         category: 'learning',
                         color: 'blue',
                         isPinned: false
-                    });
+                    }, userId);
                 }
             }
 

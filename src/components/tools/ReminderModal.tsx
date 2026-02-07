@@ -51,24 +51,46 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
         );
     };
 
-    const handleSave = (e: React.FormEvent) => {
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({
-            title,
-            time,
-            days: isRecurring ? days : [],
-            date: isRecurring ? undefined : date,
-            habitId: habitId || undefined,
-            videoId: videoId || undefined,
-            courseId: courseId || undefined,
-            resourceId: resourceId || undefined,
-            folderId: folderId || undefined,
-            customMessage: (habitId || videoId || courseId || resourceId || folderId) ? customMessage : undefined,
-            promptForNote: habitId ? promptForNote : false,
-            notificationType,
-            syncToGoogle
-        });
-        onClose();
+        try {
+            // Normalize date: if one-time reminder is scheduled for earlier today, roll to next day
+            let saveDate = isRecurring ? undefined : date;
+            if (!isRecurring && saveDate) {
+                try {
+                    const composed = new Date(`${saveDate}T${time}`);
+                    if (composed.getTime() <= Date.now()) {
+                        const tomorrow = new Date(composed);
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        saveDate = tomorrow.toISOString().split('T')[0];
+                    }
+                } catch (e) {
+                    // fallback: leave date as provided
+                }
+            }
+
+            // Await the parent's onSave so we can keep the modal open on failure
+            await onSave({
+                title,
+                time,
+                days: isRecurring ? days : [],
+                date: isRecurring ? undefined : saveDate,
+                habitId: habitId || undefined,
+                videoId: videoId || undefined,
+                courseId: courseId || undefined,
+                resourceId: resourceId || undefined,
+                folderId: folderId || undefined,
+                customMessage: (habitId || videoId || courseId || resourceId || folderId) ? customMessage : undefined,
+                promptForNote: habitId ? promptForNote : false,
+                notificationType,
+                syncToGoogle
+            });
+            onClose();
+        } catch (err: any) {
+            // Keep modal open and surface error
+            console.error('Failed to save reminder from modal:', err);
+            alert(err?.message || 'Failed to save reminder');
+        }
     };
 
     const modalContent = (

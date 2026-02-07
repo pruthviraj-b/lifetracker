@@ -99,34 +99,64 @@ export function VideoPlayerModal({ video, onClose, onProgressUpdate }: VideoPlay
             setStatus('loading');
 
             try {
-                // Step 1: Fetch Latest Data (Source of Truth)
-                const latestData = await YouTubeService.getVideoDetails(video.id);
-                const startSeconds = latestData?.watchProgress || video.watchProgress || 0;
+                // Step 1: Validate Video ID
+                if (!video.videoId) {
+                    console.error("VideoPlayerModal: Missing videoId", video);
+                    throw new Error("Invalid Video ID");
+                }
+
+                // Step 2: Fetch Latest Data (Source of Truth)
+                let startSeconds = video.watchProgress || 0;
+                try {
+                    const latestData = await YouTubeService.getVideoDetails(video.id);
+                    // Fallback to prop if fetch fails or property missing
+                    if (latestData && typeof latestData.watchProgress === 'number') {
+                        startSeconds = latestData.watchProgress;
+                    }
+                } catch (e) {
+                    console.warn("Details fetch failed, using prop data", e);
+                }
+
                 console.log("VideoPlayerModal: DB Fetch Complete. Resuming at:", startSeconds);
 
-                // Step 2: Check Prerequisites
+                // Step 3: Check Prerequisites
                 const met = await CourseService.checkPrerequisitesMet(video.id);
                 if (!met) {
                     if (isMounted) setStatus('locked');
                     return;
                 }
 
-                // Step 3: Load Notes
-                const notesData = await YouTubeService.getNotes(video.id);
-                if (isMounted) setNotes(notesData);
+                // Step 4: Load Notes
+                try {
+                    const notesData = await YouTubeService.getNotes(video.id);
+                    if (isMounted) setNotes(notesData);
+                } catch (err) {
+                    console.warn("Notes fetch failed:", err);
+                }
 
-                // Step 4: Initialize Player API
-                if (!window.YT) {
-                    const tag = document.createElement('script');
-                    tag.src = "https://www.youtube.com/iframe_api";
-                    const firstScriptTag = document.getElementsByTagName('script')[0];
-                    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+                // Step 5: Initialize Player API with Timeout Safety
+                if (isMounted) {
+                    // Force a timeout to clear loading state if YouTube hangs
+                    setTimeout(() => {
+                        if (isMounted && status === 'loading') {
+                            console.warn("VideoPlayer: Force clearing loading state after timeout");
+                            // We don't set to error, just 'ready' to remove overlay so user might see native YouTube error
+                            setStatus('ready');
+                        }
+                    }, 5000);
 
-                    window.onYouTubeIframeAPIReady = () => {
-                        if (isMounted) initPlayer(startSeconds);
-                    };
-                } else {
-                    if (isMounted) initPlayer(startSeconds);
+                    if (!window.YT) {
+                        const tag = document.createElement('script');
+                        tag.src = "https://www.youtube.com/iframe_api";
+                        const firstScriptTag = document.getElementsByTagName('script')[0];
+                        firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+
+                        window.onYouTubeIframeAPIReady = () => {
+                            if (isMounted) initPlayer(startSeconds);
+                        };
+                    } else {
+                        initPlayer(startSeconds);
+                    }
                 }
             } catch (error) {
                 console.error("Initialization Failed:", error);
@@ -139,10 +169,6 @@ export function VideoPlayerModal({ video, onClose, onProgressUpdate }: VideoPlay
         const handleUnload = () => {
             if (playerRef.current && playerRef.current.getCurrentTime) {
                 const time = playerRef.current.getCurrentTime();
-                // Use beacon or synchronous XHR if possible, but for now try best-effort async
-                // Note: Modern browsers often block async in unload. 
-                // We rely on the frequent 5s interval mostly, but this catches some cases.
-                // Ideally we'd use navigator.sendBeacon with a custom API endpoint.
                 saveProgressToDB(time);
             }
         };
@@ -159,7 +185,9 @@ export function VideoPlayerModal({ video, onClose, onProgressUpdate }: VideoPlay
                 } catch (e) { /* ignore cleanup errors */ }
             }
         };
-    }, []); // Empty dependency array ensures this runs ONCE on mount
+    }, []);
+
+
 
     // --- Player Logic ---
 
@@ -178,7 +206,7 @@ export function VideoPlayerModal({ video, onClose, onProgressUpdate }: VideoPlay
                     controls: 0, // We render our own controls
                     disablekb: 1,
                     iv_load_policy: 3,
-                    origin: window.location.origin,
+                    // origin: window.location.origin, // Commented out to prevent localhost blocking issues
                     playsinline: 1
                 },
                 events: {

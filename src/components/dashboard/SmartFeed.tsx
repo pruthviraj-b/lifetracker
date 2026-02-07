@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { useTheme } from '../../context/ThemeContext';
 import { HabitService } from '../../services/habit.service';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 
 const QUOTES = [
     { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Aristotle" },
@@ -26,12 +27,14 @@ const SUGGESTED_HABITS = [
 export function SmartFeed() {
     const { preferences } = useTheme();
     const { showToast } = useToast();
+    const { user } = useAuth();
     const isWild = preferences.wild_mode;
     const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
     const [suggestion] = useState(() => SUGGESTED_HABITS[Math.floor(Math.random() * SUGGESTED_HABITS.length)]);
     const [added, setAdded] = useState(false);
 
     const handleAccept = async () => {
+        if (!user) return;
         try {
             await HabitService.createHabit({
                 title: suggestion.title,
@@ -42,7 +45,7 @@ export function SmartFeed() {
                 type: 'habit',
                 priority: 'medium',
                 goalDuration: 30
-            } as any); // Temporary loose cast to get build passing if type defs are strictly enforcing Omit<>
+            } as any, user.id);
             showToast("Success", "Protocol Integrated", { type: 'success' });
             setAdded(true);
             // Reload page or trigger global refresh if possible, but toast is enough for now

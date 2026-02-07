@@ -71,13 +71,11 @@ export const HabitService = {
         return habits;
     },
 
-    async createHabit(habit: Omit<Habit, 'id' | 'streak' | 'completedToday'>) {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) throw new Error('No user logged in');
+    async createHabit(habit: Omit<Habit, 'id' | 'streak' | 'completedToday'>, userId: string) {
+        if (!userId) throw new Error('No user logged in');
 
         const payload: any = {
-            user_id: user.id,
+            user_id: userId,
             title: habit.title,
             category: habit.category,
             time_of_day: habit.timeOfDay,
@@ -92,19 +90,32 @@ export const HabitService = {
         if (habit.order !== undefined) payload.order = habit.order;
         payload.archived = false;
 
-        const { data, error } = await supabase
-            .from('habits')
-            .insert(payload)
-            .select()
-            .single();
+        let data, error;
 
-        if (error) throw error;
+        try {
+            const result = await supabase
+                .from('habits')
+                .insert(payload)
+                .select()
+                .single();
+
+            data = result.data;
+            error = result.error;
+
+            if (error) {
+                console.error('[HabitService] Supabase INSERT Error:', error);
+                throw error;
+            }
+        } catch (e) {
+            console.error('[HabitService] EXCEPTION during creation:', e);
+            throw e;
+        }
 
         // Save links if any (Resilient)
         if (habit.links && habit.links.length > 0) {
             try {
                 const linksToInsert = habit.links.map(l => ({
-                    user_id: user.id,
+                    user_id: userId,
                     source_habit_id: data.id,
                     target_habit_id: l.targetHabitId,
                     type: l.type,
@@ -130,10 +141,8 @@ export const HabitService = {
         return data;
     },
 
-    async updateHabit(id: string, updates: Partial<Habit>) {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) throw new Error('No user');
+    async updateHabit(id: string, updates: Partial<Habit>, userId: string) {
+        if (!userId) throw new Error('No user');
 
         const payload: any = {};
         if (updates.title) payload.title = updates.title;
@@ -158,7 +167,7 @@ export const HabitService = {
 
             if (updates.links.length > 0) {
                 const linksToInsert = updates.links.map(l => ({
-                    user_id: user.id,
+                    user_id: userId,
                     source_habit_id: id,
                     target_habit_id: l.targetHabitId,
                     type: l.type,
@@ -188,8 +197,8 @@ export const HabitService = {
         if (error) throw error;
     },
 
-    async archiveHabit(id: string) {
-        return this.updateHabit(id, { archived: true });
+    async archiveHabit(id: string, userId: string) {
+        return this.updateHabit(id, { archived: true }, userId);
     },
 
     // --- Habit Links ---
@@ -210,15 +219,13 @@ export const HabitService = {
         }));
     },
 
-    async createHabitLink(link: Omit<HabitLink, 'id'>) {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) throw new Error('No user');
+    async createHabitLink(link: Omit<HabitLink, 'id'>, userId: string) {
+        if (!userId) throw new Error('No user');
 
         const { data, error } = await supabase
             .from('habit_links')
             .insert({
-                user_id: user.id,
+                user_id: userId,
                 source_habit_id: link.sourceHabitId,
                 target_habit_id: link.targetHabitId,
                 type: link.type,
@@ -239,15 +246,13 @@ export const HabitService = {
     },
 
     // --- XP System ---
-    async getProfile() {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) return null;
+    async getProfile(userId: string) {
+        if (!userId) return null;
 
         const { data, error } = await supabase
             .from('profiles')
             .select('level, current_xp, next_level_xp')
-            .eq('id', user.id)
+            .eq('id', userId)
             .single();
 
         if (error && error.code !== 'PGRST116') throw error; // Ignore no rows (handled by RPC)
@@ -297,17 +302,15 @@ export const HabitService = {
         return data || [];
     },
 
-    async toggleHabitCompletion(habitId: string, date: string, isCompleted: boolean, note?: string) {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) throw new Error('No user');
+    async toggleHabitCompletion(habitId: string, date: string, isCompleted: boolean, userId: string, note?: string) {
+        if (!userId) throw new Error('No user');
 
         if (isCompleted) {
             // Insert log
             const { error } = await supabase
                 .from('habit_logs')
                 .insert({
-                    user_id: user.id,
+                    user_id: userId,
                     habit_id: habitId,
                     date: date,
                     note: note
@@ -319,7 +322,7 @@ export const HabitService = {
             let synergyBonus = false;
 
             // Phase 10: Synergy Bonus
-            const links = await this.getHabitLinks(user.id);
+            const links = await this.getHabitLinks(userId);
             const habitLinks = links.filter(l => (l.sourceHabitId === habitId || l.targetHabitId === habitId) && l.type === 'synergy');
 
             if (habitLinks.length > 0) {
@@ -338,7 +341,7 @@ export const HabitService = {
             await this.incrementXP(xpToAward);
 
             // Auto-remove skip if exists
-            this.undoSkip(habitId, date);
+            await this.undoSkip(habitId, date, userId);
 
             return { xpGained: xpToAward, synergyBonus };
         } else {
@@ -355,15 +358,13 @@ export const HabitService = {
         }
     },
 
-    async skipHabit(habitId: string, date: string, reason: string) {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) throw new Error('No user');
+    async skipHabit(habitId: string, date: string, reason: string, userId: string) {
+        if (!userId) throw new Error('No user');
 
         const { error } = await supabase
             .from('habit_skips')
             .insert({
-                user_id: user.id,
+                user_id: userId,
                 habit_id: habitId,
                 date: date,
                 reason: reason
@@ -372,9 +373,9 @@ export const HabitService = {
         if (error && error.code !== '23505') throw error;
     },
 
-    async undoSkip(habitId: string, date: string) {
+    async undoSkip(habitId: string, date: string, userId: string) {
         try {
-            await supabase.from('habit_skips').delete().match({ habit_id: habitId, date: date });
+            await supabase.from('habit_skips').delete().match({ habit_id: habitId, date: date, user_id: userId });
         } catch (e) { /* ignore */ }
     },
 
@@ -388,15 +389,13 @@ export const HabitService = {
     },
 
     // --- Reflections ---
-    async getReflections(startDate: string, endDate: string) {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) return [];
+    async getReflections(startDate: string, endDate: string, userId: string) {
+        if (!userId) return [];
 
         const { data, error } = await supabase
             .from('daily_reflections')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .gte('date', startDate)
             .lte('date', endDate);
 
@@ -404,15 +403,13 @@ export const HabitService = {
         return data || [];
     },
 
-    async saveReflection(date: string, mood: string, note: string) {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) throw new Error('No user');
+    async saveReflection(date: string, mood: string, note: string, userId: string) {
+        if (!userId) throw new Error('No user');
 
         const { error } = await supabase
             .from('daily_reflections')
             .upsert({
-                user_id: user.id,
+                user_id: userId,
                 date: date,
                 mood: mood,
                 note: note
@@ -422,11 +419,9 @@ export const HabitService = {
     },
 
     // --- Arrears ---
-    async getArrears() {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
-        if (!user) return [];
-        const uid = user.id;
+    async getArrears(userId: string) {
+        const uid = userId;
+        if (!uid) return [];
 
         const now = new Date();
         const thirtyDaysAgo = new Date();

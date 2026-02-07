@@ -54,7 +54,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             if (reminder.date) {
                 const [y, m, d] = reminder.date.split('-').map(Number);
                 targetDate.setFullYear(y, m - 1, d);
-                if (targetDate < now) continue;
+                // If the scheduled datetime is in the past, but the date equals today, roll to next day.
+                const providedDate = new Date(y, m - 1, d);
+                if (targetDate <= now) {
+                    if (providedDate.toDateString() === now.toDateString()) {
+                        targetDate.setDate(targetDate.getDate() + 1);
+                    } else {
+                        continue;
+                    }
+                }
             } else if (reminder.days.length > 0) {
                 // Find next occurrence in next 7 days
                 let found = false;

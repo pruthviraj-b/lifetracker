@@ -25,6 +25,7 @@ import { AddFlashcardModal } from '../components/flashcards/AddFlashcardModal';
 import { SyllabusRoadmap } from '../components/notes/SyllabusRoadmap';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 const COLOR_CLASSES: Record<string, string> = {
     yellow: 'bg-amber-50 text-amber-700 border-amber-100',
@@ -38,6 +39,7 @@ const COLOR_CLASSES: Record<string, string> = {
 export default function NotesPage() {
     const navigate = useNavigate();
     const { showToast } = useToast();
+    const { user } = useAuth();
     const [notes, setNotes] = useState<Note[]>([]);
     const [folders, setFolders] = useState<NoteFolder[]>([]);
     const [loading, setLoading] = useState(true);
@@ -80,9 +82,9 @@ export default function NotesPage() {
 
     const handleCreateFolder = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newFolderName.trim()) return;
+        if (!newFolderName.trim() || !user) return;
         try {
-            await NoteService.createFolder(newFolderName);
+            await NoteService.createFolder(newFolderName, user.id);
             setNewFolderName('');
             setIsCreatingFolder(false);
             fetchFolders();
@@ -105,11 +107,16 @@ export default function NotesPage() {
     };
 
     const handleSaveNote = async (noteData: CreateNoteInput | Partial<Note>) => {
+        if (!user) {
+            showToast('Error', 'You must be logged in to save notes', { type: 'error' });
+            return;
+        }
+
         try {
             if (editingNote) {
                 await NoteService.updateNote(editingNote.id, noteData);
             } else {
-                await NoteService.createNote(noteData as CreateNoteInput);
+                await NoteService.createNote(noteData as CreateNoteInput, user.id);
             }
             await fetchNotes();
             showToast('Success', editingNote ? 'Note updated' : 'Note added', { type: 'success' });

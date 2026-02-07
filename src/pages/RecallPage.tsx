@@ -65,15 +65,7 @@ export default function RecallPage() {
         }
     };
 
-    // --- Loading State ---
-    if (loading) return (
-        <div className="flex h-[80vh] items-center justify-center">
-            <div className="text-center space-y-6 animate-pulse">
-                <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                <h2 className="text-xl font-bold tracking-tight text-foreground">Preparing your session...</h2>
-            </div>
-        </div>
-    );
+    // Blocking loader removed for instant UI
 
     // --- Empty / Error State ---
     if (!loading && (!queue || queue.length === 0) && !sessionComplete) {
@@ -122,7 +114,7 @@ export default function RecallPage() {
                     </div>
                 </div>
                 <div className="px-5 py-2.5 bg-secondary rounded-2xl border border-border text-xs font-bold text-muted-foreground">
-                    Item {currentIndex + 1} of {queue.length}
+                    {loading ? '...' : `Item ${currentIndex + 1} of ${queue.length}`}
                 </div>
             </div>
 
@@ -131,12 +123,18 @@ export default function RecallPage() {
                 <motion.div
                     className="h-full bg-primary"
                     initial={{ width: 0 }}
-                    animate={{ width: `${((currentIndex) / queue.length) * 100}%` }}
+                    animate={{ width: `${loading || queue.length === 0 ? 0 : ((currentIndex) / queue.length) * 100}%` }}
                 />
             </div>
 
-            {/* Completion State (End of Session) */}
-            {sessionComplete ? (
+            {/* Content Area */}
+            {loading ? (
+                <div className="w-full max-w-2xl space-y-12">
+                    <div className="w-full aspect-[4/3] md:aspect-[16/9] bg-secondary/20 rounded-[3.5rem] animate-pulse border-2 border-dashed border-border/50 flex items-center justify-center">
+                        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin opacity-50" />
+                    </div>
+                </div>
+            ) : sessionComplete ? (
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}

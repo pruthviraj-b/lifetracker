@@ -31,7 +31,7 @@ import { ReminderService } from '../services/reminder.service';
 import { NotificationManagerInstance } from '../utils/notificationManager';
 
 export default function DashboardPage() {
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const { showToast } = useToast();
     const { preferences } = useTheme();
     const isWild = preferences.wild_mode;
@@ -99,75 +99,119 @@ export default function DashboardPage() {
     }, [window.location.search]);
 
     useEffect(() => {
-        loadData();
+        if (user) loadData();
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
         return () => clearInterval(timer);
-    }, []);
+    }, [user]);
 
     const loadData = async () => {
+        if (!user) return;
+
+        // 1. Critical Data - Must load for dashboard to be useful
         try {
             setLoading(true);
-            const todayStr = new Date().toISOString().split('T')[0];
-            const lastYearStr = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-            const [fetchedHabits, fetchedLogs, fetchedReflections, profile, fetchedReminders] = await Promise.all([
-                HabitService.getHabits(),
-                HabitService.getLogs(lastYearStr, todayStr),
-                HabitService.getReflections(lastYearStr, todayStr),
-                HabitService.getProfile(),
-                ReminderService.getReminders()
-            ]);
-
-            setReminders(fetchedReminders);
-
-            if (profile) {
-                setXpStats({
-                    level: profile.level,
-                    currentXP: profile.current_xp,
-                    nextLevelXP: profile.next_level_xp
-                });
-            }
-
-            const logsMap: Record<string, DayLog> = {};
-            const todaysCompletedIds = new Set<string>();
-            const notesMap: Record<string, string> = {};
-
-            fetchedLogs.forEach((log: any) => {
-                const date = log.date;
-                if (!logsMap[date]) logsMap[date] = { date, completedHabitIds: [], totalHabits: fetchedHabits.length };
-                logsMap[date].completedHabitIds.push(log.habit_id);
-                if (date === todayStr) {
-                    todaysCompletedIds.add(log.habit_id);
-                    if (log.note) notesMap[log.habit_id] = log.note;
-                }
-            });
-
-            fetchedReflections.forEach((ref: any) => {
-                const date = ref.date;
-                if (!logsMap[date]) logsMap[date] = { date, completedHabitIds: [], totalHabits: fetchedHabits.length };
-                logsMap[date].mood = ref.mood;
-                logsMap[date].journalEntry = ref.note;
-            });
-
-            setLogs(logsMap);
-            setTodayNotes(notesMap);
-
-            const fetchedSkips = await HabitService.getSkips(lastYearStr, todayStr);
-            const todaySkips = new Set(fetchedSkips.filter(s => s.date === todayStr).map(s => s.habit_id));
-
-            setHabits(fetchedHabits.map(h => ({
-                ...h,
-                completedToday: todaysCompletedIds.has(h.id),
-                skippedToday: todaySkips.has(h.id)
-            })));
+            const fetchedHabits = await HabitService.getHabits(user.id);
+            setHabits(fetchedHabits);
         } catch (error) {
-            console.error("Failed to load dashboard:", error);
-        } finally {
-            setLoading(false);
+            console.error("Critical error loading habits:", error);
+            showToast("Error", "Failed to load rituals. Please refresh.", { type: 'error' });
+            setLoading(false); // Stop loading if critical data fails
+            return;
         }
+
+        // 2. Secondary Data - Can fail individually without breaking the app
+        const todayStr = new Date().toISOString().split('T')[0];
+        const lastYearStr = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        // We run these in parallel but handle errors individually
+        const loadSecondary = async () => {
+            try {
+                const [fetchedLogs, fetchedReflections, profile] = await Promise.all([
+                    HabitService.getLogs(lastYearStr, todayStr, user.id).catch(e => { console.warn('Logs failed', e); return []; }),
+                    HabitService.getReflections(lastYearStr, todayStr, user.id).catch(e => { console.warn('Reflections failed', e); return []; }),
+                    HabitService.getProfile(user.id).catch(e => { console.warn('Profile failed', e); return null; }),
+                ]);
+
+                // Update UI with what we got
+                if (profile) {
+                    setXpStats({
+                        level: profile.level,
+                        currentXP: profile.current_xp,
+                        nextLevelXP: profile.next_level_xp
+                    });
+                }
+
+                // Process logs
+                const logsMap: Record<string, DayLog> = {};
+                const todaysCompletedIds = new Set<string>();
+                const notesMap: Record<string, string> = {};
+
+                fetchedLogs.forEach((log: any) => {
+                    const date = log.date;
+                    // Note: totalHabits is just a snapshot, might not match exactly if habits changed, but fine for heatmap
+                    if (!logsMap[date]) logsMap[date] = { date, completedHabitIds: [], totalHabits: 0 };
+                    logsMap[date].completedHabitIds.push(log.habit_id);
+                    if (date === todayStr) {
+                        todaysCompletedIds.add(log.habit_id);
+                        if (log.note) notesMap[log.habit_id] = log.note;
+                    }
+                });
+
+                fetchedReflections.forEach((ref: any) => {
+                    const date = ref.date;
+                    if (!logsMap[date]) logsMap[date] = { date, completedHabitIds: [], totalHabits: 0 };
+                    logsMap[date].mood = ref.mood;
+                    logsMap[date].journalEntry = ref.note;
+                });
+
+                setLogs(logsMap);
+                setTodayNotes(notesMap);
+
+                // Update habits completed state
+                setHabits(prev => prev.map(h => ({
+                    ...h,
+                    completedToday: todaysCompletedIds.has(h.id)
+                })));
+
+            } catch (e) {
+                console.warn("Secondary data warning:", e);
+            }
+        };
+
+        const loadReminders = async () => {
+            try {
+                const fetchedReminders = await ReminderService.getReminders(user.id);
+                setReminders(fetchedReminders);
+            } catch (e) {
+                console.warn("Reminders failed to load", e);
+            }
+        };
+
+        const loadSkips = async () => {
+            try {
+                const fetchedSkips = await HabitService.getSkips(lastYearStr, todayStr);
+                const todaySkips = new Set(fetchedSkips.filter(s => s.date === todayStr).map(s => s.habit_id));
+                setHabits(prev => prev.map(h => ({
+                    ...h,
+                    skippedToday: todaySkips.has(h.id)
+                })));
+            } catch (e) {
+                console.warn("Skips failed to load", e);
+            }
+        };
+
+        // Fire off secondary loads without awaiting them to block the UI
+        Promise.allSettled([loadSecondary(), loadReminders(), loadSkips()]).then(() => {
+            // Optional: visual indicator that *everything* is done? 
+            // For now, we just let the UI update progressively.
+        });
+
+        // Dashboard is usable now!
+        setLoading(false);
     };
 
     const toggleHabit = async (id: string, note?: string) => {
+        if (!user) return;
         const todayStr = new Date().toISOString().split('T')[0];
         const habitToToggle = habits.find(h => h.id === id);
         if (!habitToToggle) return;
@@ -178,7 +222,7 @@ export default function DashboardPage() {
         setHabits(prev => prev.map(h => h.id === id ? { ...h, completedToday: isNowCompleted } : h));
 
         try {
-            const result = await HabitService.toggleHabitCompletion(id, todayStr, isNowCompleted, note);
+            const result = await HabitService.toggleHabitCompletion(id, todayStr, isNowCompleted, user.id, note);
             if (isNowCompleted) {
                 showToast(
                     result?.synergyBonus ? "Synergy Bonus! ✨" : "Success",
@@ -202,8 +246,10 @@ export default function DashboardPage() {
             title: "Archive Habit?",
             message: "This will hide the habit from your daily flow.",
             onConfirm: async () => {
-                await HabitService.archiveHabit(id);
-                loadData();
+                if (user) {
+                    await HabitService.archiveHabit(id, user.id);
+                    loadData();
+                }
                 setConfirmState(prev => ({ ...prev, isOpen: false }));
             },
             isDestructive: true
@@ -222,7 +268,8 @@ export default function DashboardPage() {
 
     const handleCreateHabit = async (data: any) => {
         try {
-            const newHabit = await HabitService.createHabit(data);
+            if (!user) return;
+            const newHabit = await HabitService.createHabit(data, user.id);
             showToast("Success", "Protocol Initiated", { type: 'success' });
 
             // Handle Auto-Reminder
@@ -262,8 +309,10 @@ export default function DashboardPage() {
 
                     await NotificationManagerInstance.scheduleNotification(newHabit.title, target, {
                         body: `Time for your habit: ${newHabit.title}`,
-                        icon: '/vite.svg'
-                    });
+                        icon: '/vite.svg',
+                        tag: newHabit.id,
+                        id: newHabit.id
+                    } as any);
                     showToast("Info", "Reminder Scheduled", { type: 'info' });
 
                 } catch (remErr) {
@@ -272,7 +321,7 @@ export default function DashboardPage() {
             }
 
             loadData();
-            setIsCreateOpen(false);
+            // setIsCreateOpen(false); // Handled by Modal internally now
         } catch (error: any) {
             console.error("Create failed:", error);
             showToast("Error", `Initiation failed: ${error.message || 'System Error'}`, { type: 'error' });
@@ -280,9 +329,9 @@ export default function DashboardPage() {
     };
 
     const handleUpdateHabit = async (data: any) => {
-        if (!habitToEdit) return;
+        if (!habitToEdit || !user) return;
         try {
-            await HabitService.updateHabit(habitToEdit.id, data);
+            await HabitService.updateHabit(habitToEdit.id, data, user.id);
             showToast("Success", "Protocol Updated", { type: 'success' });
             loadData();
             setIsEditOpen(false);
@@ -293,8 +342,9 @@ export default function DashboardPage() {
     };
 
     const handleSaveReflection = async (mood: Mood, note: string) => {
+        if (!user) return;
         const todayStr = new Date().toISOString().split('T')[0];
-        await HabitService.saveReflection(todayStr, mood, note);
+        await HabitService.saveReflection(todayStr, mood, note, user.id);
         loadData();
     };
 
@@ -306,19 +356,9 @@ export default function DashboardPage() {
     const getHabitsByTime = (time: TimeOfDay) => habits.filter(h => h.timeOfDay === time && !h.archived);
     const getUncategorized = () => habits.filter(h => !h.timeOfDay && !h.archived);
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 animate-pulse">
-                <div className="text-center space-y-10">
-                    <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                    <div className="space-y-2">
-                        <h2 className="text-2xl font-bold tracking-tight text-foreground">Loading your workspace</h2>
-                        <p className="text-muted-foreground text-xs font-medium uppercase tracking-widest">Organizing rituals and progress</p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // Non-blocking loading state - we render the shell immediately
+    // if (loading) { ... } removed to make app feel 10x faster
+
 
     return (
         <div className="p-4 md:p-8 animate-claude-in">
@@ -330,7 +370,7 @@ export default function DashboardPage() {
             <LevelUpModal isOpen={showLevelUp} onClose={() => setShowLevelUp(false)} level={xpStats.level} />
             {newAchievement && <NewAchievementModal isOpen={!!newAchievement} achievement={newAchievement} onClose={() => setNewAchievement(null)} />}
             {noteModal && noteModal.isOpen && <NoteModal isOpen={noteModal.isOpen} onClose={() => setNoteModal(null)} onSave={handleSaveNote} initialNote={noteModal.note} />}
-            {skipModal && skipModal.isOpen && <SkipReasonModal isOpen={skipModal.isOpen} onClose={() => setSkipModal(null)} onConfirm={async (r) => { await HabitService.skipHabit(skipModal!.habitId, new Date().toISOString().split('T')[0], r); loadData(); setSkipModal(null); }} habitTitle={skipModal.title} />}
+            {skipModal && skipModal.isOpen && <SkipReasonModal isOpen={skipModal.isOpen} onClose={() => setSkipModal(null)} onConfirm={async (r) => { if (user) { await HabitService.skipHabit(skipModal!.habitId, new Date().toISOString().split('T')[0], r, user.id); loadData(); } setSkipModal(null); }} habitTitle={skipModal.title} />}
 
             {reminderModal && reminderModal.isOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
@@ -395,7 +435,7 @@ export default function DashboardPage() {
                         </Button>
                     </div>
                     <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm">
-                        <Heatmap logs={logs} onDayClick={setSelectedDate} />
+                        <Heatmap logs={logs} daysMode="month" onDayClick={setSelectedDate} />
                     </div>
                 </div>
 
@@ -435,8 +475,20 @@ export default function DashboardPage() {
                             <HabitSection title="Other Protocols" icon={<AlertCircle className="w-4 h-4 text-gray-500" />} habits={getUncategorized()} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
                         )}
 
-                        {/* ZERO STATE */}
-                        {habits.length === 0 && (
+                        {/* ZERO STATE / LOADING STATE */}
+                        {loading ? (
+                            <div className="space-y-6 animate-pulse">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="space-y-4">
+                                        <div className="h-8 w-48 bg-secondary/50 rounded-lg" />
+                                        <div className="space-y-3">
+                                            <div className="h-24 w-full bg-card border border-border rounded-3xl" />
+                                            <div className="h-24 w-full bg-card border border-border rounded-3xl" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : habits.length === 0 && (
                             <div className="p-16 bg-secondary/20 border-2 border-dashed border-border rounded-[3rem] text-center space-y-8 flex flex-col items-center justify-center min-h-[450px]">
                                 <div className="w-20 h-20 rounded-[2rem] bg-background flex items-center justify-center shadow-xl">
                                     <Activity className="w-10 h-10 text-primary" />

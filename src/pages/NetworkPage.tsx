@@ -16,7 +16,7 @@ import { useToast } from '../context/ToastContext';
 export default function NetworkPage() {
     const [nodes, setNodes] = useState<MultiverseNode[]>([]);
     const [links, setLinks] = useState<MultiverseLink[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
 
     // Link Creation State
@@ -29,9 +29,8 @@ export default function NetworkPage() {
     const { preferences } = useTheme();
     const isWild = preferences.wild_mode;
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    // NOTE: Avoid auto-loading heavy data on mount to speed up initial app load.
+    // Data will be fetched when user explicitly requests a sync (Sync_Matrix button).
 
     const loadData = async () => {
         setLoading(true);
@@ -177,6 +176,12 @@ export default function NetworkPage() {
                         <div className="animate-pulse flex flex-col items-center gap-6">
                             <Activity className="w-12 h-12 text-primary animate-glitch" />
                             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Syncing Multiverse...</p>
+                        </div>
+                    ) : nodes.length === 0 ? (
+                        <div className="flex flex-col items-center gap-4 p-8 text-center">
+                            <Activity className="w-10 h-10 text-primary opacity-80" />
+                            <p className="text-sm font-bold">Multiverse not loaded</p>
+                            <p className="text-[11px] text-muted-foreground max-w-xs">Click "Sync_Matrix" to fetch your nodes and links when you need them. This avoids slow startup loads.</p>
                         </div>
                     ) : (
                         <svg width="100%" height="750" viewBox={`0 0 ${width} ${height}`} className="overflow-visible drop-shadow-2xl">

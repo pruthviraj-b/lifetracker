@@ -12,6 +12,7 @@ import { AddFlashcardModal } from '../../components/flashcards/AddFlashcardModal
 import { FlashcardService } from '../../services/flashcard.service';
 import { NotificationManagerInstance } from '../../utils/notificationManager';
 import { Bell } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 
 export const CourseDetailsPage: React.FC = () => {
@@ -19,7 +20,9 @@ export const CourseDetailsPage: React.FC = () => {
     const navigate = useNavigate();
     const { showToast } = useToast();
     const { preferences } = useTheme();
+
     const isWild = preferences.wild_mode;
+    const { user } = useAuth();
 
     const [course, setCourse] = useState<Course | null>(null);
     const [modules, setModules] = useState<CourseModule[]>([]);
@@ -79,7 +82,11 @@ export const CourseDetailsPage: React.FC = () => {
         try {
             setIsSaving(true);
             setSaveStatus('saving');
-            await CourseService.updateLessonJournal(selectedLesson.id, journalNotes, resourcesToSave);
+            if (!user) {
+                showToast("Error", "You must be logged in to save.", { type: "error" });
+                return;
+            }
+            await CourseService.updateLessonJournal(selectedLesson.id, journalNotes, resourcesToSave, user.id);
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 2000);
             showToast("Saved", "Journal entry updated.", { type: 'success' });
@@ -151,6 +158,7 @@ export const CourseDetailsPage: React.FC = () => {
             showToast('Enroll First', 'You must initiate the protocol first.', { type: 'error' });
             return;
         }
+        if (!user) return; // Guard
 
         // Optimistic Update
         const newSet = new Set(completedLessonIds);
@@ -176,7 +184,7 @@ export const CourseDetailsPage: React.FC = () => {
             });
 
             try {
-                await CourseService.markLessonComplete(lessonId, id!);
+                await CourseService.markLessonComplete(lessonId, id!, user.id);
                 showToast('Marked Complete', 'Progress recorded.', { type: 'success' });
             } catch (e) {
                 // Revert
@@ -188,9 +196,12 @@ export const CourseDetailsPage: React.FC = () => {
     };
 
     const handleEnroll = async () => {
-        if (!course) return;
+        if (!course || !user) {
+            if (!user) showToast('Error', 'Please log in to enroll.', { type: 'error' });
+            return;
+        }
         try {
-            const data = await CourseService.enrollInCourse(course.id);
+            const data = await CourseService.enrollInCourse(course.id, user.id);
             setEnrollment(data);
             showToast('Enrolled', `Welcome to ${course.title}`, { type: 'success' });
         } catch (e) {
@@ -228,7 +239,36 @@ export const CourseDetailsPage: React.FC = () => {
         }
     };
 
-    if (loading) return <div>Loading...</div>;
+    if (loading) {
+        return (
+            <div className={`min-h-screen bg-background pb-20 relative ${isWild ? 'wild' : ''}`}>
+                {/* Skeleton Banner */}
+                <div className="relative h-[60vh] w-full bg-muted/20 animate-pulse">
+                    <div className="absolute bottom-0 left-0 w-full p-8 md:p-16 space-y-6">
+                        <div className="h-6 w-32 bg-muted/40 rounded" />
+                        <div className="h-16 w-3/4 max-w-4xl bg-muted/40 rounded-xl" />
+                        <div className="flex gap-4">
+                            <div className="h-8 w-24 bg-muted/40 rounded-full" />
+                            <div className="h-8 w-32 bg-muted/40 rounded-full" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Skeleton Action Bar */}
+                <div className="bg-background/80 backdrop-blur border-b border-white/10 px-4 md:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="h-4 w-64 bg-muted/20 rounded animate-pulse" />
+                    <div className="h-12 w-48 bg-muted/20 rounded-full animate-pulse" />
+                </div>
+
+                {/* Skeleton Modules */}
+                <div className="max-w-4xl mx-auto mt-20 px-6 space-y-8">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-24 bg-secondary/10 rounded-2xl border border-white/5 animate-pulse" />
+                    ))}
+                </div>
+            </div>
+        );
+    }
     if (!course) return <div>Course not found</div>;
 
     return (

@@ -5,7 +5,7 @@ import { IndexedDBManagerInstance } from './indexedDbManager';
 
 class NotificationManager {
     private serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
-    private notificationSchedules = new Map<string, NodeJS.Timeout>();
+    private notificationSchedules = new Map<string, NodeJS.Timeout>(); // keyed by notification tag/id
 
     // Initialize Service Worker
     async init(): Promise<ServiceWorkerRegistration | boolean> {
@@ -82,8 +82,8 @@ class NotificationManager {
                 return false;
             }
 
-            const notificationId = `${habitName}_${Date.now()}`;
-            const uniqueTag = options.tag || notificationId; // Use unique tag to allow stacking
+            const notificationId = options.id || `${habitName.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}`;
+            const uniqueTag = (options as any).tag || notificationId; // Use provided tag/id or fallback
 
             // Store in IndexedDB for persistence
             await IndexedDBManagerInstance.addNotification({
@@ -124,8 +124,8 @@ class NotificationManager {
                 }
             }
 
-            // Also set local timer (for when tab is open)
-            this.setLocalNotificationTimer(habitName, delay, { ...options, tag: uniqueTag } as any);
+            // Also set local timer (for when tab is open). Keyed by tag so cancel works reliably.
+            this.setLocalNotificationTimer(uniqueTag, delay, { ...options, tag: uniqueTag } as any);
 
             return true;
         } catch (error) {
@@ -146,18 +146,18 @@ class NotificationManager {
     }
 
     // Local timer (works when tab is open)
-    setLocalNotificationTimer(habitName: string, delay: number, options: NotificationOptions) {
-        // Clear existing if any for same habit to prevent dupes (or use unique IDs)
-        if (this.notificationSchedules.has(habitName)) {
-            clearTimeout(this.notificationSchedules.get(habitName)!);
+    setLocalNotificationTimer(tag: string, delay: number, options: NotificationOptions) {
+        // Clear existing timer for same tag to prevent duplicates
+        if (this.notificationSchedules.has(tag)) {
+            clearTimeout(this.notificationSchedules.get(tag)!);
         }
 
         const timerId = setTimeout(() => {
-            this.showNotification(habitName, options);
+            this.showNotification(options && (options as any).title ? (options as any).title : (options as any).body || 'Reminder', options as any);
         }, delay);
 
-        // Store timer ID for cancellation if needed
-        this.notificationSchedules.set(habitName, timerId);
+        // Store timer ID keyed by tag for reliable cancellation
+        this.notificationSchedules.set(tag, timerId);
     }
 
     // Show notification immediately (with background fallback)
@@ -231,19 +231,73 @@ class NotificationManager {
     }
 
     // Cancel specific notification
-    async cancelNotification(habitName: string) {
-        const timerId = this.notificationSchedules.get(habitName);
-        if (timerId) {
-            clearTimeout(timerId);
-            this.notificationSchedules.delete(habitName);
+    async cancelNotification(tagOrHabitName: string) {
+        // 1) Try canceling local timer by tag
+        if (this.notificationSchedules.has(tagOrHabitName)) {
+            clearTimeout(this.notificationSchedules.get(tagOrHabitName)!);
+            this.notificationSchedules.delete(tagOrHabitName);
+        }
+
+        // 2) If service worker is available, instruct it to cancel the matching tag
+        try {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'CANCEL_NOTIFICATION', tag: tagOrHabitName });
+            }
+        } catch (e) {
+            console.warn('Failed to post cancel to service worker', e);
+        }
+
+        // 3) If the input looks like a habitName (not a tag), try to find matching DB entries and cancel their tags
+        try {
+            const all = await IndexedDBManagerInstance.getAllNotifications();
+            const matches = all.filter((n: any) => n.habitName === tagOrHabitName || n.id === tagOrHabitName || (n.options && n.options.tag === tagOrHabitName));
+            for (const m of matches) {
+                const tag = (m.options && m.options.tag) || m.id;
+                if (tag) {
+                    if (this.notificationSchedules.has(tag)) {
+                        clearTimeout(this.notificationSchedules.get(tag)!);
+                        this.notificationSchedules.delete(tag);
+                    }
+                    try {
+                        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                            navigator.serviceWorker.controller.postMessage({ type: 'CANCEL_NOTIFICATION', tag });
+                        }
+                    } catch (e) { }
+                }
+            }
+        } catch (e) {
+            // ignore DB errors
         }
     }
 
     // MASS ABORT: Cancel everything
     async cancelAllNotifications() {
+        // Clear local timers
         this.notificationSchedules.forEach((timerId) => clearTimeout(timerId));
         this.notificationSchedules.clear();
-        console.log('☣️ MASS ABORT: All local notification schedules purged.');
+
+        // Ask service worker to cancel any queued timers and clear stored DB entries
+        try {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                const all = await IndexedDBManagerInstance.getAllNotifications();
+                all.forEach((n: any) => {
+                    const tag = (n.options && n.options.tag) || n.id;
+                    if (tag) navigator.serviceWorker.controller.postMessage({ type: 'CANCEL_NOTIFICATION', tag });
+                });
+            }
+
+            // Remove all notification records from IndexedDB so they don't re-schedule later
+            try {
+                await IndexedDBManagerInstance.deleteAllNotifications();
+                console.log('🧹 Cleared notification records from IndexedDB');
+            } catch (e) {
+                console.warn('Failed to clear notifications from IndexedDB', e);
+            }
+        } catch (e) {
+            console.warn('Failed to broadcast cancelAll to service worker', e);
+        }
+
+        console.log('☣️ MASS ABORT: All local, service-worker, and stored notifications purged.');
     }
 
     // Physical haptic feedback (Mobile)

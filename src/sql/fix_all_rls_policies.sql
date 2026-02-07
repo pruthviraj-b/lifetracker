@@ -114,6 +114,12 @@ CREATE POLICY "Users can manage their own resources" ON learning_resources
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
+-- REMINDERS
+CREATE POLICY "Users can manage their own reminders" ON reminders
+    FOR ALL
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
 -- LEARNING CHANNELS (Mentors)
 CREATE POLICY "Users can manage their own channels" ON learning_channels
     FOR ALL

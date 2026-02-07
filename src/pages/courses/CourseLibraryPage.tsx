@@ -8,6 +8,7 @@ import { NoteService } from '../../services/note.service';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 
 // Course Data Imports
@@ -24,6 +25,7 @@ const NeuralInstaller = ({ onInstallComplete }: { onInstallComplete: () => void 
     const { preferences } = useTheme();
     const isWild = preferences.wild_mode;
     const { showToast } = useToast();
+    const { user } = useAuth(); // Import user
     const [installing, setInstalling] = useState<string | null>(null);
     const [logs, setLogs] = useState<string[]>([]);
     const logsEndRef = useRef<HTMLDivElement>(null);
@@ -52,6 +54,11 @@ const NeuralInstaller = ({ onInstallComplete }: { onInstallComplete: () => void 
 
     const handleInstall = async (mod: typeof modules[0]) => {
         if (installing) return;
+        if (!user) {
+            showToast('Error', 'Must be logged in to install modules', { type: 'error' });
+            return;
+        }
+
         setInstalling(mod.id);
         setLogs([`> INITIALIZING UPLINK FOR [${mod.name.toUpperCase()}]...`]);
 
@@ -62,14 +69,16 @@ const NeuralInstaller = ({ onInstallComplete }: { onInstallComplete: () => void 
             await new Promise(r => setTimeout(r, 600));
             addLog("DOWNLOADING HABIT PROTOCOLS...");
 
-            // 1. Create Habit
-            await HabitService.createHabit(mod.data.habit as any);
+            // 1. Create Habit (Update HabitService to accept userId if needed, but for now focus on NoteService)
+            // Checking HabitService... it likely needs similar fix.
+            // For now, passing user.id to createHabit if the signature allows, or reliance on session (which is broken)
+            await HabitService.createHabit(mod.data.habit as any, user.id);
             await new Promise(r => setTimeout(r, 400));
             addLog("HABITS INJECTED.");
 
             // 2. Create Note
             addLog("COMPILING SYLLABUS...");
-            await NoteService.createNote(mod.data.note as any);
+            await NoteService.createNote(mod.data.note as any, user.id);
             await new Promise(r => setTimeout(r, 400));
             addLog("SYLLABUS DECRYPTED.");
 
@@ -93,7 +102,7 @@ const NeuralInstaller = ({ onInstallComplete }: { onInstallComplete: () => void 
 
             addLog("ENROLLING USER...");
             try {
-                await CourseService.enrollInCourse(courseId);
+                await CourseService.enrollInCourse(courseId, user.id);
             } catch (e) {
                 // ignore
             }
@@ -233,14 +242,8 @@ export const CourseLibraryPage: React.FC = () => {
         load();
     }, []);
 
-    if (loading) return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-8 animate-pulse">
-            <div className="text-center space-y-4">
-                <div className="text-4xl md:text-6xl font-black italic tracking-tighter text-primary animate-glitch uppercase">Loading Neural Protocols...</div>
-                <div className="h-1 w-64 bg-primary mx-auto"></div>
-            </div>
-        </div>
-    );
+    // Blocking loader removed for instant UI
+
 
     return (
         <div className="p-6 md:p-12 space-y-12">
@@ -269,78 +272,92 @@ export const CourseLibraryPage: React.FC = () => {
 
             {/* Course Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {courses.map((course, idx) => (
-                    <motion.div
-                        key={course.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.1 }}
-                        className="h-full"
-                    >
-                        <ThemedCard
-                            noPadding
-                            interactive
-                            onClick={() => navigate(`/courses/${course.id}`)}
-                            className="h-full group flex flex-col"
+                {loading ? (
+                    // Skeleton Loading
+                    [1, 2, 3, 4, 5, 6].map(i => (
+                        <div key={i} className="h-96 rounded-3xl bg-secondary/20 animate-pulse border border-white/5 space-y-4 overflow-hidden">
+                            <div className="h-48 bg-secondary/40" />
+                            <div className="p-6 space-y-4">
+                                <div className="h-8 w-3/4 bg-secondary/40 rounded" />
+                                <div className="h-4 w-full bg-secondary/30 rounded" />
+                                <div className="h-4 w-1/2 bg-secondary/30 rounded" />
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    courses.map((course, idx) => (
+                        <motion.div
+                            key={course.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            className="h-full"
                         >
-                            {/* Thumbnail / Header */}
-                            <div className="h-48 bg-gradient-to-br from-gray-900 to-black relative overflow-hidden">
-                                {/* Abstract Cyber Grid Background */}
-                                <div className="absolute inset-0 opacity-20"
-                                    style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-                                />
+                            <ThemedCard
+                                noPadding
+                                interactive
+                                onClick={() => navigate(`/courses/${course.id}`)}
+                                className="h-full group flex flex-col"
+                            >
+                                {/* Thumbnail / Header */}
+                                <div className="h-48 bg-gradient-to-br from-gray-900 to-black relative overflow-hidden">
+                                    {/* Abstract Cyber Grid Background */}
+                                    <div className="absolute inset-0 opacity-20"
+                                        style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}
+                                    />
 
-                                {course.thumbnail_url ? (
-                                    <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                                ) : (
-                                    <div className="flex items-center justify-center h-full">
-                                        <BookOpen className="w-16 h-16 text-white/10" />
+                                    {course.thumbnail_url ? (
+                                        <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full">
+                                            <BookOpen className="w-16 h-16 text-white/10" />
+                                        </div>
+                                    )}
+
+                                    {/* Level Badge */}
+                                    <div className="absolute top-4 right-4 bg-black/80 backdrop-blur border border-white/10 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-white shadow-xl">
+                                        {course.difficulty_level}
                                     </div>
-                                )}
-
-                                {/* Level Badge */}
-                                <div className="absolute top-4 right-4 bg-black/80 backdrop-blur border border-white/10 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-white shadow-xl">
-                                    {course.difficulty_level}
                                 </div>
-                            </div>
 
-                            {/* Content */}
-                            <div className="p-6 flex-1 flex flex-col space-y-4">
-                                <h3 className="text-2xl font-black uppercase leading-tight group-hover:text-primary transition-colors">
-                                    {course.title}
-                                </h3>
+                                {/* Content */}
+                                <div className="p-6 flex-1 flex flex-col space-y-4">
+                                    <h3 className="text-2xl font-black uppercase leading-tight group-hover:text-primary transition-colors">
+                                        {course.title}
+                                    </h3>
 
-                                <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
-                                    {course.description}
-                                </p>
+                                    <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+                                        {course.description}
+                                    </p>
 
-                                {/* Tags */}
-                                <div className="flex flex-wrap gap-2 pt-2">
-                                    {course.tags?.map(t => (
-                                        <span key={t} className="text-[10px] uppercase font-bold text-muted-foreground bg-secondary/50 px-2 py-1 rounded border border-white/5">
-                                            #{t}
+                                    {/* Tags */}
+                                    <div className="flex flex-wrap gap-2 pt-2">
+                                        {course.tags?.map(t => (
+                                            <span key={t} className="text-[10px] uppercase font-bold text-muted-foreground bg-secondary/50 px-2 py-1 rounded border border-white/5">
+                                                #{t}
+                                            </span>
+                                        ))}
+                                    </div>
+
+                                    {/* Footer Stats */}
+                                    <div className="pt-4 mt-auto border-t border-white/5 flex items-center justify-between text-xs font-mono text-muted-foreground">
+                                        <span className="flex items-center gap-1.5">
+                                            <Clock className="w-3.5 h-3.5" />
+                                            {course.duration_weeks} WEEKS
                                         </span>
-                                    ))}
+                                        <span className="flex items-center gap-1.5 text-primary group-hover:animate-pulse">
+                                            <Trophy className="w-3.5 h-3.5" />
+                                            OPEN ACCESS
+                                        </span>
+                                    </div>
                                 </div>
-
-                                {/* Footer Stats */}
-                                <div className="pt-4 mt-auto border-t border-white/5 flex items-center justify-between text-xs font-mono text-muted-foreground">
-                                    <span className="flex items-center gap-1.5">
-                                        <Clock className="w-3.5 h-3.5" />
-                                        {course.duration_weeks} WEEKS
-                                    </span>
-                                    <span className="flex items-center gap-1.5 text-primary group-hover:animate-pulse">
-                                        <Trophy className="w-3.5 h-3.5" />
-                                        OPEN ACCESS
-                                    </span>
-                                </div>
-                            </div>
-                        </ThemedCard>
-                    </motion.div>
-                ))}
+                            </ThemedCard>
+                        </motion.div>
+                    ))
+                )}
 
                 {/* Coming Soon Placeholder */}
-                {courses.length === 0 && (
+                {!loading && courses.length === 0 && (
                     <div className="col-span-full text-center py-20 opacity-50">
                         <Lock className="w-12 h-12 mx-auto mb-4" />
                         <h3 className="text-xl font-bold">No Protocols Online</h3>

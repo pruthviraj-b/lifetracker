@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { DayLog } from '@/types/habit';
 import { useTheme } from '@/context/ThemeContext';
@@ -6,18 +7,58 @@ import { motion } from 'framer-motion';
 interface HeatmapProps {
     logs: Record<string, DayLog>; // Map of date -> log
     daysToShow?: number;
+    /**
+     * 'auto' = desktop shows current month, mobile shows 30 days
+     * '30' = always 30 days
+     * 'month' = show days in current month
+     */
+    daysMode?: 'auto' | '30' | 'month';
     className?: string;
     onDayClick?: (date: string) => void;
 }
 
-export function Heatmap({ logs, daysToShow = 30, className, onDayClick }: HeatmapProps) {
+export function Heatmap({ logs, daysToShow = 30, daysMode = 'auto', className, onDayClick }: HeatmapProps) {
     const { preferences } = useTheme();
     const isWild = preferences.wild_mode;
-    // Generate dates backwards from today
+
+    const [cellSize, setCellSize] = useState<number>(24);
+    const [computedDays, setComputedDays] = useState<number>(daysToShow);
+
+    // Compute number of days to show and cell size based on viewport and mode
+    useEffect(() => {
+        const compute = () => {
+            const w = typeof window !== 'undefined' ? window.innerWidth : 1024;
+            const isMobile = w < 640;
+
+            let finalDays = daysToShow;
+            if (daysMode === '30') finalDays = 30;
+            else if (daysMode === 'month') {
+                const today = new Date();
+                finalDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            } else {
+                // auto
+                if (isMobile) finalDays = 30;
+                else {
+                    const today = new Date();
+                    finalDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+                }
+            }
+
+            const size = isMobile ? 18 : (w < 1024 ? 22 : 28);
+
+            setComputedDays(finalDays);
+            setCellSize(size);
+        };
+
+        compute();
+        window.addEventListener('resize', compute);
+        return () => window.removeEventListener('resize', compute);
+    }, [daysMode, daysToShow]);
+
     const generateDates = () => {
-        const dates = [];
+        const dates: Date[] = [];
         const today = new Date();
-        for (let i = 0; i < daysToShow; i++) {
+        for (let i = 0; i < computedDays; i++) {
             const d = new Date(today);
             d.setDate(d.getDate() - i);
             dates.push(d);
@@ -78,40 +119,43 @@ export function Heatmap({ logs, daysToShow = 30, className, onDayClick }: Heatma
                 </div>
             </div>
 
-            {/* Grid Container - adjusted for 30 days (approx 4-5 weeks) */}
-            <div className="grid grid-cols-7 gap-[3px] md:gap-[4px]">
-                {/* Day Labels (Optional, can add later) */}
-                {dates.map((date, i) => {
-                    const dateStr = formatDate(date);
-                    const log = logs[dateStr];
-                    const count = log?.completedHabitIds.length || 0;
-                    const intensity = getIntensity(dateStr);
+            {/* Grid Container - 7 columns (week) with responsive cell sizing */}
+            <div className="overflow-x-auto">
+                <div className="grid grid-cols-7 gap-[3px] md:gap-[4px]" style={{ gridAutoRows: `${cellSize}px` }}>
+                    {/* Day Labels (Optional, can add later) */}
+                    {dates.map((date, i) => {
+                        const dateStr = formatDate(date);
+                        const log = logs[dateStr];
+                        const count = log?.completedHabitIds.length || 0;
+                        const intensity = getIntensity(dateStr);
 
-                    return (
-                        <motion.button
-                            key={dateStr}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: i * 0.01 }}
-                            onClick={() => onDayClick?.(dateStr)}
-                            title={`${dateStr}: ${count} completions`}
-                            className={cn(
-                                "aspect-square w-full rounded-sm transition-all relative group/cell",
-                                intensity === 0 && "bg-secondary/30 hover:bg-secondary/50",
-                                intensity === 1 && "bg-primary/20 hover:bg-primary/30",
-                                intensity === 2 && "bg-primary/40 hover:bg-primary/50",
-                                intensity === 3 && "bg-primary/60 hover:bg-primary/70",
-                                intensity === 4 && "bg-primary hover:bg-primary/90 shadow-[0_0_8px_rgba(var(--primary),0.4)]",
-                                isWild && "rounded-none border border-red-900/20"
-                            )}
-                        >
-                            {/* Tooltip on Hover */}
-                            <span className="opacity-0 group-hover/cell:opacity-100 absolute bottom-full left-1/2 -translate-x-1/2 bg-black text-white text-[9px] px-1 py-0.5 rounded pointer-events-none whitespace-nowrap z-20 mb-1">
-                                {new Date(date).getDate()}
-                            </span>
-                        </motion.button>
-                    );
-                })}
+                        return (
+                            <motion.button
+                                key={dateStr}
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: i * 0.01 }}
+                                onClick={() => onDayClick?.(dateStr)}
+                                title={`${dateStr}: ${count} completions`}
+                                style={{ minWidth: `${cellSize}px`, height: `${cellSize}px` }}
+                                className={cn(
+                                    "rounded-sm transition-all relative group/cell flex items-center justify-center",
+                                    intensity === 0 && "bg-secondary/30 hover:bg-secondary/50",
+                                    intensity === 1 && "bg-primary/20 hover:bg-primary/30",
+                                    intensity === 2 && "bg-primary/40 hover:bg-primary/50",
+                                    intensity === 3 && "bg-primary/60 hover:bg-primary/70",
+                                    intensity === 4 && "bg-primary hover:bg-primary/90 shadow-[0_0_8px_rgba(var(--primary),0.4)]",
+                                    isWild && "rounded-none border border-red-900/20"
+                                )}
+                            >
+                                {/* Tooltip on Hover */}
+                                <span className="opacity-0 group-hover/cell:opacity-100 absolute bottom-full left-1/2 -translate-x-1/2 bg-black text-white text-[9px] px-1 py-0.5 rounded pointer-events-none whitespace-nowrap z-20 mb-1">
+                                    {new Date(date).getDate()}
+                                </span>
+                            </motion.button>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

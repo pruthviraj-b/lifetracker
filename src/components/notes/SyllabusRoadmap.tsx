@@ -5,6 +5,7 @@ import { Note } from '../../types/note';
 import { Habit } from '../../types/habit';
 import { HabitService } from '../../services/habit.service';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import confetti from 'canvas-confetti';
 
 interface SyllabusRoadmapProps {
@@ -72,6 +73,7 @@ const parseSyllabus = (content: string): SyllabusNode[] => {
 
 export const SyllabusRoadmap: React.FC<SyllabusRoadmapProps> = ({ note, onUpdateContent }) => {
     const { showToast } = useToast();
+    const { user } = useAuth();
     const [tree, setTree] = useState<SyllabusNode[]>([]);
     const [linkedHabit, setLinkedHabit] = useState<Habit | null>(null);
 
@@ -127,8 +129,8 @@ export const SyllabusRoadmap: React.FC<SyllabusRoadmapProps> = ({ note, onUpdate
                 try {
                     const today = new Date().toISOString().split('T')[0];
                     // Only toggle if not already completed today to avoid double-counting
-                    if (!linkedHabit.completedToday) {
-                        await HabitService.toggleHabitCompletion(linkedHabit.id, today, true);
+                    if (!linkedHabit.completedToday && user) {
+                        await HabitService.toggleHabitCompletion(linkedHabit.id, today, true, user.id);
                         showToast('Habit Synced', `Completed: ${linkedHabit.title}`, { type: 'success' });
                     }
                 } catch (e) {

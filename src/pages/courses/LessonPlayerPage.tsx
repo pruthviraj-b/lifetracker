@@ -8,6 +8,7 @@ import { CourseService } from '../../services/course.service';
 import { useToast } from '../../context/ToastContext';
 
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 export const LessonPlayerPage: React.FC = () => {
     const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
@@ -15,6 +16,7 @@ export const LessonPlayerPage: React.FC = () => {
     const { showToast } = useToast();
     const { preferences } = useTheme();
     const isWild = preferences.wild_mode;
+    const { user } = useAuth();
 
     const [course, setCourse] = useState<Course | null>(null);
     const [modules, setModules] = useState<CourseModule[]>([]);
@@ -23,6 +25,7 @@ export const LessonPlayerPage: React.FC = () => {
     const [markedComplete, setMarkedComplete] = useState(false);
 
     useEffect(() => {
+        // ... existing useEffect ...
         if (!courseId || !lessonId) return;
         const load = async () => {
             try {
@@ -38,9 +41,6 @@ export const LessonPlayerPage: React.FC = () => {
                 });
 
                 if (found) setCurrentLesson(found);
-
-                // Check if already completed (simple check for now, can be robustified)
-                // In real app, we'd fetch lesson_progress specifically
             } catch (e) {
                 console.error(e);
             }
@@ -49,10 +49,10 @@ export const LessonPlayerPage: React.FC = () => {
     }, [courseId, lessonId]);
 
     const handleComplete = async () => {
-        if (!currentLesson || !course) return;
+        if (!currentLesson || !course || !user) return;
         try {
             if (!markedComplete) {
-                await CourseService.markLessonComplete(currentLesson.id, course.id);
+                await CourseService.markLessonComplete(currentLesson.id, course.id, user.id);
                 setMarkedComplete(true);
                 showToast('Progress Saved', 'Lesson Complete', { type: 'success' });
             }
@@ -90,7 +90,45 @@ export const LessonPlayerPage: React.FC = () => {
         }
     };
 
-    if (!currentLesson || !course) return <div className="p-8">Loading Neural Interface...</div>;
+    if (!currentLesson || !course) {
+        return (
+            <div className={`flex h-screen bg-background overflow-hidden relative ${isWild ? 'wild' : ''}`}>
+                {/* Skeleton Sidebar - Desktop */}
+                <div className="w-80 border-r border-white/10 bg-black/50 hidden md:block h-full p-6 space-y-6">
+                    <div className="h-6 w-3/4 bg-muted/20 rounded animate-pulse" />
+                    <div className="space-y-4">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="space-y-2">
+                                <div className="h-4 w-1/2 bg-muted/10 rounded" />
+                                <div className="h-8 w-full bg-muted/5 rounded" />
+                                <div className="h-8 w-full bg-muted/5 rounded" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Skeleton Main Content */}
+                <div className="flex-1 flex flex-col relative bg-[#050505]">
+                    {/* Top Skeleton */}
+                    <div className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-background/50">
+                        <div className="h-8 w-32 bg-muted/20 rounded animate-pulse" />
+                        <div className="h-4 w-24 bg-muted/10 rounded animate-pulse" />
+                    </div>
+
+                    {/* Content Skeleton */}
+                    <div className="flex-1 overflow-y-auto p-6 md:p-12 max-w-4xl mx-auto w-full space-y-8">
+                        <div className="h-12 w-3/4 bg-muted/20 rounded-lg animate-pulse" />
+                        <div className="aspect-video bg-muted/10 rounded-xl border border-white/5 animate-pulse" />
+                        <div className="space-y-4">
+                            {[1, 2, 3, 4, 5, 6].map(i => (
+                                <div key={i} className="h-4 w-full bg-muted/10 rounded animate-pulse" />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={`flex h-screen bg-background overflow-hidden relative selection:bg-primary selection:text-black ${isWild ? 'wild font-mono' : ''}`}>

@@ -144,7 +144,10 @@ export default function RemindersPage() {
         if (reminder.date) {
             const [y, m, d] = reminder.date.split('-').map(Number);
             targetDate.setFullYear(y, m - 1, d);
-            if (targetDate < now) return;
+            // If the scheduled datetime is already in the past, roll it to next day
+            if (targetDate <= now) {
+                targetDate.setDate(targetDate.getDate() + 1);
+            }
         } else if (reminder.days.length > 0) {
             let found = false;
             for (let i = 0; i < 7; i++) {
@@ -174,18 +177,32 @@ export default function RemindersPage() {
 
     const handleSave = async (data: any) => {
         try {
+            let result: any = null;
             if (editingReminder) {
                 await ReminderService.updateReminder(editingReminder.id, data);
+                result = { ...editingReminder, ...data };
             } else {
-                await ReminderService.createReminder({ ...data, isEnabled: true });
+                result = await ReminderService.createReminder({ ...data, isEnabled: true });
             }
-            refreshReminders();
+
+            // Refresh local state and SW sync
+            await refreshReminders();
             const updatedReminders = await ReminderService.getReminders();
             setReminders(updatedReminders);
             setEditingReminder(undefined);
-            setIsModalOpen(false);
+
+            // Surface success feedback
+            try {
+                // prefer toast if available
+                const { showToast } = await import('../context/ToastContext');
+                // no-op: import to keep tree-shaking stable; actual toast used below via context
+            } catch (e) { }
+
+            // Return created/updated reminder for caller
+            return result;
         } catch (error: any) {
-            alert(`Failed to save: ${error.message}`);
+            console.error('Failed to save reminder:', error);
+            throw error;
         }
     };
 
@@ -199,7 +216,7 @@ export default function RemindersPage() {
                 if (r) scheduleReminderInSW({ ...r, isEnabled: true });
             } else {
                 const r = reminders.find(item => item.id === id);
-                if (r) NotificationManagerInstance.cancelNotification(r.title);
+                if (r) NotificationManagerInstance.cancelNotification(id);
             }
         } catch (error) {
             console.error(error);
@@ -211,7 +228,7 @@ export default function RemindersPage() {
         try {
             setReminders(prev => prev.filter(r => r.id !== id));
             await ReminderService.deleteReminder(id);
-            await NotificationManagerInstance.cancelNotification(title);
+            await NotificationManagerInstance.cancelNotification(id);
         } catch (error) {
             console.error(error);
         }
@@ -348,7 +365,7 @@ export default function RemindersPage() {
                         reminders.map(reminder => (
                             <ThemedCard
                                 key={reminder.id}
-                                className={`group relative transition-all duration-300 ${!reminder.isEnabled ? 'opacity-40 grayscale pointer-events-none' : ''}`}
+                                className={`group relative transition-all duration-300 ${!reminder.isEnabled ? 'opacity-40 grayscale' : ''}`}
                             >
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">

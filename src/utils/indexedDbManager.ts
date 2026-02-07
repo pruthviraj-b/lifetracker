@@ -83,6 +83,19 @@ class IndexedDBManager {
             request.onerror = () => reject(request.error);
         });
     }
+
+    // Delete all notifications (clear object store)
+    async deleteAllNotifications() {
+        if (!this.db) await this.init();
+        const transaction = this.db!.transaction('notifications', 'readwrite');
+        const store = transaction.objectStore('notifications');
+
+        return new Promise((resolve, reject) => {
+            const request = store.clear();
+            request.onsuccess = () => resolve(true);
+            request.onerror = () => reject(request.error);
+        });
+    }
 }
 
 export const IndexedDBManagerInstance = new IndexedDBManager();

@@ -16,10 +16,15 @@ export const AuthService = {
             email = 'admin@lifetracker.local'; // This user must exist in Supabase Auth
         }
 
+        // REMOVED explicit signOut to avoid aborting the fetch signal
+        // We rely on Supabase to handle the session replacement naturally
+
+        console.log("Supabase Auth: Initiating signInWithPassword...");
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
+        console.log("Supabase Auth: Response received", error ? "ERROR" : "SUCCESS");
 
         if (error) {
             console.error("Supabase Login Error:", error);

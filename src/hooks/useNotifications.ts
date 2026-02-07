@@ -21,8 +21,9 @@ export const useNotifications = () => {
                     const delay = scheduledTime - now;
 
                     if (delay > 0) {
+                        const tag = (notification.options && (notification.options as any).tag) || notification.id;
                         NotificationManagerInstance.setLocalNotificationTimer(
-                            notification.habitName,
+                            tag,
                             delay,
                             notification.options
                         );
@@ -49,8 +50,8 @@ export const useNotifications = () => {
         return await NotificationManagerInstance.scheduleNotification(habitName, time, options);
     };
 
-    const cancelReminder = (habitName: string) => {
-        NotificationManagerInstance.cancelNotification(habitName);
+    const cancelReminder = (tagOrHabitName: string) => {
+        NotificationManagerInstance.cancelNotification(tagOrHabitName);
     };
 
     const showImmediateNotification = async (title: string, options: NotificationOptions) => {

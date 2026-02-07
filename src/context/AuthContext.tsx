@@ -21,44 +21,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Initialize session and listen for auth changes
     useEffect(() => {
-        // Safety timeout to prevent infinite loading
-        const timeoutId = setTimeout(() => {
-            console.warn("Auth check timed out - forcing UI render");
-            setIsLoading(false);
-        }, 3000);
+        let mounted = true;
 
-        // Initial check
-        AuthService.checkSession().then(currentUser => {
-            // Only update if we haven't timed out (optional check, but setState is safe)
-            setUser(currentUser);
-            setIsLoading(false);
-            clearTimeout(timeoutId);
-        }).catch((err) => {
-            console.error("Session check failed", err);
-            setIsLoading(false);
-            clearTimeout(timeoutId);
-        });
+        const initSession = async () => {
+            try {
+                // 1. Get initial session
+                const { data: { session } } = await supabase.auth.getSession();
 
-        // Realtime listener for OAuth redirects and session updates
+                if (mounted) {
+                    if (session?.user) {
+                        setUser({
+                            id: session.user.id,
+                            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+                            email: session.user.email || '',
+                        });
+                    }
+                    // CRITICAL: Always finish loading after initial check
+                    setIsLoading(false);
+                }
+            } catch (error) {
+                console.error("Auth Init Error:", error);
+                if (mounted) setIsLoading(false);
+            }
+        };
+
+        initSession();
+
+        // 2. Set up listener for updates
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            if (!mounted) return;
+
             if (session?.user) {
-                const user = await AuthService.checkSession(); // Or map session.user directly
-                setUser(user);
+                setUser({
+                    id: session.user.id,
+                    name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+                    email: session.user.email || '',
+                });
             } else {
                 setUser(null);
             }
             setIsLoading(false);
-            clearTimeout(timeoutId);
         });
 
         return () => {
+            mounted = false;
             subscription.unsubscribe();
-            clearTimeout(timeoutId);
         };
     }, []);
 
     const login = async (credentials: LoginCredentials) => {
-        const { user, token } = await AuthService.login(credentials);
+        // Wrap login in a timeout/race to prevent UI hang
+        const loginPromise = AuthService.login(credentials);
+        const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Login timed out. Please check your connection.")), 15000)
+        );
+
+        const { user, token } = await Promise.race([loginPromise, timeoutPromise]);
+
         AuthService.setSession(token, user);
         setUser(user);
 

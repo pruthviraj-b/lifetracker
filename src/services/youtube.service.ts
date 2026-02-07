@@ -54,7 +54,8 @@ export const YouTubeService = {
                     folder_id: input.folderId,
                     course_id: input.courseId,
                     difficulty: input.difficulty || 'beginner',
-                    status: 'unwatched'
+                    status: 'unwatched',
+                    is_archived: false
                 })
                 .select()
                 .single();

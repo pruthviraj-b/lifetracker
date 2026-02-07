@@ -86,28 +86,39 @@ export function CreateHabitModal({ isOpen, onClose, onSave, initialData, mode = 
         );
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({
-            title,
-            category,
-            timeOfDay: time,
-            frequency: days,
-            type,
-            priority,
-            goalDuration: type === 'goal' ? duration : undefined,
-            goalProgress: type === 'goal' ? (mode === 'create' ? 0 : initialData?.goalProgress) : undefined,
-            id: initialData?.id,
-            links: links as HabitLink[],
-            reminderTime: reminderTime || undefined // Pass custom field
-        });
-        // Reset and close
-        setTitle('');
-        setDays([0, 1, 2, 3, 4, 5, 6]);
-        setType('habit');
-        setDuration(30);
-        setReminderTime('');
-        onClose();
+        setLoading(true);
+        try {
+            await onSave({
+                title,
+                category,
+                timeOfDay: time,
+                frequency: days,
+                type,
+                priority,
+                goalDuration: type === 'goal' ? duration : undefined,
+                goalProgress: type === 'goal' ? (mode === 'create' ? 0 : initialData?.goalProgress) : undefined,
+                id: initialData?.id,
+                links: links as HabitLink[],
+                reminderTime: reminderTime || undefined
+            });
+
+            // Only close and reset on success
+            setTitle('');
+            setDays([0, 1, 2, 3, 4, 5, 6]);
+            setType('habit');
+            setDuration(30);
+            setReminderTime('');
+            onClose();
+        } catch (error) {
+            console.error('Modal Save Error:', error);
+            // Don't close on error
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (!isOpen) return null;

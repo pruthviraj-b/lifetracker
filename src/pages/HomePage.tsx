@@ -101,8 +101,9 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
 
     useEffect(() => {
         const loadDashboardData = async () => {
+            if (!user) return;
             try {
-                const habitsData = await HabitService.getHabits();
+                const habitsData = await HabitService.getHabits(user.id);
                 const completedCount = habitsData.filter(h => h.completedToday).length;
                 setHabits(habitsData.map(h => ({ id: h.id, title: h.title, completed: h.completedToday })));
                 setStats({ total: habitsData.length, completed: completedCount, percentage: habitsData.length > 0 ? Math.round((completedCount / habitsData.length) * 100) : 0 });
@@ -117,12 +118,13 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
             } catch (error) { console.error("Dashboard load failed:", error); }
         };
         loadDashboardData();
-    }, []);
+    }, [user]);
 
     const handleQuickLog = async (id: string) => {
         try {
+            if (!user) return;
             const today = new Date().toISOString().split('T')[0];
-            await HabitService.toggleHabitCompletion(id, today, true);
+            await HabitService.toggleHabitCompletion(id, today, true, user.id);
             setHabits(prev => prev.map(h => h.id === id ? { ...h, completed: true } : h));
             setStats(prev => { const newCompleted = prev.completed + 1; return { ...prev, completed: newCompleted, percentage: Math.round((newCompleted / prev.total) * 100) }; });
         } catch (error) { console.error("Quick log failed:", error); }
@@ -265,7 +267,7 @@ const ClaudeLanding = ({ navigate }: { navigate: any }) => {
                         Simple, intuitive, and human-centric.
                     </p>
                 </div>
-                beach
+
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <Button
                         onClick={() => navigate('/login')}

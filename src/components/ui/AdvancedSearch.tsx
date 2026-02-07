@@ -6,6 +6,7 @@ import { HabitService } from '../../services/habit.service';
 import { ReminderService } from '../../services/reminder.service';
 import { FlashcardService } from '../../services/flashcard.service';
 import smartChatAnalyzer from '../../utils/smartChatAnalyzer';
+import { useAuth } from '../../context/AuthContext';
 
 interface SearchResult {
     id: string;
@@ -18,6 +19,7 @@ interface SearchResult {
 
 export const AdvancedSearch = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [query, setQuery] = useState('');
     const [isThinking, setIsThinking] = useState(false);
     const [isExecuting, setIsExecuting] = useState(false);
@@ -148,6 +150,7 @@ export const AdvancedSearch = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
     // Wizard Input Handler
     const handleWizardInput = async () => {
         if (!wizard.type) return;
+        if (!user) return; // Add check
 
         const steps = WIZARD_STEPS[wizard.type];
         const currentStep = steps[wizard.step];
@@ -189,9 +192,10 @@ export const AdvancedSearch = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
                     timeOfDay: timeOfDay as any,
                     frequency: frequency as any,
                     type: 'habit',
+                    goalDuration: 15,
                     priority: 'medium',
                     order: 0
-                });
+                }, user.id);
             } else if (wizard.type === 'reminder') {
                 await ReminderService.createReminder({
                     title: newData.title,

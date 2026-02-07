@@ -40,13 +40,7 @@ export default function AnalyticsPage() {
         }
     };
 
-    if (loading || !stats) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-8 animate-pulse">
-                <div className="text-sm font-bold uppercase tracking-widest text-primary">Calculating your progress...</div>
-            </div>
-        );
-    }
+    // Blocking loader removed for instant UI
 
     return (
         <div className="p-4 md:p-8 space-y-12 max-w-7xl mx-auto animate-claude-in">
@@ -82,29 +76,36 @@ export default function AnalyticsPage() {
 
             {/* Overview Matrix */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {[
-                    { label: 'Consistency', value: `${stats.summary.completionRate}%`, sub: 'Adherence rate', icon: Activity },
-                    { label: 'Total Rituals', value: stats.summary.totalCompletions, sub: 'All-time logs', icon: Calendar },
-                    { label: 'Best Streak', value: Math.max(0, ...stats.habitStats.map(h => h.streak)), sub: 'Longest run', icon: Zap },
-                    { label: 'Global Progress', value: `${Math.round(stats.multiverse.linkDensity)}%`, sub: 'Habit connectivity', icon: TrendingUp }
-                ].map((stat, i) => (
-                    <ThemedCard key={i} className="p-8 space-y-4 group">
-                        <div className="p-3 bg-secondary rounded-2xl w-fit group-hover:bg-primary group-hover:text-white transition-all">
-                            <stat.icon className="w-6 h-6" />
-                        </div>
-                        <div className="space-y-1">
-                            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
-                                {stat.label}
+                {loading ? (
+                    // Skeletons
+                    [1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-40 bg-secondary/30 rounded-3xl animate-pulse" />
+                    ))
+                ) : stats && (
+                    [
+                        { label: 'Consistency', value: `${stats.summary.completionRate}%`, sub: 'Adherence rate', icon: Activity },
+                        { label: 'Total Rituals', value: stats.summary.totalCompletions, sub: 'All-time logs', icon: Calendar },
+                        { label: 'Best Streak', value: Math.max(0, ...stats.habitStats.map(h => h.streak)), sub: 'Longest run', icon: Zap },
+                        { label: 'Global Progress', value: `${Math.round(stats.multiverse.linkDensity)}%`, sub: 'Habit connectivity', icon: TrendingUp }
+                    ].map((stat, i) => (
+                        <ThemedCard key={i} className="p-8 space-y-4 group">
+                            <div className="p-3 bg-secondary rounded-2xl w-fit group-hover:bg-primary group-hover:text-white transition-all">
+                                <stat.icon className="w-6 h-6" />
                             </div>
-                            <div className="text-4xl font-bold text-foreground tracking-tight">
-                                {stat.value}
+                            <div className="space-y-1">
+                                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
+                                    {stat.label}
+                                </div>
+                                <div className="text-4xl font-bold text-foreground tracking-tight">
+                                    {stat.value}
+                                </div>
+                                <div className="text-xs text-muted-foreground font-medium">
+                                    {stat.sub}
+                                </div>
                             </div>
-                            <div className="text-xs text-muted-foreground font-medium">
-                                {stat.sub}
-                            </div>
-                        </div>
-                    </ThemedCard>
-                ))}
+                        </ThemedCard>
+                    ))
+                )}
             </div>
 
             {/* Performance Curve */}
@@ -116,7 +117,11 @@ export default function AnalyticsPage() {
                     </h3>
                 </div>
                 <div className="h-[350px] w-full">
-                    <TrendChart data={stats.trend} />
+                    {loading ? (
+                        <div className="w-full h-full bg-secondary/20 rounded-xl animate-pulse" />
+                    ) : stats && (
+                        <TrendChart data={stats.trend} />
+                    )}
                 </div>
             </ThemedCard>
 
@@ -127,7 +132,9 @@ export default function AnalyticsPage() {
                         <Trophy className="w-4 h-4 text-primary" /> Most Consistent Rituals
                     </h3>
                     <div className="space-y-2">
-                        {stats.habitStats.slice(0, 5).map((habit, i) => (
+                        {loading ? (
+                            [1, 2, 3].map(i => <div key={i} className="h-16 bg-secondary/30 rounded-2xl animate-pulse" />)
+                        ) : stats && stats.habitStats.slice(0, 5).map((habit, i) => (
                             <div key={habit.id} className="flex items-center justify-between p-4 transition-all rounded-2xl hover:bg-secondary group">
                                 <div className="flex items-center gap-4">
                                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${i < 3 ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-secondary text-muted-foreground'}`}>
@@ -155,24 +162,33 @@ export default function AnalyticsPage() {
                         <Calendar className="w-4 h-4 text-primary" /> Progress Insights
                     </h3>
                     <div className="space-y-6">
-                        <div className="p-6 bg-primary/5 rounded-[2rem] space-y-2">
-                            <p className="text-sm font-medium text-foreground leading-relaxed">
-                                Your current reliability index is <span className="text-primary font-bold">{Math.round(stats.summary.completionRate)}%</span>.
-                                Maintaining an 80% or higher completion rate is the optimal threshold for long-term consistency.
-                            </p>
-                        </div>
-
-                        <div className="p-8 bg-secondary border border-border rounded-[2.5rem] space-y-4 group transition-all duration-500">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-white rounded-xl shadow-sm">
-                                    <Activity className="w-5 h-5 text-primary" />
+                        {loading ? (
+                            <div className="space-y-4 animate-pulse">
+                                <div className="h-32 bg-secondary/30 rounded-3xl" />
+                                <div className="h-32 bg-secondary/30 rounded-3xl" />
+                            </div>
+                        ) : stats && (
+                            <>
+                                <div className="p-6 bg-primary/5 rounded-[2rem] space-y-2">
+                                    <p className="text-sm font-medium text-foreground leading-relaxed">
+                                        Your current reliability index is <span className="text-primary font-bold">{Math.round(stats.summary.completionRate)}%</span>.
+                                        Maintaining an 80% or higher completion rate is the optimal threshold for long-term consistency.
+                                    </p>
                                 </div>
-                                <div className="text-xs font-bold uppercase tracking-widest text-foreground">Weekly Overview</div>
-                            </div>
-                            <div className="text-sm font-medium leading-relaxed text-muted-foreground">
-                                Your activity pattern is stabilizing. You've shown peak performance in your morning rituals this week. Keep focus on maintaining your evening wind-down consistency.
-                            </div>
-                        </div>
+
+                                <div className="p-8 bg-secondary border border-border rounded-[2.5rem] space-y-4 group transition-all duration-500">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-white rounded-xl shadow-sm">
+                                            <Activity className="w-5 h-5 text-primary" />
+                                        </div>
+                                        <div className="text-xs font-bold uppercase tracking-widest text-foreground">Weekly Overview</div>
+                                    </div>
+                                    <div className="text-sm font-medium leading-relaxed text-muted-foreground">
+                                        Your activity pattern is stabilizing. You've shown peak performance in your morning rituals this week. Keep focus on maintaining your evening wind-down consistency.
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </ThemedCard>
             </div>
