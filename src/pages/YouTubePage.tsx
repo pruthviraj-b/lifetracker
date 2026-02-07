@@ -213,7 +213,7 @@ export default function YouTubePage() {
     // Consolidated list for "Root View" mixing (optional, but current logic separates them)
 
     return (
-        <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto min-h-screen">
+        <div className="p-3 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto min-h-screen">
 
             {/* 1. Header & Navigation */}
             <div className={`flex flex-col gap-6 ${isWild ? 'animate-reveal' : ''}`}>
@@ -223,10 +223,10 @@ export default function YouTubePage() {
                             <Home className="w-5 h-5" />
                         </Button>
                         <div>
-                            <h1 className={`text-3xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>
+                            <h1 className={`text-xl md:text-3xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>
                                 {activeCourse ? activeCourse.title : activeFolder ? activeFolder.name : 'Archive Matrix'}
                             </h1>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-60">
+                            <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.3em] opacity-60">
                                 {activeCourse ? 'Curriculum Sequence' : activeFolder ? 'Knowledge Cluster' : 'Neural Storage'}
                             </p>
                         </div>
@@ -253,7 +253,7 @@ export default function YouTubePage() {
 
             {/* 3. Stats / Course Progress (If Course Active) */}
             {activeCourseId && activeCourseStats && (
-                <div className="bg-card border rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 animate-in fade-in">
+                <div className="bg-card border rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 animate-in fade-in">
                     <div className="space-y-1">
                         <h3 className="text-lg font-bold">Progress Status</h3>
                         <p className="text-xs text-muted-foreground">{activeCourseStats.completedVideos} / {activeCourseStats.totalVideos} Modules Complete</p>
@@ -300,8 +300,8 @@ export default function YouTubePage() {
                                 </div>
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold truncate">{folder.name}</h3>
-                                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Cluster</p>
+                                <h3 className="text-base md:text-xl font-bold truncate">{folder.name}</h3>
+                                <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Cluster</p>
                             </div>
                         </ThemedCard>
                     ))}
@@ -323,8 +323,8 @@ export default function YouTubePage() {
                                 </div>
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold truncate">{course.title}</h3>
-                                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Curriculum</p>
+                                <h3 className="text-base md:text-xl font-bold truncate">{course.title}</h3>
+                                <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Curriculum</p>
                             </div>
                         </ThemedCard>
                     ))}
@@ -353,7 +353,7 @@ export default function YouTubePage() {
                             </div>
 
                             {/* Info */}
-                            <div className="p-4 flex-1 flex flex-col gap-3">
+                            <div className="p-3 flex-1 flex flex-col gap-2">
                                 <h3 className="font-bold leading-tight line-clamp-2 text-sm group-hover:text-primary transition-colors">{video.title}</h3>
 
                                 <div className="mt-auto flex items-center justify-between">

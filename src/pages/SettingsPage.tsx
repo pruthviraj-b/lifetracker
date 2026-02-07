@@ -80,7 +80,7 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-12 max-w-7xl mx-auto">
+        <div className="p-3 md:p-8 space-y-8 md:space-y-12 max-w-7xl mx-auto">
             {/* Header Area */}
             <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-6 ${isWild ? 'animate-reveal' : ''}`}>
                 <div className="flex items-center gap-4">
@@ -92,8 +92,8 @@ export default function SettingsPage() {
                         {activeTab ? <X className="w-5 h-5" /> : <Home className="w-5 h-5" />}
                     </Button>
                     <div>
-                        <h1 className={`text-3xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>System_Config</h1>
-                        <p className="text-muted-foreground text-[8px] uppercase font-bold tracking-[0.3em] opacity-60">Neural Protocol Configuration</p>
+                        <h1 className={`text-xl md:text-3xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>System_Config</h1>
+                        <p className="text-muted-foreground text-[7px] md:text-[8px] uppercase font-bold tracking-[0.3em] opacity-60">Neural Protocol Configuration</p>
                     </div>
                 </div>
 
@@ -127,10 +127,10 @@ export default function SettingsPage() {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <h3 className="text-lg font-black uppercase tracking-tight group-hover:text-primary transition-colors">
+                                    <h3 className="text-base md:text-lg font-black uppercase tracking-tight group-hover:text-primary transition-colors">
                                         {item.label}
                                     </h3>
-                                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest leading-relaxed opacity-60">
+                                    <p className="text-[9px] md:text-[10px] text-muted-foreground font-black uppercase tracking-widest leading-relaxed opacity-60">
                                         {item.description}
                                     </p>
                                 </div>
@@ -145,11 +145,11 @@ export default function SettingsPage() {
                         {/* Terminate Session Node */}
                         <ThemedCard
                             onClick={() => logout()}
-                            className="col-span-full md:col-span-2 lg:col-span-3 xl:col-span-4 mt-8 flex flex-col items-center justify-center p-12 text-center group border-red-500/20 hover:border-red-500/50 hover:bg-red-500/5"
+                            className="col-span-full md:col-span-2 lg:col-span-3 xl:col-span-4 mt-4 md:mt-8 flex flex-col items-center justify-center p-8 md:p-12 text-center group border-red-500/20 hover:border-red-500/50 hover:bg-red-500/5"
                         >
-                            <LogOut className="w-10 h-10 mb-4 text-red-500 group-hover:scale-125 transition-transform" />
-                            <h3 className="text-2xl font-black uppercase tracking-tighter text-red-500">Terminate_Session</h3>
-                            <p className="text-[10px] font-black text-red-500/60 uppercase tracking-widest mt-2 max-w-sm">
+                            <LogOut className="w-8 h-8 md:w-10 md:h-10 mb-2 md:mb-4 text-red-500 group-hover:scale-125 transition-transform" />
+                            <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-red-500">Terminate_Session</h3>
+                            <p className="text-[9px] md:text-[10px] font-black text-red-500/60 uppercase tracking-widest mt-2 max-w-sm">
                                 Disconnect from neural network and purge local encryption keys.
                             </p>
                         </ThemedCard>
@@ -161,14 +161,14 @@ export default function SettingsPage() {
                         exit={{ opacity: 0, y: -20 }}
                         className="max-w-4xl mx-auto"
                     >
-                        <ThemedCard className="p-8 md:p-12 min-h-[60vh] relative overflow-hidden">
+                        <ThemedCard className="p-4 md:p-12 min-h-[60vh] relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
 
-                            <div className="md:hidden flex items-center gap-4 mb-8 pb-8 border-b border-white/5">
-                                <div className="p-3 bg-primary/10 rounded-xl text-primary">
+                            <div className="md:hidden flex items-center gap-3 mb-6 pb-6 border-b border-white/5">
+                                <div className="p-2 bg-primary/10 rounded-lg text-primary">
                                     {menuItems.find(i => i.id === activeTab)?.icon}
                                 </div>
-                                <h2 className="text-xl font-black uppercase tracking-tighter">
+                                <h2 className="text-lg font-black uppercase tracking-tighter">
                                     {menuItems.find(i => i.id === activeTab)?.label}
                                 </h2>
                             </div>

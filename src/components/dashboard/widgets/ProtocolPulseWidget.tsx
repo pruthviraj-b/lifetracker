@@ -41,7 +41,7 @@ export const ProtocolPulseWidget: React.FC<ProtocolPulseWidgetProps> = ({ nextRe
     return (
         <div
             onClick={() => navigate('/reminders')}
-            className="bg-card border border-border p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col justify-between cursor-pointer hover:border-primary/30"
+            className="bg-card border border-border p-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col justify-between cursor-pointer hover:border-primary/30"
         >
             <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
@@ -84,9 +84,9 @@ export const ProtocolPulseWidget: React.FC<ProtocolPulseWidgetProps> = ({ nextRe
                 )}
             </div>
 
-            <div className="bg-secondary/30 border border-border p-2 rounded-xl flex items-center justify-between mt-2">
-                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">In</span>
-                <span className="text-base font-bold text-primary tabular-nums">
+            <div className="bg-secondary/30 border border-border px-2 py-1.5 rounded-lg flex items-center justify-between mt-2">
+                <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">In</span>
+                <span className="text-sm font-bold text-primary tabular-nums">
                     {timeLeft}
                 </span>
             </div>

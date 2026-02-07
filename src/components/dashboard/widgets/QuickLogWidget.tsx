@@ -12,7 +12,7 @@ export const QuickLogWidget: React.FC<QuickLogWidgetProps> = ({ habits, onLog })
     const navigate = useNavigate();
 
     return (
-        <div className="bg-card border border-border p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col justify-between">
+        <div className="bg-card border border-border p-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col justify-between">
             <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
                     <Target className="w-4 h-4 text-primary" />

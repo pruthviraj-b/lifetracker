@@ -157,7 +157,7 @@ export default function NotesPage() {
     });
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-12 animate-claude-in">
+        <div className="p-3 md:p-8 max-w-7xl mx-auto space-y-8 md:space-y-12 animate-claude-in">
             <div className="flex flex-col md:flex-row gap-12">
                 {/* Sidebar */}
                 <div className="w-full md:w-64 space-y-10 shrink-0">
@@ -238,12 +238,12 @@ export default function NotesPage() {
                 <div className="flex-1 space-y-8">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 bg-primary/10 rounded-2xl">
-                                <StickyNote className="w-8 h-8 text-primary" />
+                            <div className="p-2 md:p-3 bg-primary/10 rounded-xl md:rounded-2xl">
+                                <StickyNote className="w-6 h-6 md:w-8 md:h-8 text-primary" />
                             </div>
                             <div>
-                                <h1 className="text-4xl font-bold tracking-tight text-foreground">Knowledge Base</h1>
-                                <p className="text-muted-foreground text-sm">Organize your thoughts and resources.</p>
+                                <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground">Knowledge Base</h1>
+                                <p className="text-muted-foreground text-xs md:text-sm">Organize your thoughts and resources.</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -275,7 +275,7 @@ export default function NotesPage() {
                             placeholder="Search your knowledge base..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-16 h-16 bg-card border border-border rounded-3xl text-lg focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-sm"
+                            className="pl-14 h-12 md:h-16 bg-card border border-border rounded-2xl md:rounded-3xl text-sm md:text-lg focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-sm"
                         />
                     </div>
 
@@ -319,7 +319,7 @@ export default function NotesPage() {
                                             setEditingNote(note);
                                             setIsModalOpen(true);
                                         }}
-                                        className="claude-card group p-8 flex flex-col h-full cursor-pointer"
+                                        className="claude-card group p-5 md:p-8 flex flex-col h-full cursor-pointer"
                                     >
                                         <div className="flex-1 space-y-6">
                                             <div className="flex items-start justify-between">
@@ -336,7 +336,7 @@ export default function NotesPage() {
                                                 </div>
                                             </div>
 
-                                            <h3 className="text-xl font-bold text-foreground leading-tight line-clamp-2">
+                                            <h3 className="text-base md:text-xl font-bold text-foreground leading-tight line-clamp-2">
                                                 {note.title}
                                             </h3>
 
@@ -408,8 +408,8 @@ export default function NotesPage() {
                                 <StickyNote className="w-12 h-12 text-primary" />
                             </div>
                             <div className="space-y-2">
-                                <h3 className="text-2xl font-bold text-foreground">No notes discovered yet</h3>
-                                <p className="text-muted-foreground max-w-sm mx-auto">Build your personal workspace by adding your first note or connecting a resource.</p>
+                                <h3 className="text-xl md:text-2xl font-bold text-foreground">No notes discovered yet</h3>
+                                <p className="text-muted-foreground text-xs max-w-sm mx-auto">Build your personal workspace by adding your first note or connecting a resource.</p>
                             </div>
                             <Button
                                 variant="outline"

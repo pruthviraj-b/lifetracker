@@ -15,7 +15,7 @@ export const NeuralLoadWidget: React.FC<NeuralLoadWidgetProps> = ({ percentage, 
     return (
         <div
             onClick={() => navigate('/dashboard')}
-            className="bg-card border border-border p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col items-center justify-between cursor-pointer hover:border-primary/30"
+            className="bg-card border border-border p-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col items-center justify-between cursor-pointer hover:border-primary/30"
         >
             <div className="w-full flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -53,8 +53,8 @@ export const NeuralLoadWidget: React.FC<NeuralLoadWidgetProps> = ({ percentage, 
                     />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-bold text-foreground">{completed}</span>
-                    <span className="text-[10px] font-medium text-muted-foreground">/{total}</span>
+                    <span className="text-lg font-bold text-foreground">{completed}</span>
+                    <span className="text-[9px] font-medium text-muted-foreground">/{total}</span>
                 </div>
             </div>
 

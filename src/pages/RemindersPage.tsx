@@ -261,7 +261,7 @@ export default function RemindersPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-12 max-w-5xl mx-auto">
+        <div className="p-3 md:p-8 space-y-8 md:space-y-12 max-w-5xl mx-auto">
             <ReminderModal
                 isOpen={isModalOpen || !!editingReminder}
                 onClose={() => { setIsModalOpen(false); setEditingReminder(undefined); }}
@@ -282,8 +282,8 @@ export default function RemindersPage() {
                             <Home className="w-5 h-5" />
                         </Button>
                         <div>
-                            <h1 className={`text-3xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>Trigger Protocols</h1>
-                            <p className="text-muted-foreground text-[8px] uppercase font-bold tracking-[0.3em] opacity-60">Temporal Alert Management</p>
+                            <h1 className={`text-xl md:text-3xl font-black uppercase tracking-tighter ${isWild ? 'animate-glitch' : ''}`}>Trigger Protocols</h1>
+                            <p className="text-muted-foreground text-[7px] md:text-[8px] uppercase font-bold tracking-[0.3em] opacity-60">Temporal Alert Management</p>
                         </div>
                     </div>
                 </div>
@@ -306,13 +306,13 @@ export default function RemindersPage() {
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-1">
                             <div className="text-[10px] uppercase font-bold text-muted-foreground opacity-40">Handshake</div>
-                            <div className={`text-xl font-black ${hasPermission ? 'text-primary' : 'text-red-500'}`}>
+                            <div className={`text-lg md:text-xl font-black ${hasPermission ? 'text-primary' : 'text-red-500'}`}>
                                 {hasPermission ? 'SECURE' : 'BLOCKED'}
                             </div>
                         </div>
                         <div className="space-y-1">
                             <div className="text-[10px] uppercase font-bold text-muted-foreground opacity-40">Active Nodes</div>
-                            <div className="text-xl font-black">{reminders.filter(r => r.isEnabled).length} / {reminders.length}</div>
+                            <div className="text-lg md:text-xl font-black">{reminders.filter(r => r.isEnabled).length} / {reminders.length}</div>
                         </div>
                     </div>
                     {!hasPermission && (
@@ -355,7 +355,7 @@ export default function RemindersPage() {
                         <div className={`col-span-full py-24 bg-muted/5 border-2 border-dashed flex flex-col items-center justify-center gap-6 ${isWild ? 'rounded-none border-primary/20' : 'rounded-[2rem] border-border'}`}>
                             <Zap className="w-10 h-10 text-primary opacity-20" />
                             <div className="text-center space-y-1">
-                                <h3 className="text-xl font-black uppercase tracking-tight">No trigger nodes found</h3>
+                                <h3 className="text-lg md:text-xl font-black uppercase tracking-tight">No trigger nodes found</h3>
                                 <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest opacity-60">Initialize new protocol node</p>
                             </div>
                         </div>
@@ -369,7 +369,7 @@ export default function RemindersPage() {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <div className={`w-1.5 h-1.5 rounded-full ${reminder.isEnabled ? 'bg-primary animate-pulse' : 'bg-muted-foreground'}`} />
-                                            <span className="text-2xl font-black tracking-tighter text-primary">{formatTime(reminder.time)}</span>
+                                            <span className="text-xl md:text-2xl font-black tracking-tighter text-primary">{formatTime(reminder.time)}</span>
                                         </div>
                                         <button
                                             onClick={(e) => {

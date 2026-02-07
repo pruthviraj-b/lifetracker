@@ -43,23 +43,23 @@ export default function AnalyticsPage() {
     // Blocking loader removed for instant UI
 
     return (
-        <div className="p-4 md:p-8 space-y-12 max-w-7xl mx-auto animate-claude-in">
+        <div className="p-3 md:p-8 space-y-8 md:space-y-12 max-w-7xl mx-auto animate-claude-in">
             {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div className="flex items-center gap-6">
-                    <div className="p-4 bg-primary/10 rounded-[1.5rem]">
-                        <TrendingUp className="w-8 h-8 text-primary" />
+                <div className="flex items-center gap-4 md:gap-6">
+                    <div className="p-3 md:p-4 bg-primary/10 rounded-xl md:rounded-[1.5rem]">
+                        <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-4xl font-bold tracking-tight text-foreground">
+                        <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground">
                             Growth Analytics
                         </h1>
-                        <p className="text-muted-foreground text-sm font-medium">Track your progress and consistency over time.</p>
+                        <p className="text-muted-foreground text-xs md:text-sm font-medium">Track your progress and consistency over time.</p>
                     </div>
                 </div>
                 <div className="flex gap-4 w-full md:w-auto">
                     <select
-                        className="claude-input h-14 px-6 text-sm font-bold bg-card border-border min-w-[160px]"
+                        className="claude-input h-10 md:h-14 px-4 md:px-6 text-xs md:text-sm font-bold bg-card border-border min-w-[140px] md:min-w-[160px]"
                         value={range}
                         onChange={(e) => setRange(Number(e.target.value))}
                     >
@@ -67,8 +67,8 @@ export default function AnalyticsPage() {
                         <option value="30">Last 30 Days</option>
                         <option value="90">Last 90 Days</option>
                     </select>
-                    <Button variant="outline" size="sm" onClick={() => AnalyticsService.exportToCSV()} className="claude-button h-14 px-8 bg-background border-border text-sm font-bold">
-                        <Download className="w-4 h-4 mr-2" />
+                    <Button variant="outline" size="sm" onClick={() => AnalyticsService.exportToCSV()} className="claude-button h-10 md:h-14 px-6 md:px-8 bg-background border-border text-xs md:text-sm font-bold">
+                        <Download className="w-3.5 h-3.5 md:w-4 h-4 mr-2" />
                         Export CSV
                     </Button>
                 </div>
@@ -88,18 +88,18 @@ export default function AnalyticsPage() {
                         { label: 'Best Streak', value: Math.max(0, ...stats.habitStats.map(h => h.streak)), sub: 'Longest run', icon: Zap },
                         { label: 'Global Progress', value: `${Math.round(stats.multiverse.linkDensity)}%`, sub: 'Habit connectivity', icon: TrendingUp }
                     ].map((stat, i) => (
-                        <ThemedCard key={i} className="p-8 space-y-4 group">
-                            <div className="p-3 bg-secondary rounded-2xl w-fit group-hover:bg-primary group-hover:text-white transition-all">
-                                <stat.icon className="w-6 h-6" />
+                        <ThemedCard key={i} className="p-5 md:p-8 space-y-3 md:space-y-4 group">
+                            <div className="p-2.5 md:p-3 bg-secondary rounded-xl md:rounded-2xl w-fit group-hover:bg-primary group-hover:text-white transition-all">
+                                <stat.icon className="w-5 h-5 md:w-6 md:h-6" />
                             </div>
-                            <div className="space-y-1">
-                                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
+                            <div className="space-y-0.5 md:space-y-1">
+                                <div className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
                                     {stat.label}
                                 </div>
-                                <div className="text-4xl font-bold text-foreground tracking-tight">
+                                <div className="text-2xl md:text-4xl font-bold text-foreground tracking-tight">
                                     {stat.value}
                                 </div>
-                                <div className="text-xs text-muted-foreground font-medium">
+                                <div className="text-[10px] md:text-xs text-muted-foreground font-medium">
                                     {stat.sub}
                                 </div>
                             </div>
@@ -111,8 +111,8 @@ export default function AnalyticsPage() {
             {/* Performance Curve */}
             <ThemedCard className="p-8 space-y-8">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-3">
-                        <TrendingUp className="w-6 h-6 text-primary" />
+                    <h3 className="text-base md:text-xl font-bold tracking-tight text-foreground flex items-center gap-2 md:gap-3">
+                        <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-primary" />
                         Performance Trends
                     </h3>
                 </div>

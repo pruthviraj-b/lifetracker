@@ -103,15 +103,15 @@
 
 @layer components {
   .claude-card {
-    @apply bg-card border border-border rounded-[2rem] shadow-sm hover:shadow-md transition-all duration-300;
+    @apply bg-card border border-border rounded-2xl md:rounded-[2rem] shadow-sm hover:shadow-md transition-all duration-300;
   }
 
   .claude-input-container {
-    @apply bg-card border border-border rounded-[1.5rem] px-6 py-4 shadow-sm hover:border-primary/30 transition-all duration-300 focus-within:ring-2 focus-within:ring-primary/10;
+    @apply bg-card border border-border rounded-xl md:rounded-[1.5rem] px-4 py-3 md:px-6 md:py-4 shadow-sm hover:border-primary/30 transition-all duration-300 focus-within:ring-2 focus-within:ring-primary/10;
   }
 
   .claude-button-secondary {
-    @apply bg-secondary border border-border/50 text-foreground/80 rounded-xl px-4 py-2 text-sm font-medium hover:bg-secondary/70 hover:text-foreground transition-all duration-200 flex items-center gap-2;
+    @apply bg-secondary border border-border/50 text-foreground/80 rounded-lg md:rounded-xl px-3 py-1.5 md:px-4 md:py-2 text-[10px] md:text-sm font-medium hover:bg-secondary/70 hover:text-foreground transition-all duration-200 flex items-center gap-2;
   }
 
   .active-nav-item {

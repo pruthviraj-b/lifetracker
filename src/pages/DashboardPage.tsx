@@ -361,7 +361,7 @@ export default function DashboardPage() {
 
 
     return (
-        <div className="p-4 md:p-8 animate-claude-in">
+        <div className="p-3 md:p-8 animate-claude-in">
             <ConfirmModal {...confirmState} onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))} />
             <FocusTimer isOpen={isFocusOpen} onClose={() => setIsFocusOpen(false)} />
             <CreateHabitModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSave={handleCreateHabit} mode="create" />
@@ -396,7 +396,7 @@ export default function DashboardPage() {
                 <div className="flex flex-col gap-4 animate-claude-in">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="flex-1">
-                            <h1 className="text-4xl font-bold tracking-tight text-foreground mb-1">
+                            <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground mb-1">
                                 Daily Rituals
                             </h1>
                             <div className="flex items-center gap-3 text-muted-foreground text-sm font-medium">
@@ -407,8 +407,8 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <Button onClick={() => setIsCreateOpen(true)} className="claude-button bg-primary text-white shadow-lg shadow-primary/20 h-11 px-8">
-                                <Plus className="w-4 h-4 mr-2" />
+                            <Button onClick={() => setIsCreateOpen(true)} className="claude-button bg-primary text-white shadow-lg shadow-primary/20 h-10 px-6 text-xs">
+                                <Plus className="w-3.5 h-3.5 mr-2" />
                                 Add Ritual
                             </Button>
                             <Button variant="outline" size="icon" onClick={() => setIsFocusOpen(true)} className="w-11 h-11 rounded-2xl border-border" title="Focus Timer">
@@ -428,13 +428,13 @@ export default function DashboardPage() {
                 {/* Activity Pattern */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between px-2">
-                        <h3 className="text-xl font-bold tracking-tight text-foreground">Activity Pattern</h3>
+                        <h3 className="text-sm md:text-xl font-bold tracking-tight text-foreground">Activity Pattern</h3>
                         <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold uppercase tracking-widest text-primary hover:bg-primary/5" onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}>
                             <CalendarIcon className="w-4 h-4 mr-2" />
                             History
                         </Button>
                     </div>
-                    <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm">
+                    <div className="bg-card border border-border rounded-2xl md:rounded-[2.5rem] p-4 md:p-8 shadow-sm">
                         <Heatmap logs={logs} daysMode="month" onDayClick={setSelectedDate} />
                     </div>
                 </div>
@@ -576,8 +576,8 @@ function HabitSection({ title, icon, habits, onToggle, onDelete, onEdit, onNote,
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between border-l-4 border-primary pl-4">
-                <h2 className={`text-xl font-black uppercase tracking-tighter flex items-center gap-2 ${isWild ? 'animate-glitch' : ''}`}>
-                    {icon} {title} <span className="text-xs opacity-50 ml-2">[{habits.length}]</span>
+                <h2 className={`text-sm md:text-xl font-black uppercase tracking-tighter flex items-center gap-2 ${isWild ? 'animate-glitch' : ''}`}>
+                    {icon} {title} <span className="text-[10px] opacity-50 ml-2">[{habits.length}]</span>
                 </h2>
                 {hasMore && (
                     <Button
@@ -599,16 +599,16 @@ function HabitSection({ title, icon, habits, onToggle, onDelete, onEdit, onNote,
                         className={habit.completedToday ? 'opacity-40 grayscale pointer-events-none' : ''}
                         noPadding
                     >
-                        <div className="flex items-center justify-between p-4">
+                        <div className="flex items-center justify-between p-3 md:p-4">
 
                             <div className="flex items-center gap-4">
-                                <button onClick={() => onToggle(habit.id)} className={`w-10 h-10 flex items-center justify-center transition-all rounded-xl border-2 ${habit.completedToday ? 'bg-primary border-primary text-white' : 'border-border hover:border-primary/50 text-transparent'}`}>
-                                    <Check className="w-5 h-5" />
+                                <button onClick={() => onToggle(habit.id)} className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center transition-all rounded-lg md:rounded-xl border-2 ${habit.completedToday ? 'bg-primary border-primary text-white' : 'border-border hover:border-primary/50 text-transparent'}`}>
+                                    <Check className="w-4 h-4 md:w-5 md:h-5" />
                                 </button>
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <h3 className={`text-xl font-bold tracking-tight ${habit.completedToday ? 'line-through opacity-40 text-foreground' : 'text-foreground'}`}>{habit.title}</h3>
-                                        {habit.type === 'goal' && <Target className="w-4 h-4 text-primary" />}
+                                        <h3 className={`text-base md:text-xl font-bold tracking-tight ${habit.completedToday ? 'line-through opacity-40 text-foreground' : 'text-foreground'}`}>{habit.title}</h3>
+                                        {habit.type === 'goal' && <Target className="w-3.5 h-3.5 text-primary" />}
                                     </div>
                                     <div className="flex items-center gap-4 text-[11px] font-bold uppercase tracking-widest text-foreground/80">
                                         <span className="flex items-center gap-1.5"><Activity className="w-3 h-3" /> {habit.streak} Day Streak</span>
@@ -622,12 +622,12 @@ function HabitSection({ title, icon, habits, onToggle, onDelete, onEdit, onNote,
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => onReminder(habit)} className="w-10 h-10 flex items-center justify-center bg-secondary text-foreground/60 hover:bg-primary hover:text-white rounded-xl transition-all" title="Reminders"><Bell className="w-4 h-4" /></button>
-                                <button onClick={() => onSkip(habit)} className="w-10 h-10 flex items-center justify-center hover:bg-secondary transition-all rounded-xl text-muted-foreground" title="Skip"><CalendarOff className="w-4 h-4" /></button>
-                                <button onClick={() => onNote(habit.id)} className="w-10 h-10 flex items-center justify-center hover:bg-secondary transition-all rounded-xl text-muted-foreground" title="Note"><StickyNote className="w-4 h-4" /></button>
-                                <button onClick={() => onEdit(habit)} className="w-10 h-10 flex items-center justify-center hover:bg-secondary transition-all rounded-xl text-muted-foreground" title="Edit"><Plus className="w-4 h-4 rotate-45" /></button>
-                                <button onClick={() => onDelete(habit.id)} className="w-10 h-10 flex items-center justify-center hover:bg-red-50 text-red-400 rounded-xl transition-all" title="Archive"><Trash2 className="w-4 h-4" /></button>
+                            <div className="flex items-center gap-1.5">
+                                <button onClick={() => onReminder(habit)} className="w-8 h-8 flex items-center justify-center bg-secondary text-foreground/60 hover:bg-primary hover:text-white rounded-lg transition-all" title="Reminders"><Bell className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => onSkip(habit)} className="w-8 h-8 flex items-center justify-center hover:bg-secondary transition-all rounded-lg text-muted-foreground" title="Skip"><CalendarOff className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => onNote(habit.id)} className="w-8 h-8 flex items-center justify-center hover:bg-secondary transition-all rounded-lg text-muted-foreground" title="Note"><StickyNote className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => onEdit(habit)} className="w-8 h-8 flex items-center justify-center hover:bg-secondary transition-all rounded-lg text-muted-foreground" title="Edit"><Plus className="w-3.5 h-3.5 rotate-45" /></button>
+                                <button onClick={() => onDelete(habit.id)} className="w-8 h-8 flex items-center justify-center hover:bg-red-50 text-red-400 rounded-lg transition-all" title="Archive"><Trash2 className="w-3.5 h-3.5" /></button>
                             </div>
                         </div>
 

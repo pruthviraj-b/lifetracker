@@ -15,7 +15,7 @@ export const StreakMatrixWidget: React.FC<StreakMatrixWidgetProps> = ({ data }) 
     return (
         <div
             onClick={() => navigate('/dashboard')}
-            className="bg-card border border-border p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col justify-between cursor-pointer hover:border-primary/30"
+            className="bg-card border border-border p-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col justify-between cursor-pointer hover:border-primary/30"
         >
             <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">

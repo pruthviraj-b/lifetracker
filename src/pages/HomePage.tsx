@@ -160,12 +160,12 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
                     transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
                     className="flex items-center gap-2 md:gap-3"
                 >
-                    <div className="w-6 h-6 md:w-8 md:h-8 text-primary flex-shrink-0">
+                    <div className="w-5 h-5 md:w-8 md:h-8 text-primary flex-shrink-0">
                         <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
                             <path d="M12,2L14.4,9.5L22,12L14.4,14.5L12,22L9.6,14.5L2,12L9.6,9.5L12,2Z" />
                         </svg>
                     </div>
-                    <h1 className="text-xl md:text-4xl font-bold font-serif text-foreground tracking-tight">
+                    <h1 className="text-sm md:text-4xl font-bold font-serif text-foreground tracking-tight uppercase">
                         RITU OS
                     </h1>
                 </motion.div>
@@ -177,7 +177,7 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
             <div className="w-full max-w-3xl space-y-4">
                 <div className="claude-input-container relative min-h-[100px] md:min-h-[160px] flex flex-col">
                     <textarea
-                        className="w-full bg-transparent resize-none outline-none text-base md:text-lg text-foreground/80 placeholder:text-muted-foreground/60 p-2"
+                        className="w-full bg-transparent resize-none outline-none text-xs md:text-lg text-foreground/80 placeholder:text-muted-foreground/60 p-2"
                         placeholder="How can I help you today?"
                         rows={2}
                         onClick={() => setIsSearchOpen(true)}
@@ -212,7 +212,7 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
                         <button
                             key={i}
                             onClick={() => btn.action ? btn.action() : navigate(btn.path)}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-secondary/50 border border-border/50 rounded-xl text-xs font-medium text-foreground/70 hover:bg-secondary hover:text-foreground transition-all whitespace-nowrap"
+                            className="flex items-center gap-1 px-3 py-1.5 bg-secondary/50 border border-border/50 rounded-lg text-[10px] md:text-xs font-medium text-foreground/70 hover:bg-secondary hover:text-foreground transition-all whitespace-nowrap"
                         >
                             {btn.icon}
                             {btn.label}
@@ -257,12 +257,12 @@ const ClaudeLanding = ({ navigate }: { navigate: any }) => {
                 transition={{ duration: 0.6, ease: "easeOut" }}
                 className="max-w-2xl w-full text-center space-y-12"
             >
-                <div className="space-y-6">
-                    <h1 className="text-4xl md:text-7xl font-bold tracking-tight text-foreground leading-[1.1]">
+                <div className="space-y-4 md:space-y-6">
+                    <h1 className="text-2xl md:text-7xl font-bold tracking-tight text-foreground leading-[1.1]">
                         Focus on what matters.<br />
                         <span className="text-primary">Leave the rest to us.</span>
                     </h1>
-                    <p className="text-base md:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
+                    <p className="text-xs md:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
                         A helpful assistant for your daily rituals, knowledge, and growth.
                         Simple, intuitive, and human-centric.
                     </p>
