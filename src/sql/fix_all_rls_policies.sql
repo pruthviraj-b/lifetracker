@@ -33,6 +33,10 @@ ALTER TABLE IF EXISTS enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS lesson_progress ENABLE ROW LEVEL SECURITY;
 
 -- 2. Drop existing policies to prevent conflicts (SAFE to run multiple times)
+DROP POLICY IF EXISTS "Users can read their own profile" ON users;
+DROP POLICY IF EXISTS "Users can update their own profile" ON users;
+DROP POLICY IF EXISTS "Users can delete their own profile" ON users;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON users;
 DROP POLICY IF EXISTS "Users can manage their own profile" ON users;
 DROP POLICY IF EXISTS "Users can manage their own habits" ON habits;
 DROP POLICY IF EXISTS "Users can manage their own logs" ON habit_logs;
@@ -50,10 +54,18 @@ DROP POLICY IF EXISTS "Users can manage their own progress" ON lesson_progress;
 -- 3. Create Permissive Policies (CRUD)
 
 -- USERS
-CREATE POLICY "Users can manage their own profile" ON users
-    FOR ALL
+CREATE POLICY "Users can read their own profile" ON users
+    FOR SELECT
+    USING (auth.uid() = id);
+
+CREATE POLICY "Users can update their own profile" ON users
+    FOR UPDATE
     USING (auth.uid() = id)
     WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can delete their own profile" ON users
+    FOR DELETE
+    USING (auth.uid() = id);
 
 -- Allow new users to insert their profile during signup
 CREATE POLICY "Users can insert their own profile" ON users
