@@ -21,6 +21,7 @@ ALTER TABLE IF EXISTS learning_channels ADD COLUMN IF NOT EXISTS user_id UUID RE
 ALTER TABLE IF EXISTS courses ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
 ALTER TABLE IF EXISTS enrollments ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
 ALTER TABLE IF EXISTS lesson_progress ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE IF EXISTS user_preferences ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
 
 -- STEP 3: Enable RLS on all tables
 ALTER TABLE IF EXISTS users ENABLE ROW LEVEL SECURITY;
@@ -37,6 +38,7 @@ ALTER TABLE IF EXISTS modules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS lessons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS lesson_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS user_preferences ENABLE ROW LEVEL SECURITY;
 
 -- STEP 4: DROP ALL existing policies (clean slate)
 DO $$ 
@@ -65,6 +67,7 @@ CREATE POLICY "learning_resources_all" ON learning_resources FOR ALL USING (auth
 CREATE POLICY "learning_channels_all" ON learning_channels FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "enrollments_all" ON enrollments FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "lesson_progress_all" ON lesson_progress FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "user_preferences_all" ON user_preferences FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Courses: Allow reading public courses + managing own
 CREATE POLICY "courses_select" ON courses FOR SELECT USING (user_id IS NULL OR auth.uid() = user_id OR published = true);
