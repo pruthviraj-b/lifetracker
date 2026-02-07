@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AuthService } from '../services/auth.service'; // Added
 import { AuthLayout } from '../components/auth/AuthLayout';
@@ -9,6 +9,8 @@ import { useTheme } from '../context/ThemeContext'; // Added
 
 export default function LoginPage() {
     const { login } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
     const { preferences } = useTheme(); // Added
     const isWild = preferences.wild_mode; // Added
     const [loading, setLoading] = useState(false);
@@ -26,7 +28,9 @@ export default function LoginPage() {
 
         try {
             await login(formData);
-            // Redirect handled by wrapper
+            // Redirect to the page they were trying to access, or default to homepage
+            const from = (location.state as any)?.from?.pathname || '/home';
+            navigate(from, { replace: true });
         } catch (err: any) {
             // Display the specific error message from the service
             const msg = err.message || 'Failed to sign in';
