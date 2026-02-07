@@ -61,6 +61,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { user, token } = await AuthService.login(credentials);
         AuthService.setSession(token, user);
         setUser(user);
+
+        // Give Supabase time to persist the session
+        await new Promise(resolve => setTimeout(resolve, 100));
     };
 
     const register = async (credentials: RegisterCredentials) => {
@@ -68,6 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const { user, token } = await AuthService.register(credentials);
             AuthService.setSession(token, user);
             setUser(user);
+
+            // Give Supabase time to persist the session
+            await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error) {
             console.error("AuthContext Registration Error:", error);
             throw error;
