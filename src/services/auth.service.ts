@@ -163,6 +163,23 @@ export const AuthService = {
         return data;
     },
 
+    async connectGoogleCalendar() {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin + '/settings?calendar_connected=true',
+                scopes: 'https://www.googleapis.com/auth/calendar', // Requesting specific scope here
+                queryParams: {
+                    access_type: 'offline', // Need refresh token for background sync
+                    prompt: 'consent', // Force consent screen to ensure scope is granted
+                },
+            },
+        });
+
+        if (error) throw error;
+        return data;
+    },
+
     async loginWithGoogle() {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',

@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { YouTubeVideo, VideoNote, AddVideoInput } from '../types/youtube';
+import { YouTubeVideo, VideoNote, AddVideoInput, LearningChannel } from '../types/youtube';
 
 export const YouTubeService = {
     parseVideoId(url: string): string | null {
@@ -192,6 +192,61 @@ export const YouTubeService = {
             .update({ folder_id: folderId, updated_at: new Date().toISOString() })
             .eq('id', id);
         if (error) throw error;
+    },
+
+    async getChannels(): Promise<LearningChannel[]> {
+        const { data, error } = await supabase
+            .from('learning_channels')
+            .select('*')
+            .order('title');
+
+        if (error) {
+            console.warn("Failed to fetch channels:", error);
+            return [];
+        }
+        return (data || []).map(c => this.mapChannel(c));
+    },
+
+    async createChannel(title: string, url: string): Promise<LearningChannel> {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        const { data, error } = await supabase
+            .from('learning_channels')
+            .insert({
+                user_id: user.id,
+                title: title,
+                custom_url: url,
+                channel_id: 'manual-' + Date.now(), // Placeholder, or extract from URL
+                is_favorite: true
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return this.mapChannel(data);
+    },
+
+    async deleteChannel(id: string): Promise<void> {
+        const { error } = await supabase
+            .from('learning_channels')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+    },
+
+    mapChannel(c: any): LearningChannel {
+        return {
+            id: c.id,
+            userId: c.user_id,
+            channelId: c.channel_id,
+            title: c.title,
+            description: c.description,
+            thumbnailUrl: c.thumbnail_url,
+            customUrl: c.custom_url,
+            isFavorite: c.is_favorite,
+            createdAt: c.created_at
+        };
     },
 
     mapVideo(v: any): YouTubeVideo {

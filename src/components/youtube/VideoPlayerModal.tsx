@@ -188,6 +188,35 @@ export function VideoPlayerModal({ video, onClose, onProgressUpdate }: VideoPlay
                         setDuration(event.target.getDuration());
                         setStatus('ready');
                         startTrackers();
+
+                        // --- BACKGROUND PLAY ENHANCEMENT ---
+                        // Integrate with Media Session API to keep audio alive in background/lock screen
+                        if ('mediaSession' in navigator) {
+                            navigator.mediaSession.metadata = new MediaMetadata({
+                                title: video.title,
+                                artist: 'LifeTracker Learning', // Channel name if available
+                                artwork: [
+                                    { src: video.thumbnailUrl || '', sizes: '512x512', type: 'image/jpeg' },
+                                    { src: video.thumbnailUrl || '', sizes: '192x192', type: 'image/jpeg' }
+                                ]
+                            });
+
+                            // Link Lock Screen Controls to Player
+                            navigator.mediaSession.setActionHandler('play', () => {
+                                event.target.playVideo();
+                                setIsPlaying(true);
+                            });
+                            navigator.mediaSession.setActionHandler('pause', () => {
+                                event.target.pauseVideo();
+                                setIsPlaying(false);
+                            });
+                            navigator.mediaSession.setActionHandler('seekbackward', () => seekDelta(-10));
+                            navigator.mediaSession.setActionHandler('seekforward', () => seekDelta(10));
+                            const defaultSkipMetrics = { seekOffset: 10 };
+                            navigator.mediaSession.setActionHandler('previoustrack', () => seekDelta(-10)); // Use skip for tracks
+                            navigator.mediaSession.setActionHandler('nexttrack', () => seekDelta(10));
+                        }
+
                         // Force initial sync
                         if (!video.durationSeconds) {
                             YouTubeService.updateProgress(video.id, startSeconds, 'in_progress', event.target.getDuration());

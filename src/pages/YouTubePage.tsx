@@ -42,7 +42,8 @@ import {
     LearningResource,
     ResourceType,
     LearningCourse,
-    CourseSeriesStats
+    CourseSeriesStats,
+    LearningChannel
 } from '../types/youtube';
 import { Habit } from '../types/habit';
 import { VideoPlayerModal } from '../components/youtube/VideoPlayerModal';
@@ -58,6 +59,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 import { ThemedCard } from '../components/ui/ThemedCard';
+import { Users, X } from 'lucide-react';
 
 export default function YouTubePage() {
     const navigate = useNavigate();
@@ -72,6 +74,7 @@ export default function YouTubePage() {
     const [resources, setResources] = useState<LearningResource[]>([]);
     const [courses, setCourses] = useState<LearningCourse[]>([]);
     const [habits, setHabits] = useState<Habit[]>([]);
+    const [channels, setChannels] = useState<LearningChannel[]>([]);
     const [activeCourseStats, setActiveCourseStats] = useState<CourseSeriesStats | null>(null);
 
     // UI State
@@ -80,7 +83,7 @@ export default function YouTubePage() {
     const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [addType, setAddType] = useState<'video' | 'folder' | 'resource' | 'course'>('video');
+    const [addType, setAddType] = useState<'video' | 'folder' | 'resource' | 'course' | 'channel'>('video');
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
     const [movingItem, setMovingItem] = useState<{ id: string, type: 'video' | 'resource' } | null>(null);
 
@@ -101,6 +104,8 @@ export default function YouTubePage() {
     const [newResUrl, setNewResUrl] = useState('');
     const [newResType, setNewResType] = useState<ResourceType>('link');
     const [newCourseTitle, setNewCourseTitle] = useState('');
+    const [newChannelTitle, setNewChannelTitle] = useState('');
+    const [newChannelUrl, setNewChannelUrl] = useState('');
     const [targetHabitId, setTargetHabitId] = useState<string>('');
     const [targetFolderId, setTargetFolderId] = useState<string>('');
     const [targetCourseId, setTargetCourseId] = useState<string>('');
@@ -120,18 +125,20 @@ export default function YouTubePage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [v, f, r, c, h] = await Promise.all([
+            const [v, f, r, c, h, ch] = await Promise.all([
                 YouTubeService.getVideos(),
                 LearningService.getFolders(),
                 LearningService.getResources(),
                 CourseService.getCourses(),
-                HabitService.getHabits()
+                HabitService.getHabits(),
+                YouTubeService.getChannels()
             ]);
             setVideos(v);
             setFolders(f);
             setResources(r);
             setCourses(c);
             setHabits(h);
+            setChannels(ch);
         } catch (error: any) {
             console.error(error);
             showToast('Error', 'Failed to load library', { type: 'error' });
@@ -257,6 +264,11 @@ export default function YouTubePage() {
                     folderId: targetFolderId || undefined
                 });
                 setNewCourseTitle('');
+            } else if (addType === 'channel') {
+                if (!newChannelTitle || !newChannelUrl) return;
+                await YouTubeService.createChannel(newChannelTitle, newChannelUrl);
+                setNewChannelTitle('');
+                setNewChannelUrl('');
             }
 
             resetForm();
@@ -269,7 +281,7 @@ export default function YouTubePage() {
         }
     };
 
-    const handleDelete = async (id: string, type: 'video' | 'resource' | 'folder' | 'course') => {
+    const handleDelete = async (id: string, type: 'video' | 'resource' | 'folder' | 'course' | 'channel') => {
         if (!confirm('Abort this module?')) return;
 
         try {
@@ -281,6 +293,8 @@ export default function YouTubePage() {
             } else if (type === 'course') {
                 await CourseService.deleteCourse(id);
                 if (activeCourseId === id) setActiveCourseId(null);
+            } else if (type === 'channel') {
+                await YouTubeService.deleteChannel(id);
             }
             loadData();
             showToast('Success', 'Module purged', { type: 'success' });
@@ -333,6 +347,8 @@ export default function YouTubePage() {
         setNewResTitle('');
         setNewResUrl('');
         setNewCourseTitle('');
+        setNewChannelTitle('');
+        setNewChannelUrl('');
         setTargetHabitId('');
         setTargetFolderId('');
         setTargetCourseId('');
@@ -397,6 +413,44 @@ export default function YouTubePage() {
                     </Button>
                 </div>
             </div>
+
+            {/* Mentors / Channels Section */}
+            {channels.length > 0 && !activeFolderId && !activeCourseId && (
+                <div className="space-y-4 animate-in fade-in duration-500">
+                    <h2 className="text-xs font-black uppercase tracking-widest opacity-50 flex items-center gap-2">
+                        <Users className="w-4 h-4" /> Neural Mentors
+                    </h2>
+                    <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                        {channels.map(channel => (
+                            <a
+                                key={channel.id}
+                                href={channel.customUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-3 p-3 pr-6 bg-card border rounded-full hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all shrink-0 group relative min-w-[200px]"
+                            >
+                                <div className="w-10 h-10 rounded-full bg-red-600/10 flex items-center justify-center text-red-600 font-bold border border-red-500/20">
+                                    {channel.title.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <div className="text-sm font-bold truncate max-w-[150px]">{channel.title}</div>
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Direct Link</div>
+                                </div>
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handleDelete(channel.id, 'channel');
+                                    }}
+                                    className="absolute -top-1 -right-1 w-6 h-6 bg-card border hover:bg-red-500 hover:text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Breadcrumbs & Special Controls */}
             {(activeFolderId || activeCourseId) && (
@@ -716,6 +770,10 @@ export default function YouTubePage() {
                                     onClick={() => setAddType('course')}
                                     className={cn("px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0", addType === 'course' ? "bg-background shadow-sm text-primary" : "text-muted-foreground")}
                                 >Course</button>
+                                <button
+                                    onClick={() => setAddType('channel')}
+                                    className={cn("px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0", addType === 'channel' ? "bg-background shadow-sm text-primary" : "text-muted-foreground")}
+                                >Mentor</button>
                             </div>
                         </div>
 
@@ -787,7 +845,20 @@ export default function YouTubePage() {
                                 </div>
                             )}
 
-                            {addType !== 'folder' && addType !== 'course' && (
+                            {addType === 'channel' && (
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Mentor Name</label>
+                                        <Input placeholder="E.g. Fireship, Veritassium..." className="h-12 rounded-xl bg-muted/30 border-none shadow-inner" value={newChannelTitle} onChange={e => setNewChannelTitle(e.target.value)} required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Channel URL</label>
+                                        <Input placeholder="https://youtube.com/@..." className="h-12 rounded-xl bg-muted/30 border-none shadow-inner" value={newChannelUrl} onChange={e => setNewChannelUrl(e.target.value)} required />
+                                    </div>
+                                </div>
+                            )}
+
+                            {addType !== 'folder' && addType !== 'course' && addType !== 'channel' && (
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Target Collection</label>

@@ -116,3 +116,20 @@ export interface CourseSeriesStats {
     remainingDurationSeconds: number;
     nextVideoId?: string;
 }
+
+export interface LearningChannel {
+    id: string;
+    userId: string;
+    channelId: string;
+    title: string;
+    description?: string;
+    thumbnailUrl?: string;
+    customUrl?: string;
+    isFavorite: boolean;
+    createdAt: string;
+}
+
+export interface CreateChannelInput {
+    url: string;
+    isFavorite?: boolean;
+}
