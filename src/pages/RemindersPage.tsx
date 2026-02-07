@@ -346,9 +346,9 @@ export default function RemindersPage() {
                         <Button variant="destructive" size="sm" onClick={handleDeleteAll} className={`text-[10px] font-black ${isWild ? 'rounded-none' : ''}`}>
                             Full Abort
                         </Button>
-                            <Button variant="outline" size="sm" onClick={handlePurgeStored} className={`text-[10px] font-black ${isWild ? 'rounded-none' : ''}`}>
-                                Purge Stored Notifications
-                            </Button>
+                        <Button variant="outline" size="sm" onClick={handlePurgeStored} className={`text-[10px] font-black ${isWild ? 'rounded-none' : ''}`}>
+                            Purge Stored Notifications
+                        </Button>
                     </div>
                 </ThemedCard>
             </div>
@@ -440,45 +440,7 @@ export default function RemindersPage() {
                 </div>
             </div>
 
-            {/* Footer Diagnostic Panel */}
-            <ThemedCard className="border-t-2 border-primary/10 bg-primary/5 space-y-6">
-                <div className="flex items-center gap-3">
-                    <Activity className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-black uppercase tracking-tight italic">Matrix Integrity Diagnostics</h2>
-                </div>
-                <div className="grid md:grid-cols-2 gap-8 items-center">
-                    <p className="text-[10px] text-muted-foreground leading-relaxed font-bold uppercase tracking-widest opacity-60">
-                        The temporal sync engine monitors all active protocols within the current cluster.
-                        Persistent triggers rely on the Service Worker handshake and notification permissions.
-                    </p>
-                    <div className="flex flex-wrap gap-4 justify-end">
-                        <button onClick={async () => {
-                            const results = await runDiagnostics();
-                            alert(`DIAGNOSIS:\nPlatform: ${results.isMobile ? 'Mobile' : 'Desktop'}\nPWA: ${results.isPWA}\nSecure: ${results.isSecure}\nSW: ${results.hasServiceWorker}\nPerm: ${results.permission}`);
-                        }} className="text-[10px] font-black uppercase tracking-widest border-b-2 border-primary text-primary hover:bg-primary/10 px-1 py-1 transition-colors">
-                            [Execute Diagnosis]
-                        </button>
-                        <button onClick={testNotifications} className="text-[10px] font-black uppercase tracking-widest border-b-2 border-foreground text-foreground hover:bg-muted/20 px-1 py-1 transition-colors">
-                            [Pulse Test Signal]
-                        </button>
-                        <button onClick={async () => {
-                            if (!confirm("PURGE SYSTEM CACHE? Matrix reconciliation required.")) return;
-                            if ('serviceWorker' in navigator) {
-                                const regs = await navigator.serviceWorker.getRegistrations();
-                                for (let reg of regs) await reg.unregister();
-                            }
-                            const keys = await caches.keys();
-                            for (let key of keys) await caches.delete(key);
-                            window.location.reload();
-                        }} className="text-[10px] font-black uppercase tracking-widest border-b-2 border-red-500 text-red-500 hover:bg-red-500/10 px-1 py-1 transition-colors">
-                            [Purge & Re-sync]
-                        </button>
-                    </div>
-                </div>
-                <div className="text-[8px] opacity-30 uppercase font-black tracking-[0.4em] text-center pt-4">
-                    Matrix Build Sequence: v3.0.0-RITUAL-PROTOCOL
-                </div>
-            </ThemedCard>
+
         </div>
     );
 }

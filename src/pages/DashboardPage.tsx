@@ -541,14 +541,7 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Debug View (Hidden unless no habits show up in main sections) */}
-                {habits.length > 0 && getHabitsByTime('morning').length === 0 && getHabitsByTime('afternoon').length === 0 && getHabitsByTime('evening').length === 0 && getHabitsByTime('anytime').length === 0 && getUncategorized().length === 0 && (
-                    <div className="p-8 border-4 border-dashed border-primary/20 bg-primary/5">
-                        <h2 className="text-xl font-black uppercase mb-4">Master Protocol List (Debug)</h2>
-                        <p className="text-xs mb-4 opacity-70">If your habit is here but not above, it's a categorization error.</p>
-                        <HabitSection title="All Detected Protocols" icon={<Activity className="w-5 h-5" />} habits={habits} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
-                    </div>
-                )}
+
 
                 <div className="pt-12 border-t-2 border-primary/20">
                     <DailyCheckin onSave={handleSaveReflection} />

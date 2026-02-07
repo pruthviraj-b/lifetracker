@@ -160,7 +160,44 @@
   .claude-button-secondary { padding: 0.4rem 0.75rem; gap: 0.5rem; }
 
   /* Compact common elements */
-  .text-sm, .text-[10px], .text-xs { font-size: 0.78rem; }
+  .text-sm, .text-xs { font-size: 0.78rem; }
+
+  /* Make lucide/react icons consistent and slightly larger for touch clarity */
+  svg.lucide-react, svg.icon, .icon svg {
+    width: 1.15rem !important;
+    height: 1.15rem !important;
+    vertical-align: middle;
+    display: inline-block;
+  }
+
+  /* Buttons: larger touch targets but compact visual size */
+  button, .btn {
+    min-height: 40px;
+    padding: 0.45rem 0.85rem;
+    border-radius: 0.6rem;
+    font-size: 0.9rem;
+  }
+
+  /* Claude card: reduced padding and subtler shadow for mobile */
+  .claude-card, .ThemedCard, .card {
+    padding: 0.75rem !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.04) !important;
+  }
+
+  /* Reduce general gaps and spacing to make content denser but readable */
+  .space-y-6 > * + *, .space-y-4 > * + * { margin-top: 0.5rem !important; }
+  .gap-6 { gap: 0.5rem !important; }
+
+  /* Compact headers */
+  h1 { font-size: 1.25rem !important; }
+  h2 { font-size: 1.05rem !important; }
+
+  /* Completed node badge slightly smaller and sharper */
+  .completed-badge { width: 10px; height: 10px; top: 8px; right: 8px; }
+
+  /* Accordion / module compacting: reduce internal paddings if present */
+  .accordion, .module, .panel, .accordion-item { padding: 0.5rem !important; }
 
   /* Heatmap cell tooltip and badges smaller */
   .group\/cell span { font-size: 9px; }

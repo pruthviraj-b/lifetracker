@@ -14,7 +14,6 @@ import { PWAInstaller } from './components/pwa/PWAInstaller';
 import { PWAUpdater } from './components/pwa/PWAUpdater';
 import { ServiceWorkerHandler } from './components/pwa/ServiceWorkerHandler';
 import { GlobalErrorBoundary } from './components/debug/GlobalErrorBoundary';
-import { SystemStatusMonitor } from './components/debug/SystemStatusMonitor';
 import { NotificationManagerInstance } from './utils/notificationManager';
 import { HabitService } from './services/habit.service';
 
@@ -102,7 +101,6 @@ function App() {
                         <NotificationProvider>
                             <Suspense fallback={<PageLoader />}>
                                 <GlobalErrorBoundary>
-                                    <SystemStatusMonitor />
                                     <PWAInstaller />
                                     <PWAUpdater />
                                     <CommandPalette />
