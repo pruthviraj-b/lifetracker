@@ -81,7 +81,8 @@ export const FlashcardService = {
     },
 
     async createFlashcard(input: CreateFlashcardInput): Promise<Flashcard> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user');
 
         const { data, error } = await supabase

@@ -57,7 +57,8 @@ export const defaultPreferences: UserPreferences = {
 
 export const UserPreferencesService = {
     async getPreferences(): Promise<UserPreferences> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('Not authenticated');
 
         const { data, error } = await supabase
@@ -79,7 +80,8 @@ export const UserPreferencesService = {
     },
 
     async updatePreferences(updates: Partial<UserPreferences>): Promise<UserPreferences> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('Not authenticated');
 
         // Check if row exists first, if not insert, else update

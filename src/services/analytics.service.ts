@@ -47,7 +47,8 @@ export const AnalyticsService = {
         habitStats: HabitStat[];
     }> {
         const { start, end } = this.getDateRange(rangeDays);
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         const userId = user?.id;
 
         // Parallel Fetch
@@ -122,7 +123,8 @@ export const AnalyticsService = {
 
     exportToCSV: async () => {
         const { start, end } = AnalyticsService.getDateRange(365); // 1 Year
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         const userId = user?.id;
 
         const [habits, logs] = await Promise.all([
@@ -150,7 +152,8 @@ export const AnalyticsService = {
     },
 
     async getMultiverseStats(): Promise<MultiverseStats> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return { totalNodes: 0, totalLinks: 0, linkDensity: 0 };
 
         const [habits, videos, courses, links] = await Promise.all([

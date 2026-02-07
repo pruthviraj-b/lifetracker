@@ -37,8 +37,9 @@ export const YouTubeService = {
         if (!videoId) throw new Error('Invalid YouTube URL');
 
         const metadata = await this.fetchMetadata(videoId);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('User not authenticated');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) throw new Error('User not authenticated');
+        const user = session.user;
 
         try {
             const { data, error } = await supabase
@@ -70,7 +71,8 @@ export const YouTubeService = {
     },
 
     async getFolders(): Promise<any[]> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return [];
 
         const { data, error } = await supabase
@@ -87,8 +89,9 @@ export const YouTubeService = {
     },
 
     async createFolder(name: string): Promise<any> {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('User not authenticated');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) throw new Error('User not authenticated');
+        const user = session.user;
 
         const { data, error } = await supabase
             .from('learning_folders')
@@ -105,7 +108,8 @@ export const YouTubeService = {
     },
 
     async getVideos(habitId?: string): Promise<YouTubeVideo[]> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return [];
 
         let query = supabase.from('youtube_videos')
@@ -154,8 +158,9 @@ export const YouTubeService = {
     },
 
     async addNote(videoId: string, timestamp: number, content: string): Promise<VideoNote> {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('User not authenticated');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) throw new Error('User not authenticated');
+        const user = session.user;
 
         const { data, error } = await supabase
             .from('video_notes')
@@ -215,8 +220,9 @@ export const YouTubeService = {
     },
 
     async createChannel(title: string, url: string): Promise<LearningChannel> {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('User not authenticated');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) throw new Error('User not authenticated');
+        const user = session.user;
 
         const { data, error } = await supabase
             .from('learning_channels')

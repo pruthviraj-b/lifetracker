@@ -72,7 +72,8 @@ export const HabitService = {
     },
 
     async createHabit(habit: Omit<Habit, 'id' | 'streak' | 'completedToday'>) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user logged in');
 
         const payload: any = {
@@ -130,7 +131,8 @@ export const HabitService = {
     },
 
     async updateHabit(id: string, updates: Partial<Habit>) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user');
 
         const payload: any = {};
@@ -209,7 +211,8 @@ export const HabitService = {
     },
 
     async createHabitLink(link: Omit<HabitLink, 'id'>) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user');
 
         const { data, error } = await supabase
@@ -237,7 +240,8 @@ export const HabitService = {
 
     // --- XP System ---
     async getProfile() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return null;
 
         const { data, error } = await supabase
@@ -294,7 +298,8 @@ export const HabitService = {
     },
 
     async toggleHabitCompletion(habitId: string, date: string, isCompleted: boolean, note?: string) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user');
 
         if (isCompleted) {
@@ -351,7 +356,8 @@ export const HabitService = {
     },
 
     async skipHabit(habitId: string, date: string, reason: string) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user');
 
         const { error } = await supabase
@@ -383,7 +389,8 @@ export const HabitService = {
 
     // --- Reflections ---
     async getReflections(startDate: string, endDate: string) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return [];
 
         const { data, error } = await supabase
@@ -398,7 +405,8 @@ export const HabitService = {
     },
 
     async saveReflection(date: string, mood: string, note: string) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user');
 
         const { error } = await supabase
@@ -415,7 +423,8 @@ export const HabitService = {
 
     // --- Arrears ---
     async getArrears() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return [];
         const uid = user.id;
 
@@ -479,7 +488,8 @@ export const HabitService = {
     },
 
     async resetAccount() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user');
 
         // Delete all data for this user

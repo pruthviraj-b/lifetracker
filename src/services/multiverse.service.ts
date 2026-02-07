@@ -3,7 +3,8 @@ import { MultiverseLink, MultiverseEntityType, MultiverseRelationType } from '..
 
 export const MultiverseService = {
     async getLinks(): Promise<MultiverseLink[]> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return [];
 
         const { data, error } = await supabase
@@ -30,7 +31,8 @@ export const MultiverseService = {
     },
 
     async createLink(link: Omit<MultiverseLink, 'id' | 'userId' | 'createdAt'>) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('Unauthorized');
 
         const { data, error } = await supabase
@@ -60,7 +62,8 @@ export const MultiverseService = {
     },
 
     async repairGraph() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return;
 
         console.log("🌌 INITIATING MULTIVERSE GRAPH REPAIR...");

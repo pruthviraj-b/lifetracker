@@ -14,7 +14,8 @@ export interface Achievement {
 
 export const AchievementService = {
     async getAchievements(): Promise<Achievement[]> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return [];
 
         // Fetch all achievements
@@ -41,7 +42,8 @@ export const AchievementService = {
     },
 
     async getRecentUnlocks(limit = 5): Promise<Achievement[]> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return [];
 
         const { data, error } = await supabase

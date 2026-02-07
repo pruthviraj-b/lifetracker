@@ -17,7 +17,8 @@ export const ReminderService = {
     },
 
     async createReminder(reminder: Omit<Reminder, 'id' | 'lastTriggered'>) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user logged in');
 
         const payload: any = {
@@ -154,7 +155,8 @@ export const ReminderService = {
     },
 
     async deleteAllReminders() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user logged in');
 
         const { error } = await supabase
@@ -166,7 +168,8 @@ export const ReminderService = {
     },
 
     async updateAllStatus(isEnabled: boolean) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user logged in');
 
         const { error } = await supabase

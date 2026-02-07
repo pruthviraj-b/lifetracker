@@ -9,7 +9,8 @@ export const CourseService = {
     // --- Public Content ---
 
     async getPublishedCourses(): Promise<Course[]> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
 
         let query = supabase.from('courses').select('*').eq('published', true);
 
@@ -27,7 +28,8 @@ export const CourseService = {
 
     // Used by YouTube Tracker
     async getCourses(): Promise<any[]> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
 
         let query = supabase.from('courses').select('*');
 
@@ -44,7 +46,8 @@ export const CourseService = {
     },
 
     async getCourseDetails(courseId: string): Promise<{ course: Course, modules: CourseModule[] }> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
 
         // 1. Get Course (Filtered or Public)
         let query = supabase.from('courses').select('*').eq('id', courseId);
@@ -83,7 +86,8 @@ export const CourseService = {
     // --- User Progress ---
 
     async enrollInCourse(courseId: string): Promise<Enrollment> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('Not authenticated');
 
         const { data, error } = await supabase
@@ -102,7 +106,8 @@ export const CourseService = {
     },
 
     async getMyEnrollment(courseId: string): Promise<Enrollment | null> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return null;
 
         const { data, error } = await supabase
@@ -117,7 +122,8 @@ export const CourseService = {
     },
 
     async markLessonComplete(lessonId: string, courseId: string): Promise<void> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('Not authenticated');
 
         // 1. Upsert Lesson Progress
@@ -204,7 +210,8 @@ export const CourseService = {
 
     // ... (getCompletedLessons, etc. unchanged) ...
     async getCompletedLessons(courseId: string): Promise<string[]> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return [];
         const { data: modules } = await supabase.from('modules').select('id').eq('course_id', courseId);
         if (!modules?.length) return [];
@@ -222,7 +229,8 @@ export const CourseService = {
     },
 
     async getLessonProgressDetails(lessonId: string): Promise<any> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return null;
 
         const { data, error } = await supabase
@@ -241,7 +249,8 @@ export const CourseService = {
     },
 
     async updateLessonJournal(lessonId: string, notes: string, resources: any[]): Promise<void> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error("Unauthorized");
 
         // 1. Check if exists to preserve status
@@ -607,7 +616,8 @@ export const CourseService = {
     // --- Reset ---
 
     async resetAllAcademyData(): Promise<void> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('Not authenticated');
 
         console.log("♻️ Factory Resetting Academy Data...");
@@ -672,7 +682,8 @@ export const CourseService = {
     },
 
     async createCourse(input: { title: string, folderId?: string }) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('Not authenticated');
 
         const { data, error } = await supabase

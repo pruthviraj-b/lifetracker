@@ -80,7 +80,8 @@ export const DataService = {
 
         if (!data.habits || !Array.isArray(data.habits)) throw new Error("Invalid backup format: Missing habits");
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error("User not logged in");
 
         // Strategy: Upsert based on ID? OR Wipe and Replace?
@@ -192,7 +193,8 @@ export const DataService = {
 
     // --- Delete Account ---
     async deleteAccount() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error("No user");
 
         // Client-side cascade delete (Not atomic, but works if no foreign key blocks)

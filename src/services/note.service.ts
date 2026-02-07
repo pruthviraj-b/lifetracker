@@ -64,7 +64,8 @@ export const NoteService = {
     },
 
     async createNote(note: CreateNoteInput): Promise<Note> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user logged in');
 
         const { data, error } = await supabase
@@ -140,7 +141,8 @@ export const NoteService = {
     },
 
     async createFolder(name: string, color: string = 'gray', icon: string = 'folder'): Promise<NoteFolder> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('No user logged in');
         const { data, error } = await supabase
             .from('note_folders')

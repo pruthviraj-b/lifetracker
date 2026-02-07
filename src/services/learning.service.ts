@@ -10,7 +10,8 @@ import {
 export const LearningService = {
     // FOLDERS
     async getFolders(): Promise<LearningFolder[]> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return [];
 
         const { data, error } = await supabase
@@ -24,7 +25,8 @@ export const LearningService = {
     },
 
     async createFolder(input: CreateFolderInput): Promise<LearningFolder> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('Not authenticated');
 
         const { data, error } = await supabase
@@ -78,7 +80,8 @@ export const LearningService = {
     },
 
     async createResource(input: CreateResourceInput): Promise<LearningResource> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('Not authenticated');
 
         const { data, error } = await supabase
