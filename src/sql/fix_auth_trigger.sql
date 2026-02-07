@@ -7,7 +7,7 @@
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.users (id, email, full_name, avatar_url)
+  INSERT INTO public.users (id, email, name, avatar_url)
   VALUES (
     new.id, 
     new.email, 
@@ -17,7 +17,7 @@ BEGIN
   ON CONFLICT (id) DO UPDATE
   SET 
     email = EXCLUDED.email,
-    full_name = EXCLUDED.full_name,
+    name = EXCLUDED.name,
     avatar_url = EXCLUDED.avatar_url,
     updated_at = now();
   RETURN new;
@@ -32,7 +32,7 @@ CREATE TRIGGER on_auth_user_created
 
 -- 3. Backfill missing profiles for existing users
 -- This fixes "Not Saving" errors for users who signed up but have no public profile
-INSERT INTO public.users (id, email, full_name, created_at, updated_at)
+INSERT INTO public.users (id, email, name, created_at, updated_at)
 SELECT 
     id, 
     email, 
