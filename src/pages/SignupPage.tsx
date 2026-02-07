@@ -24,6 +24,30 @@ export default function SignupPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+
+        // Validation Rules
+        if (formData.name.trim().length < 2) {
+            setError('Please enter a valid name (at least 2 characters).');
+            return;
+        }
+
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(formData.email)) {
+            setError('Please enter a valid email address.');
+            return;
+        }
+
+        // Block extremely short domains or obvious fakes (simple heuristic)
+        if (formData.email.split('@')[0].length < 3) {
+            setError('Email username is too short.');
+            return;
+        }
+
+        if (formData.password.length < 8) {
+            setError('Password must be at least 8 characters for your security.');
+            return;
+        }
+
         setLoading(true);
 
         try {

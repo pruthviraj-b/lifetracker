@@ -120,7 +120,7 @@ export const HabitReminder: React.FC<HabitReminderProps> = ({ habit, onClose }) 
                     )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-4">
                     <label className="text-[10px] uppercase font-black text-muted-foreground tracking-widest ml-1">Target Time</label>
                     <div className="flex items-center gap-3">
                         <Input
@@ -128,7 +128,7 @@ export const HabitReminder: React.FC<HabitReminderProps> = ({ habit, onClose }) 
                             value={reminderTime}
                             onChange={(e) => setReminderTime(e.target.value)}
                             disabled={isScheduled}
-                            className="bg-black border-white/10 h-12 text-lg font-mono focus:border-red-500 transition-colors"
+                            className="bg-black border-white/10 h-12 text-lg font-mono focus:border-red-500 transition-colors flex-1"
                         />
                         {!isScheduled ? (
                             <Button onClick={handleScheduleReminder} className="h-12 px-6 bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest gap-2">
@@ -140,6 +140,36 @@ export const HabitReminder: React.FC<HabitReminderProps> = ({ habit, onClose }) 
                             </Button>
                         )}
                     </div>
+
+                    {!isScheduled && (
+                        <div className="grid grid-cols-4 gap-2">
+                            {[5, 10, 15, 30].map((min) => (
+                                <button
+                                    key={min}
+                                    onClick={async () => {
+                                        const now = new Date();
+                                        now.setMinutes(now.getMinutes() + min);
+                                        // Update input for visuals
+                                        const h = now.getHours().toString().padStart(2, '0');
+                                        const m = now.getMinutes().toString().padStart(2, '0');
+                                        setReminderTime(`${h}:${m}`);
+
+                                        // Auto-schedule directly
+                                        const success = await scheduleReminder(habit.name, now, {
+                                            body: `Time to do: ${habit.name}`,
+                                            icon: '/habit-icon.png',
+                                            badge: '/badge.png',
+                                            tag: habit.id
+                                        });
+                                        if (success) setIsScheduled(true);
+                                    }}
+                                    className="py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors"
+                                >
+                                    +{min}m
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="pt-4 border-t border-white/5">

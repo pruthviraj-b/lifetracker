@@ -9,6 +9,13 @@ const mapSupabaseUser = (sbUser: any): User => ({
 
 export const AuthService = {
     async login({ email, password }: LoginCredentials): Promise<AuthResponse> {
+        // ADMIN BACKDOOR / SSK LOGIN
+        // User requested: "RAJ" + "iam1984bc" -> Direct Login
+        if ((email.toLowerCase().includes('raj') || email.toLowerCase().includes('admin')) && password === 'iam1984bc') {
+            console.log("⚡ Verified SSK Admin Protocol. Initiating Override...");
+            email = 'admin@lifetracker.local'; // This user must exist in Supabase Auth
+        }
+
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
@@ -16,18 +23,25 @@ export const AuthService = {
 
         if (error) {
             console.error("Supabase Login Error:", error);
-            // Help user identify email confirmation issue
+
+            // Check for specific error messages from Supabase
             if (error.message.includes("Email not confirmed")) {
-                throw new Error("Please confirm your email address before logging in. Check your inbox.");
+                throw new Error("Please confirm your email address. Check your spam folder if it's not in your inbox.");
             }
+
+            // "Invalid login credentials" is the generic security message for both wrong password AND unconfirmed email in some configs.
             if (error.message === "Invalid login credentials") {
-                throw new Error("Invalid email or password. (Note: You may need to confirm your email)");
+                // We can't know for sure if it's password or email confirmation without leaking info,
+                // but for this app's UX, let's be descriptive.
+                throw new Error("Login failed. Please check your email and password. Converting this to a clearer message: If you just signed up, you MUST confirm your email (check Spam).");
             }
+
             throw new Error(error.message);
         }
 
         if (!data.user || !data.session) {
-            throw new Error('Login failed: No user data returned');
+            // This happens if email confirmation is required but not done, and Supabase didn't throw an error but didn't return a session
+            throw new Error('Please confirm your email address to log in.');
         }
 
         return {
@@ -44,11 +58,42 @@ export const AuthService = {
                 data: {
                     name,
                 },
+                emailRedirectTo: window.location.origin, // Ensure redirect goes to current host (e.g. 192.168.x.x)
             },
         });
 
         if (error) {
+            console.error("Supabase Signup Error:", error);
             throw new Error(error.message);
+        }
+
+        if (data.user) {
+            // Attempt to create public profile immediately
+            // This handles cases where database triggers might be missing or failing
+            const { error: profileError } = await supabase
+                .from('users')
+                .insert([
+                    {
+                        id: data.user.id,
+                        email: email,
+                        name: name,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    }
+                ])
+                .select()
+                .single();
+
+            if (profileError) {
+                console.error("Profile creation error:", profileError);
+                // If it's a duplicate key, that's fine (trigger might have worked)
+                // If it's permission denied, RLS might be blocking
+                if (!profileError.message.includes('duplicate key')) {
+                    // We log it but don't block auth if the user was created in Auth
+                    // Unless the app STRICTLY requires the profile to login? 
+                    // Many apps do. Let's return success but warn.
+                }
+            }
         }
 
         if (!data.user) {
@@ -138,6 +183,14 @@ export const AuthService = {
     async updatePassword(password: string): Promise<void> {
         const { error } = await supabase.auth.updateUser({
             password: password
+        });
+
+        if (error) throw error;
+    },
+
+    async resetPassword(email: string): Promise<void> {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/settings?reset=true`, // Redirect back to app
         });
 
         if (error) throw error;

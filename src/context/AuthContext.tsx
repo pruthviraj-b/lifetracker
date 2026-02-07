@@ -40,9 +40,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const register = async (credentials: RegisterCredentials) => {
-        const { user, token } = await AuthService.register(credentials);
-        AuthService.setSession(token, user);
-        setUser(user);
+        try {
+            const { user, token } = await AuthService.register(credentials);
+            AuthService.setSession(token, user);
+            setUser(user);
+        } catch (error) {
+            console.error("AuthContext Registration Error:", error);
+            throw error;
+        }
     };
 
     const logout = async () => {

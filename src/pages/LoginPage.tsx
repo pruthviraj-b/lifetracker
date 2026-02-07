@@ -29,8 +29,14 @@ export default function LoginPage() {
             // Redirect handled by wrapper
         } catch (err: any) {
             // Display the specific error message from the service
-            setError(err.message || 'Failed to sign in');
+            const msg = err.message || 'Failed to sign in';
+            setError(msg);
             setLoading(false);
+
+            // Auto-shake or highlight logic could be added here
+            if (msg.includes("confirm your email")) {
+                // Optional: Trigger a toast or separate UI hint
+            }
         }
     };
 
@@ -88,9 +94,9 @@ export default function LoginPage() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-foreground ml-1">Email</label>
+                            <label className="text-xs font-semibold text-foreground ml-1">Email or Phone</label>
                             <Input
-                                type="email"
+                                type="text"
                                 placeholder="name@example.com"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -100,7 +106,30 @@ export default function LoginPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-foreground ml-1">Password</label>
+                            <div className="flex items-center justify-between ml-1">
+                                <label className="text-xs font-semibold text-foreground">Password</label>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        if (!formData.email || !formData.email.includes('@')) {
+                                            setError('Please enter your email to reset password.');
+                                            return;
+                                        }
+                                        try {
+                                            setLoading(true);
+                                            await AuthService.resetPassword(formData.email);
+                                            setError('Reset link sent! Check your email.'); // Abuse error field for success msg or add new state
+                                        } catch (err: any) {
+                                            setError(err.message);
+                                        } finally {
+                                            setLoading(false);
+                                        }
+                                    }}
+                                    className="text-[10px] font-medium text-primary hover:underline cursor-pointer"
+                                >
+                                    Forgot Password?
+                                </button>
+                            </div>
                             <Input
                                 type="password"
                                 placeholder="••••••••"
@@ -116,6 +145,12 @@ export default function LoginPage() {
                     {error && (
                         <div className="p-4 text-xs font-semibold text-destructive bg-destructive/5 border border-destructive/10 rounded-xl animate-claude-in">
                             {error}
+                            {error.includes("confirm") && (
+                                <p className="mt-2 text-[10px] text-muted-foreground font-normal border-t border-destructive/10 pt-2">
+                                    Tip: Verification emails often land in <strong>Spam</strong> or <strong>Promotions</strong>.
+                                    Please search for "Supabase" or your app name.
+                                </p>
+                            )}
                         </div>
                     )}
 
