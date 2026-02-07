@@ -129,17 +129,17 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
     };
 
     return (
-        <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-12 md:pt-20 px-4 md:px-8 space-y-8 md:space-y-12 max-w-5xl mx-auto animate-claude-in relative">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-8 md:pt-20 px-4 md:px-8 space-y-6 md:space-y-12 max-w-5xl mx-auto animate-claude-in relative pb-24 md:pb-8">
             {isSearchOpen && <AdvancedSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />}
             {/* SmartChat removed - Use CMD+K for unified search */}
 
             {/* 1. Authentic RITU OS Header */}
-            <div className="w-full flex flex-col items-start space-y-4">
+            <div className="w-full flex flex-col items-start space-y-3 md:space-y-4">
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="px-3 py-1 bg-secondary/50 border border-border/50 rounded-md text-[9px] font-mono text-muted-foreground/70"
+                    className="px-3 py-1 bg-secondary/50 border border-border/50 rounded-md text-[8px] md:text-[9px] font-mono text-muted-foreground/70"
                 >
                     {currentTime.toLocaleString('en-IN', {
                         year: 'numeric',
@@ -156,14 +156,14 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-                    className="flex items-center gap-3"
+                    className="flex items-center gap-2 md:gap-3"
                 >
-                    <div className="w-8 h-8 text-primary flex-shrink-0">
+                    <div className="w-6 h-6 md:w-8 md:h-8 text-primary flex-shrink-0">
                         <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
                             <path d="M12,2L14.4,9.5L22,12L14.4,14.5L12,22L9.6,14.5L2,12L9.6,9.5L12,2Z" />
                         </svg>
                     </div>
-                    <h1 className="text-2xl md:text-4xl font-bold font-serif text-foreground tracking-tight">
+                    <h1 className="text-xl md:text-4xl font-bold font-serif text-foreground tracking-tight">
                         RITU OS
                     </h1>
                 </motion.div>
@@ -173,23 +173,23 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
 
             {/* 2. Authentic Large Input - matching Image 1 */}
             <div className="w-full max-w-3xl space-y-4">
-                <div className="claude-input-container relative min-h-[120px] md:min-h-[160px] flex flex-col">
+                <div className="claude-input-container relative min-h-[100px] md:min-h-[160px] flex flex-col">
                     <textarea
-                        className="w-full bg-transparent resize-none outline-none text-lg text-foreground/80 placeholder:text-muted-foreground/60 p-2"
+                        className="w-full bg-transparent resize-none outline-none text-base md:text-lg text-foreground/80 placeholder:text-muted-foreground/60 p-2"
                         placeholder="How can I help you today?"
-                        rows={3}
+                        rows={2}
                         onClick={() => setIsSearchOpen(true)}
                         readOnly
                     />
                     <div className="mt-auto flex items-center justify-between">
-                        <button className="p-2 hover:bg-secondary rounded-lg transition-colors overflow-hidden group">
-                            <Plus className="w-6 h-6 text-foreground/40 group-hover:text-primary transition-colors" />
+                        <button className="p-1 md:p-2 hover:bg-secondary rounded-lg transition-colors overflow-hidden group">
+                            <Plus className="w-5 h-5 md:w-6 md:h-6 text-foreground/40 group-hover:text-primary transition-colors" />
                         </button>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-[10px] font-bold text-primary px-3 py-1.5 bg-primary/5 border border-primary/10 rounded-lg cursor-default">
-                                <span className="relative flex h-2 w-2">
+                        <div className="flex items-center gap-3 md:gap-4">
+                            <div className="flex items-center gap-1.5 md:gap-2 text-[8px] md:text-[10px] font-bold text-primary px-2 md:px-3 py-1 md:py-1.5 bg-primary/5 border border-primary/10 rounded-lg cursor-default">
+                                <span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 bg-primary"></span>
                                 </span>
                                 RITU CORE
                             </div>
@@ -199,18 +199,18 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
                 </div>
 
                 {/* 3. Authentic Action Pills - matching Image 1 */}
-                <div className="flex flex-wrap items-center justify-center gap-3">
+                <div className="flex items-center justify-start md:justify-center gap-2 overflow-x-auto pb-2 no-scrollbar px-1 md:px-0 scroll-smooth">
                     {[
-                        { icon: <Globe className="w-4 h-4" />, label: 'Dashboard', path: '/dashboard' },
-                        { icon: <BookOpen className="w-4 h-4" />, label: 'Learn', path: '/courses' },
-                        { icon: <StickyNote className="w-4 h-4" />, label: 'Knowledge', path: '/notes' },
-                        { icon: <TrendingUp className="w-4 h-4" />, label: 'Metrics', path: '/analytics' },
-                        { icon: <Search className="w-4 h-4 text-primary" />, label: "Terminal", action: () => setIsSearchOpen(true) },
+                        { icon: <Globe className="w-3.5 h-3.5" />, label: 'Dashboard', path: '/dashboard' },
+                        { icon: <BookOpen className="w-3.5 h-3.5" />, label: 'Learn', path: '/courses' },
+                        { icon: <StickyNote className="w-3.5 h-3.5" />, label: 'Knowledge', path: '/notes' },
+                        { icon: <TrendingUp className="w-3.5 h-3.5" />, label: 'Metrics', path: '/analytics' },
+                        { icon: <Search className="w-3.5 h-3.5 text-primary" />, label: "Terminal", action: () => setIsSearchOpen(true) },
                     ].map((btn: any, i) => (
                         <button
                             key={i}
                             onClick={() => btn.action ? btn.action() : navigate(btn.path)}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-secondary/50 border border-border/50 rounded-xl text-sm font-medium text-foreground/70 hover:bg-secondary hover:text-foreground transition-all"
+                            className="flex items-center gap-1.5 px-4 py-2 bg-secondary/50 border border-border/50 rounded-xl text-xs font-medium text-foreground/70 hover:bg-secondary hover:text-foreground transition-all whitespace-nowrap"
                         >
                             {btn.icon}
                             {btn.label}

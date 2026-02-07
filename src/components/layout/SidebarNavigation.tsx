@@ -6,6 +6,7 @@ import {
     Activity, Zap, Youtube, Download, Eye, Camera, Plus, Search,
     Bell, User
 } from 'lucide-react';
+import { MobileNav } from './MobileNav';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { usePWA } from '../../hooks/usePWA';
@@ -34,82 +35,6 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Settings', path: '/settings', icon: <Settings className="w-5 h-5" />, category: 'System' },
 ];
 
-const FloatingAssistant = ({ onOpenMenu, onOpenAssistant, navigate, location }: any) => {
-    const [isExpanded, setIsExpanded] = React.useState(false);
-    const containerRef = React.useRef<HTMLDivElement>(null);
-
-    const quickActions = [
-        { id: 'home', label: 'Home', icon: <Home className="w-6 h-6" />, path: '/home' },
-        { id: 'dash', label: 'Dashboard', icon: <LayoutDashboard className="w-6 h-6" />, path: '/dashboard' },
-        { id: 'notes', label: 'Knowledge', icon: <StickyNote className="w-6 h-6" />, path: '/notes' },
-        { id: 'settings', label: 'Settings', icon: <Settings className="w-6 h-6" />, path: '/settings' },
-        { id: 'menu', label: 'Menu', icon: <Menu className="w-6 h-6" />, action: onOpenMenu },
-        { id: 'assistant', label: 'Assistant', icon: <Zap className="w-6 h-6" />, action: onOpenAssistant },
-        { id: 'close', label: 'Close', icon: <X className="w-6 h-6" />, action: () => setIsExpanded(false) },
-    ];
-
-    return (
-        <div className="fixed inset-0 pointer-events-none z-[100]" ref={containerRef}>
-            <AnimatePresence>
-                {isExpanded && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => setIsExpanded(false)}
-                        className="absolute inset-0 bg-background/80 backdrop-blur-sm pointer-events-auto"
-                    />
-                )}
-            </AnimatePresence>
-
-            <motion.div
-                className="absolute pointer-events-auto bottom-8 right-8"
-                style={{ zIndex: 101 }}
-            >
-                <div className="relative">
-                    <motion.button
-                        onClick={() => setIsExpanded(!isExpanded)}
-                        className={`
-                            w-16 h-16 rounded-full flex items-center justify-center shadow-xl transition-all relative z-10 
-                            ${isExpanded ? 'opacity-0 scale-50 pointer-events-none' : 'opacity-100'}
-                            bg-primary text-white border border-primary/20
-                        `}
-                    >
-                        <Activity className="w-8 h-8" />
-                    </motion.button>
-
-                    <AnimatePresence>
-                        {isExpanded && (
-                            <motion.div
-                                initial={{ scale: 0.8, opacity: 0, y: 20 }}
-                                animate={{ scale: 1, opacity: 1, y: 0 }}
-                                exit={{ scale: 0.8, opacity: 0, y: 20 }}
-                                className="absolute bottom-0 right-0 w-[300px] p-6 bg-card border border-border rounded-[2rem] shadow-2xl grid grid-cols-4 gap-4"
-                            >
-                                {quickActions.map((action) => (
-                                    <button
-                                        key={action.id}
-                                        onClick={() => {
-                                            if (action.path) navigate(action.path);
-                                            else if (action.action) action.action();
-                                            setIsExpanded(false);
-                                        }}
-                                        className="flex flex-col items-center gap-1 group"
-                                    >
-                                        <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
-                                            {action.icon}
-                                        </div>
-                                        <span className="text-[10px] font-semibold text-muted-foreground">{action.label}</span>
-                                    </button>
-                                ))}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-            </motion.div>
-        </div>
-    );
-};
 
 export const SidebarNavigation = () => {
     const { logout, user } = useAuth();
@@ -222,14 +147,7 @@ export const SidebarNavigation = () => {
 
     return (
         <>
-            <div className="md:hidden">
-                <FloatingAssistant
-                    onOpenMenu={() => setIsOpen(true)}
-                    onOpenAssistant={() => setIsAssistantOpen(true)}
-                    navigate={navigate}
-                    location={location}
-                />
-            </div>
+            <MobileNav onOpenMenu={() => setIsOpen(true)} />
 
             <RitualAssistant
                 isOpen={isAssistantOpen}

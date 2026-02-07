@@ -1,18 +1,27 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import { useEffect } from 'react';
 
 export default function LandingPage() {
     const navigate = useNavigate();
+    const { user } = useAuth();
+
+    useEffect(() => {
+        if (user) {
+            navigate('/dashboard');
+        }
+    }, [user, navigate]);
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden font-['Cinzel'] selection:bg-primary/30 selection:text-foreground">
 
             {/* Hero Section */}
-            <main className="flex-grow flex flex-col items-center justify-center px-4 relative z-10 pb-20">
-                <div className="max-w-3xl mx-auto text-center space-y-8">
-                    <div className="space-y-4 relative">
+            <main className="flex-grow flex flex-col items-center justify-center px-6 relative z-10 pb-16 md:pb-20">
+                <div className="max-w-3xl mx-auto text-center space-y-6 md:space-y-8">
+                    <div className="space-y-3 md:space-y-4 relative">
                         <motion.h1
-                            className="text-4xl md:text-7xl font-bold tracking-tight leading-[1.1] font-['Cinzel_Decorative']"
+                            className="text-3xl sm:text-4xl md:text-7xl font-bold tracking-tight leading-[1.2] md:leading-[1.1] font-['Cinzel_Decorative']"
                             style={{ filter: 'url(#water-4d)' }}
                             animate={{ opacity: [0.9, 1, 0.9] }}
                             transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
@@ -36,7 +45,7 @@ export default function LandingPage() {
                             </svg>
 
                             <motion.p
-                                className="text-lg md:text-2xl text-muted-foreground font-light max-w-xl mx-auto leading-relaxed"
+                                className="text-base sm:text-lg md:text-2xl text-muted-foreground font-light max-w-xl mx-auto leading-relaxed px-4 md:px-0"
                                 style={{ filter: 'url(#water-4d)' }}
                                 animate={{ opacity: [0.8, 1, 0.8] }}
                                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -46,10 +55,10 @@ export default function LandingPage() {
                         </div>
                     </div>
 
-                    <div className="pt-8">
+                    <div className="pt-6 md:pt-8">
                         <button
                             onClick={() => navigate('/signup')}
-                            className="bg-primary text-primary-foreground px-8 md:px-12 py-4 md:py-5 rounded-full font-bold text-lg md:text-xl shadow-lg hover:shadow-xl hover:-translate-y-[1px] transition-all duration-300 ease-out font-['Cinzel']"
+                            className="w-full sm:w-auto bg-primary text-primary-foreground px-10 md:px-12 py-4 md:py-5 rounded-full font-bold text-lg md:text-xl shadow-lg hover:shadow-xl hover:-translate-y-[1px] transition-all duration-300 ease-out font-['Cinzel']"
                         >
                             Start Your Journey
                         </button>
