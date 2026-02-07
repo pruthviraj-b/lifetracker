@@ -10,7 +10,7 @@ interface HeatmapProps {
     onDayClick?: (date: string) => void;
 }
 
-export function Heatmap({ logs, daysToShow = 365, className, onDayClick }: HeatmapProps) {
+export function Heatmap({ logs, daysToShow = 30, className, onDayClick }: HeatmapProps) {
     const { preferences } = useTheme();
     const isWild = preferences.wild_mode;
     // Generate dates backwards from today
@@ -78,40 +78,38 @@ export function Heatmap({ logs, daysToShow = 365, className, onDayClick }: Heatm
                 </div>
             </div>
 
-            <div className="flex flex-wrap gap-[2px] justify-center md:justify-start">
+            {/* Grid Container - adjusted for 30 days (approx 4-5 weeks) */}
+            <div className="grid grid-cols-7 gap-[3px] md:gap-[4px]">
+                {/* Day Labels (Optional, can add later) */}
                 {dates.map((date, i) => {
                     const dateStr = formatDate(date);
+                    const log = logs[dateStr];
+                    const count = log?.completedHabitIds.length || 0;
                     const intensity = getIntensity(dateStr);
 
                     return (
                         <motion.button
                             key={dateStr}
-                            initial={{ opacity: 0, scale: 0 }}
-                            animate={
-                                isWild && intensity === 4
-                                    ? { opacity: 1, scale: 1, boxShadow: ["0 0 0px rgba(239,68,68,0)", "0 0 10px rgba(239,68,68,0.6)", "0 0 0px rgba(239,68,68,0)"] }
-                                    : { opacity: 1, scale: 1 }
-                            }
-                            transition={{
-                                duration: isWild && intensity === 4 ? 2 : 0.2, // Longer duration for pulse
-                                delay: Math.min(i * 0.005, 1.5), // Cap delay to avoid waiting too long
-                                ease: "easeOut",
-                                repeat: isWild && intensity === 4 ? Infinity : 0, // Repeat pulse indefinitely
-                                repeatType: "loop"
-                            }}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: i * 0.01 }}
                             onClick={() => onDayClick?.(dateStr)}
-                            title={`${dateStr}: ${logs[dateStr]?.completedHabitIds.length || 0} completions`}
+                            title={`${dateStr}: ${count} completions`}
                             className={cn(
-                                "w-2.5 h-2.5 transition-colors cursor-pointer relative",
-                                !isWild && "rounded-sm hover:scale-125 hover:z-10",
-                                isWild && "rounded-none hover:border hover:border-white z-0 hover:z-20",
-                                intensity === 0 && (isWild ? "bg-white/5" : "bg-muted/20 hover:bg-muted"),
-                                intensity === 1 && (isWild ? "bg-red-900/30" : "bg-green-900/50"),
-                                intensity === 2 && (isWild ? "bg-red-800/60" : "bg-green-700/60"),
-                                intensity === 3 && (isWild ? "bg-red-600" : "bg-green-500/80"),
-                                intensity === 4 && (isWild ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)] z-10" : "bg-green-400")
+                                "aspect-square w-full rounded-sm transition-all relative group/cell",
+                                intensity === 0 && "bg-secondary/30 hover:bg-secondary/50",
+                                intensity === 1 && "bg-primary/20 hover:bg-primary/30",
+                                intensity === 2 && "bg-primary/40 hover:bg-primary/50",
+                                intensity === 3 && "bg-primary/60 hover:bg-primary/70",
+                                intensity === 4 && "bg-primary hover:bg-primary/90 shadow-[0_0_8px_rgba(var(--primary),0.4)]",
+                                isWild && "rounded-none border border-red-900/20"
                             )}
-                        />
+                        >
+                            {/* Tooltip on Hover */}
+                            <span className="opacity-0 group-hover/cell:opacity-100 absolute bottom-full left-1/2 -translate-x-1/2 bg-black text-white text-[9px] px-1 py-0.5 rounded pointer-events-none whitespace-nowrap z-20 mb-1">
+                                {new Date(date).getDate()}
+                            </span>
+                        </motion.button>
                     );
                 })}
             </div>

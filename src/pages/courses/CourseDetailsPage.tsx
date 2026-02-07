@@ -262,7 +262,7 @@ export const CourseDetailsPage: React.FC = () => {
             </div>
 
             {/* Action Bar */}
-            <div className="sticky top-0 z-30 bg-background/80 backdrop-blur border-b border-white/10 px-4 md:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="bg-background/80 backdrop-blur border-b border-white/10 px-4 md:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     {enrollment ? (
                         <div className="flex items-center gap-4">
@@ -307,7 +307,7 @@ export const CourseDetailsPage: React.FC = () => {
 
             {/* Progress Bar */}
             {enrollment && (
-                <div className="max-w-4xl mx-auto sticky top-20 z-30 bg-background/95 backdrop-blur py-4 mb-4 border-b border-white/5">
+                <div className="max-w-4xl mx-auto py-4 mb-4 border-b border-white/5 px-6">
                     <div className="flex items-center justify-between text-xs font-mono mb-2">
                         <span className="text-muted-foreground uppercase tracking-widest">Protocol Completion</span>
                         <span className="text-primary font-bold text-right">{Math.round((completedLessonIds.size / (modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || 1)) * 100)}%</span>

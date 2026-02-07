@@ -46,7 +46,7 @@ export const ProtocolPulseWidget: React.FC<ProtocolPulseWidgetProps> = ({ nextRe
             <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-semibold text-foreground">System Timeline</span>
+                    <span className="text-xs font-semibold text-foreground">Active Pattern</span>
                 </div>
             </div>
 

@@ -26,15 +26,8 @@ export const WidgetGrid: React.FC<WidgetGridProps> = ({ stats, nextReminder, all
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-            >
-                <NeuralLoadWidget {...stats} />
-            </motion.div>
-
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
+                className="sm:col-span-2"
             >
                 <ProtocolPulseWidget nextReminder={nextReminder} allReminders={allReminders} />
             </motion.div>
