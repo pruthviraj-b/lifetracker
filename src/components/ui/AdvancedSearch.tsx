@@ -5,13 +5,16 @@ import { useNavigate } from 'react-router-dom';
 import { HabitService } from '../../services/habit.service';
 import { ReminderService } from '../../services/reminder.service';
 import { FlashcardService } from '../../services/flashcard.service';
+import { CourseService } from '../../services/course.service';
+import { NotificationManagerInstance } from '../../utils/notificationManager';
+import { useToast } from '../../context/ToastContext';
 import smartChatAnalyzer from '../../utils/smartChatAnalyzer';
 import { useAuth } from '../../context/AuthContext';
 
 interface SearchResult {
     id: string;
     title: string;
-    type: 'habit' | 'note' | 'course' | 'navigation' | 'action' | 'answer' | 'system';
+    type: 'habit' | 'note' | 'course' | 'navigation' | 'action' | 'answer' | 'system' | 'reminder' | 'task';
     path: string;
     description?: string;
     meta?: any;
@@ -25,6 +28,8 @@ export const AdvancedSearch = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
     const [isExecuting, setIsExecuting] = useState(false);
     const [thinkingStep, setThinkingStep] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
+    const [reminderPool, setReminderPool] = useState<any[]>([]);
+    const [coursePool, setCoursePool] = useState<any[]>([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [status, setStatus] = useState<string | null>(null);
     const [wizard, setWizard] = useState<{
@@ -35,6 +40,7 @@ export const AdvancedSearch = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
     }>({ active: false, type: null, step: 0, data: {} });
 
     const inputRef = useRef<HTMLInputElement>(null);
+    const { showToast } = useToast();
 
     const THINKING_PHASES = ["Parsing Intent...", "Validating Schema...", "Directing Core...", "Executing Nexus..."];
     const WIZARD_STEPS = {
@@ -130,13 +136,29 @@ export const AdvancedSearch = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 { id: 'nav-reminders', title: 'Reminders', type: 'navigation' as const, path: '/reminders', description: 'Alerts' },
             ].filter(n => n.title.toLowerCase().includes(query.toLowerCase()) || n.description?.toLowerCase().includes(query.toLowerCase()));
 
-            // Real Habit Search
-            const habits = await HabitService.getHabits();
-            const habitResults: SearchResult[] = habits
-                .filter(h => h.title.toLowerCase().includes(query.toLowerCase()))
-                .map(h => ({ id: h.id, title: h.title, type: 'habit', path: '/dashboard', description: 'Active Protocol' }));
+            // Real Habit, Reminder, Course Search
+            const [habits, reminders, courses] = await Promise.all([
+                HabitService.getHabits(),
+                ReminderService.getReminders(),
+                CourseService.getCourses()
+            ]);
 
-            setResults([...newResults, ...navDirectory, ...habitResults]);
+            setReminderPool(reminders || []);
+            setCoursePool(courses || []);
+
+            const habitResults: SearchResult[] = (habits || [])
+                .filter(h => h.title.toLowerCase().includes(query.toLowerCase()))
+                .map(h => ({ id: h.id, title: h.title, type: 'habit', path: '/dashboard', description: 'Active Protocol', meta: h }));
+
+            const reminderResults: SearchResult[] = (reminders || [])
+                .filter(r => r.title.toLowerCase().includes(query.toLowerCase()))
+                .map(r => ({ id: r.id, title: r.title, type: 'reminder', path: '/reminders', description: r.time || 'Reminder', meta: r }));
+
+            const courseResults: SearchResult[] = (courses || [])
+                .filter(c => c.title.toLowerCase().includes(query.toLowerCase()))
+                .map(c => ({ id: c.id, title: c.title, type: 'course', path: `/courses/${c.id}`, description: c.description || 'Course', meta: c }));
+
+            setResults([...newResults, ...navDirectory, ...habitResults, ...reminderResults, ...courseResults]);
             setSelectedIndex(0);
             setIsThinking(false);
         }, 800);
@@ -292,6 +314,50 @@ export const AdvancedSearch = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
         }
         navigate(result.path);
         onClose();
+    };
+
+    // Quick action handlers
+    const handleCompleteHabit = async (result: SearchResult) => {
+        try {
+            if (!user) { showToast('Not signed in', 'Please sign in to complete habits', { type: 'error' }); return; }
+            const today = new Date().toISOString().split('T')[0];
+            await HabitService.toggleHabitCompletion(result.id, today, true, user.id);
+            showToast('Completed', `${result.title} marked complete.`, { type: 'success' });
+            // update UI quickly
+            setResults(prev => prev.map(r => r.id === result.id ? { ...r } : r));
+        } catch (e) {
+            console.error('Complete habit failed', e);
+            showToast('Error', 'Failed to complete habit', { type: 'error' });
+        }
+    };
+
+    const handleDeleteReminder = async (result: SearchResult) => {
+        if (!confirm(`Delete reminder "${result.title}"?`)) return;
+        try {
+            await ReminderService.deleteReminder(result.id);
+            await NotificationManagerInstance.cancelNotification(result.id);
+            showToast('Deleted', 'Reminder removed.', { type: 'success' });
+            setResults(prev => prev.filter(r => r.id !== result.id));
+        } catch (e) {
+            console.error('Delete reminder failed', e);
+            showToast('Error', 'Failed to delete reminder', { type: 'error' });
+        }
+    };
+
+    const handleSnoozeReminder = async (result: SearchResult, minutes: number) => {
+        try {
+            const snoozed = new Date(Date.now() + minutes * 60000);
+            const hh = String(snoozed.getHours()).padStart(2, '0');
+            const mm = String(snoozed.getMinutes()).padStart(2, '0');
+            const timeStr = `${hh}:${mm}:00`;
+            await ReminderService.updateReminder(result.id, { time: timeStr, date: snoozed.toISOString().split('T')[0] } as any);
+            await NotificationManagerInstance.cancelNotification(result.id);
+            showToast('Snoozed', `${result.title} snoozed ${minutes} minutes.`, { type: 'success' });
+            setResults(prev => prev.map(r => r.id === result.id ? { ...r, description: timeStr } : r));
+        } catch (e) {
+            console.error('Snooze failed', e);
+            showToast('Error', 'Failed to snooze reminder', { type: 'error' });
+        }
     };
 
     return (
@@ -470,11 +536,53 @@ export const AdvancedSearch = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
                                                         </div>
                                                     )}
                                                 </div>
-                                                {index === selectedIndex && (
-                                                    <div className="self-center">
-                                                        <ArrowRight className="w-5 h-5 text-primary" />
-                                                    </div>
-                                                )}
+                                                <div className="flex items-center gap-2 ml-4 z-10">
+                                                    {/* Quick action buttons based on type */}
+                                                    {result.type === 'habit' && (
+                                                        <>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleCompleteHabit(result); }}
+                                                                className="px-3 py-1 rounded-lg bg-emerald-500 text-white text-xs font-bold hover:opacity-90"
+                                                            >
+                                                                Complete
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); navigate('/dashboard'); onClose(); }}
+                                                                className="px-3 py-1 rounded-lg bg-secondary text-xs font-bold"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                        </>
+                                                    )}
+
+                                                    {result.type === 'reminder' && (
+                                                        <>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleSnoozeReminder(result, 15); }}
+                                                                className="px-3 py-1 rounded-lg bg-primary text-white text-xs font-bold"
+                                                            >
+                                                                Snooze 15m
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleDeleteReminder(result); }}
+                                                                className="px-3 py-1 rounded-lg bg-destructive text-white text-xs font-bold"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </>
+                                                    )}
+
+                                                    {result.type === 'course' && (
+                                                        <>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); navigate(result.path); onClose(); }}
+                                                                className="px-3 py-1 rounded-lg bg-primary text-white text-xs font-bold"
+                                                            >
+                                                                Open
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
                                         </motion.div>
                                     ))

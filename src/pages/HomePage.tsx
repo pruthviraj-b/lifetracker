@@ -201,23 +201,36 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
                 </div>
 
                 {/* 3. Authentic Action Pills - matching Image 1 */}
-                <div className="flex items-center justify-start md:justify-center gap-2 overflow-x-auto pb-2 no-scrollbar px-1 md:px-0 scroll-smooth">
-                    {[
-                        { icon: <Globe className="w-3.5 h-3.5" />, label: 'Dashboard', path: '/dashboard' },
-                        { icon: <BookOpen className="w-3.5 h-3.5" />, label: 'Learn', path: '/courses' },
-                        { icon: <StickyNote className="w-3.5 h-3.5" />, label: 'Knowledge', path: '/notes' },
-                        { icon: <TrendingUp className="w-3.5 h-3.5" />, label: 'Metrics', path: '/analytics' },
-                        { icon: <Search className="w-3.5 h-3.5 text-primary" />, label: "Terminal", action: () => setIsSearchOpen(true) },
-                    ].map((btn: any, i) => (
+                <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2 no-scrollbar px-1 md:px-0 scroll-smooth">
+                    <div className="flex items-center gap-2">
+                        {[
+                            { icon: <Globe className="w-3.5 h-3.5" />, label: 'Dashboard', path: '/dashboard' },
+                            { icon: <BookOpen className="w-3.5 h-3.5" />, label: 'Learn', path: '/courses' },
+                            { icon: <StickyNote className="w-3.5 h-3.5" />, label: 'Knowledge', path: '/notes' },
+                            { icon: <TrendingUp className="w-3.5 h-3.5" />, label: 'Metrics', path: '/analytics' }
+                        ].map((btn: any, i) => (
+                            <button
+                                key={i}
+                                onClick={() => btn.action ? btn.action() : navigate(btn.path)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-secondary/50 border border-border/50 rounded-lg text-[10px] md:text-xs font-medium text-foreground/70 hover:bg-secondary hover:text-foreground transition-all whitespace-nowrap"
+                            >
+                                {btn.icon}
+                                {btn.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Search button aligned to the right */}
+                    <div className="flex items-center">
                         <button
-                            key={i}
-                            onClick={() => btn.action ? btn.action() : navigate(btn.path)}
-                            className="flex items-center gap-1 px-3 py-1.5 bg-secondary/50 border border-border/50 rounded-lg text-[10px] md:text-xs font-medium text-foreground/70 hover:bg-secondary hover:text-foreground transition-all whitespace-nowrap"
+                            onClick={() => setIsSearchOpen(true)}
+                            aria-label="Open search"
+                            className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 border border-primary/10 rounded-lg text-[10px] md:text-xs font-bold text-primary hover:bg-primary/10 transition-all"
                         >
-                            {btn.icon}
-                            {btn.label}
+                            <Search className="w-4 h-4 text-primary" />
+                            <span className="hidden md:inline">Search</span>
                         </button>
-                    ))}
+                    </div>
                 </div>
             </div>
 
