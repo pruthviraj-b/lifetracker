@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, LoginCredentials, RegisterCredentials } from '../types/auth';
+import { User, LoginCredentials, RegisterCredentials } from '../types/auth'; // Ensure types are correct
 import { AuthService } from '../services/auth.service';
+import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
     user: User | null;
@@ -18,19 +19,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Initialize session on mount
+    // Initialize session and listen for auth changes
     useEffect(() => {
-        async function initAuth() {
-            try {
-                const currentUser = await AuthService.checkSession();
-                setUser(currentUser);
-            } catch (error) {
-                console.error('Session check failed', error);
-            } finally {
-                setIsLoading(false);
+        // Initial check
+        AuthService.checkSession().then(currentUser => {
+            setUser(currentUser);
+            setIsLoading(false);
+        }).catch(() => setIsLoading(false));
+
+        // Realtime listener for OAuth redirects and session updates
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            if (session?.user) {
+                const user = await AuthService.checkSession(); // Or map session.user directly
+                setUser(user);
+            } else {
+                setUser(null);
             }
-        }
-        initAuth();
+            setIsLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const login = async (credentials: LoginCredentials) => {
