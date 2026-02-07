@@ -159,7 +159,7 @@ export default function LoginPage() {
                         className="claude-button w-full h-12 bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20"
                         isLoading={loading}
                     >
-                        Sign In
+                        {loading ? 'Signing in...' : 'Sign In'}
                     </Button>
                 </form>
 
