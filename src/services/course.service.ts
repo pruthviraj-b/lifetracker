@@ -9,11 +9,17 @@ export const CourseService = {
     // --- Public Content ---
 
     async getPublishedCourses(): Promise<Course[]> {
-        const { data, error } = await supabase
-            .from('courses')
-            .select('*')
-            .eq('published', true)
-            .order('title');
+        const { data: { user } } = await supabase.auth.getUser();
+
+        let query = supabase.from('courses').select('*').eq('published', true);
+
+        if (user) {
+            query = query.or(`user_id.eq.${user.id},user_id.is.null`);
+        } else {
+            query = query.is('user_id', null);
+        }
+
+        const { data, error } = await query.order('title'); // ADDED
 
         if (error) throw error;
         return data || [];
@@ -21,22 +27,35 @@ export const CourseService = {
 
     // Used by YouTube Tracker
     async getCourses(): Promise<any[]> {
-        const { data, error } = await supabase
-            .from('courses')
-            .select('*')
-            .order('title');
+        const { data: { user } } = await supabase.auth.getUser();
+
+        let query = supabase.from('courses').select('*');
+
+        if (user) {
+            query = query.or(`user_id.eq.${user.id},user_id.is.null`);
+        } else {
+            query = query.is('user_id', null);
+        }
+
+        const { data, error } = await query.order('title');
 
         if (error) throw error;
         return data || [];
     },
 
     async getCourseDetails(courseId: string): Promise<{ course: Course, modules: CourseModule[] }> {
-        // 1. Get Course
-        const { data: course, error: courseError } = await supabase
-            .from('courses')
-            .select('*')
-            .eq('id', courseId)
-            .single();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        // 1. Get Course (Filtered or Public)
+        let query = supabase.from('courses').select('*').eq('id', courseId);
+
+        if (user) {
+            query = query.or(`user_id.eq.${user.id},user_id.is.null`);
+        } else {
+            query = query.is('user_id', null);
+        }
+
+        const { data: course, error: courseError } = await query.single();
 
         if (courseError) throw courseError;
 

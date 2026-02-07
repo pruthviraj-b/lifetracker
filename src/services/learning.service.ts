@@ -10,9 +10,13 @@ import {
 export const LearningService = {
     // FOLDERS
     async getFolders(): Promise<LearningFolder[]> {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return [];
+
         const { data, error } = await supabase
             .from('learning_folders')
             .select('*')
+            .eq('user_id', user.id)
             .order('name');
 
         if (error) throw error;

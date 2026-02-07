@@ -105,7 +105,14 @@ export const YouTubeService = {
     },
 
     async getVideos(habitId?: string): Promise<YouTubeVideo[]> {
-        let query = supabase.from('youtube_videos').select('*').eq('is_archived', false);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return [];
+
+        let query = supabase.from('youtube_videos')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_archived', false);
+
         if (habitId) query = query.eq('habit_id', habitId);
 
         const { data, error } = await query.order('created_at', { ascending: false });
