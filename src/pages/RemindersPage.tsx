@@ -244,6 +244,18 @@ export default function RemindersPage() {
         }
     };
 
+    const handlePurgeStored = async () => {
+        if (!confirm('Purge stored scheduled notifications? This clears queued reminders.')) return;
+        try {
+            await NotificationManagerInstance.cancelAllNotifications();
+            await refreshReminders();
+            showToast('Purged', 'Stored notifications cleared.', { type: 'success' });
+        } catch (error) {
+            console.error('Purge failed', error);
+            showToast('Error', 'Failed to purge stored notifications.', { type: 'error' });
+        }
+    };
+
     const handleToggleAll = async (isEnabled: boolean) => {
         try {
             await ReminderService.updateAllStatus(isEnabled);
@@ -334,6 +346,9 @@ export default function RemindersPage() {
                         <Button variant="destructive" size="sm" onClick={handleDeleteAll} className={`text-[10px] font-black ${isWild ? 'rounded-none' : ''}`}>
                             Full Abort
                         </Button>
+                            <Button variant="outline" size="sm" onClick={handlePurgeStored} className={`text-[10px] font-black ${isWild ? 'rounded-none' : ''}`}>
+                                Purge Stored Notifications
+                            </Button>
                     </div>
                 </ThemedCard>
             </div>

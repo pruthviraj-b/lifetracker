@@ -21,7 +21,8 @@ import {
 import { motion } from 'framer-motion';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { SkipReasonModal } from '../components/tools/SkipReasonModal';
-import { SmartFeed } from '../components/dashboard/SmartFeed';
+// Lazy-load SmartFeed to defer heavier rendering and network calls
+const SmartFeed = React.lazy(() => import('../components/dashboard/SmartFeed').then(m => ({ default: m.SmartFeed })));
 import { NewAchievementModal } from '../components/gamification/NewAchievementModal';
 import { Achievement } from '../services/achievement.service';
 import { useTheme } from '../context/ThemeContext';
@@ -67,6 +68,7 @@ export default function DashboardPage() {
     const [showLevelUp, setShowLevelUp] = useState(false);
     const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
     const prevLevelRef = useRef(1);
+    const [showSmartFeed, setShowSmartFeed] = useState(false);
 
     useEffect(() => {
         if (xpStats.level > prevLevelRef.current) setShowLevelUp(true);
@@ -101,7 +103,10 @@ export default function DashboardPage() {
     useEffect(() => {
         if (user) loadData();
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-        return () => clearInterval(timer);
+        // Stagger loading of non-critical UI (like SmartFeed) slightly after mount
+        const feedTimer = setTimeout(() => setShowSmartFeed(true), 1200);
+        // cleanup both timers on unmount
+        return () => { clearTimeout(feedTimer); clearInterval(timer); };
     }, [user]);
 
     const loadData = async () => {
@@ -469,7 +474,11 @@ export default function DashboardPage() {
 
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 items-start">
                     <div className="xl:col-span-2 space-y-8">
-                        <SmartFeed />
+                        {showSmartFeed && (
+                            <React.Suspense fallback={null}>
+                                <SmartFeed />
+                            </React.Suspense>
+                        )}
 
                         {getUncategorized().length > 0 && (
                             <HabitSection title="Other Protocols" icon={<AlertCircle className="w-4 h-4 text-gray-500" />} habits={getUncategorized()} onToggle={toggleHabit} onDelete={handleArchiveHabit} onEdit={openEditModal} onNote={handleAddNote} onSkip={(h) => setSkipModal({ isOpen: true, habitId: h.id, title: h.title })} onReminder={(h) => setReminderModal({ isOpen: true, habit: { id: h.id, name: h.title } })} isWild={isWild} reminders={reminders} />
