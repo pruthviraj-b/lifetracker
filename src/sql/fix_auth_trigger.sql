@@ -3,6 +3,12 @@
 -- Run this script to ensure Google/OAuth Logins work correctly.
 -- ==========================================
 
+-- 0. Ensure required columns exist
+ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
 -- 1. Create the function to automatically create a public user profile
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
