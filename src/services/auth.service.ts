@@ -151,7 +151,7 @@ export const AuthService = {
             provider: 'google',
             options: {
                 redirectTo: window.location.origin + '/settings',
-                scopes: 'https://www.googleapis.com/auth/calendar',
+                // scopes: 'https://www.googleapis.com/auth/calendar', // REMOVED to avoid Verification Warning
                 queryParams: {
                     access_type: 'offline',
                     prompt: 'consent',
@@ -168,7 +168,7 @@ export const AuthService = {
             provider: 'google',
             options: {
                 redirectTo: window.location.origin + '/home',
-                scopes: 'https://www.googleapis.com/auth/calendar', // Ensure scope is requested here too
+                // scopes: 'https://www.googleapis.com/auth/calendar', // REMOVED to avoid Verification Warning during signup
                 queryParams: {
                     access_type: 'offline',
                     prompt: 'consent',
