@@ -82,7 +82,7 @@ class NotificationManager {
                 return false;
             }
 
-            const notificationId = options.id || `${habitName.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}`;
+            const notificationId = (options as any).id || `${habitName.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}`;
             const uniqueTag = (options as any).tag || notificationId; // Use provided tag/id or fallback
 
             // Store in IndexedDB for persistence
@@ -282,7 +282,9 @@ class NotificationManager {
                 const all = await IndexedDBManagerInstance.getAllNotifications();
                 all.forEach((n: any) => {
                     const tag = (n.options && n.options.tag) || n.id;
-                    if (tag) navigator.serviceWorker.controller.postMessage({ type: 'CANCEL_NOTIFICATION', tag });
+                    if (tag && navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({ type: 'CANCEL_NOTIFICATION', tag });
+                    }
                 });
             }
 

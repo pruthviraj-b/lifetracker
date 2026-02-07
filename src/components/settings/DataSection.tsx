@@ -20,7 +20,7 @@ import { CourseService } from '../../services/course.service';
 
 export function DataSection() {
     const { showToast } = useToast();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const navigate = useNavigate();
     const [stats, setStats] = useState<{ habits: number; logs: number; estimatedSize: string } | null>(null);
     const [loading, setLoading] = useState(false);
@@ -72,9 +72,9 @@ export function DataSection() {
         try {
             setLoading(true);
             await DataService.downloadExport();
-            showToast("Data exported successfully", "success");
+            showToast("Export Success", "Data exported successfully", { type: 'success' });
         } catch (error) {
-            showToast("Failed to export data", "error");
+            showToast("Export Failed", "Failed to export data", { type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -82,14 +82,19 @@ export function DataSection() {
 
     const handleInstallCourse = async (courseData: any, courseName: string) => {
         try {
+            if (!user) {
+                showToast("Auth Error", "You must be logged in to install content.", { type: 'error' });
+                return;
+            }
+
             setInstalling(true);
             const { habit, note } = courseData;
 
             // 1. Create Habit (Personal Tracker)
-            await HabitService.createHabit(habit as any);
+            await HabitService.createHabit(habit as any, user.id);
 
             // 2. Create Syllabus Note (Personal Roadmap)
-            await NoteService.createNote(note);
+            await NoteService.createNote(note, user.id);
 
             // 3. Ensure Course exists in Academy DB (Seeding)
             // Extract a thumbnail from the note or use a default one based on course name
@@ -112,7 +117,7 @@ export function DataSection() {
 
             // 4. Enroll User in Academy Course
             try {
-                await CourseService.enrollInCourse(courseId);
+                await CourseService.enrollInCourse(courseId, user.id);
             } catch (e) {
                 // Ignore unique constraint violation if already enrolled
                 console.warn("Already enrolled or enrollment failed", e);
@@ -137,7 +142,7 @@ export function DataSection() {
             setImporting(true);
             const text = await file.text();
             await DataService.importData(text);
-            showToast("Data imported successfully! Reloading...", "success");
+            showToast("Import Success", "Data imported successfully! Reloading...", { type: "success" });
             setTimeout(() => window.location.reload(), 1500);
         } catch (error: any) {
             console.error(error);

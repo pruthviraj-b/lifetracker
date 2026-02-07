@@ -15,6 +15,7 @@ import { useNotifications } from '../context/NotificationContext';
 import { YouTubeService } from '../services/youtube.service';
 import { LearningService } from '../services/learning.service';
 import { CourseService } from '../services/course.service';
+import { useToast } from '../context/ToastContext';
 
 
 // Helper: Format 24h to 12h AM/PM with SECONDS
@@ -90,6 +91,7 @@ import { ThemedCard } from '../components/ui/ThemedCard';
 export default function RemindersPage() {
     const navigate = useNavigate();
     const { preferences } = useTheme();
+    const { showToast } = useToast();
     const { refreshReminders, runDiagnostics, testNotifications, requestPermission: requestNativePermission, syncStatus } = useNotifications();
     const isWild = preferences.wild_mode;
     const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -192,11 +194,7 @@ export default function RemindersPage() {
             setEditingReminder(undefined);
 
             // Surface success feedback
-            try {
-                // prefer toast if available
-                const { showToast } = await import('../context/ToastContext');
-                // no-op: import to keep tree-shaking stable; actual toast used below via context
-            } catch (e) { }
+            showToast(editingReminder ? "Reminder Updated" : "Reminder Set", "Your protocol node is active.", { type: 'success' });
 
             // Return created/updated reminder for caller
             return result;

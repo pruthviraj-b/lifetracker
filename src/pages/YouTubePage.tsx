@@ -5,7 +5,7 @@ import { Input } from '../components/ui/Input';
 import {
     Home, Search, Folder, GraduationCap, Youtube, Link as LinkIcon,
     MoreVertical, Trash2, Move, LayoutGrid, ChevronRight, Award,
-    CheckCircle2, Play, Eye, Bell, ExternalLink, Activity
+    CheckCircle2, Play, Eye, Bell, ExternalLink, Activity, Database
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
