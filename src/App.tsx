@@ -33,6 +33,7 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const HomePage = lazy(() => import('./pages/HomePage'));
 const NotesPage = lazy(() => import('./pages/NotesPage'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
 const RemindersPage = lazy(() => import('./pages/RemindersPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
@@ -116,7 +117,8 @@ function App() {
 
                                         {/* Protected Routes with Sidebar */}
                                         <Route element={<ProtectedLayout />}>
-                                            <Route path="/dashboard" element={<HomePage />} />
+                                        <Route path="/dashboard" element={<HomePage />} />
+                                        <Route path="/chat" element={<ChatPage />} />
                                             <Route path="/protocols" element={<DashboardPage />} />
                                             <Route path="/notes" element={<NotesPage />} />
                                             <Route path="/recall" element={<RecallPage />} />

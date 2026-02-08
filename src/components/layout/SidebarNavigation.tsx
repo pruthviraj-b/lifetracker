@@ -22,7 +22,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-    { label: 'Chats', path: '/dashboard', icon: <Globe className="w-5 h-5" />, category: 'Main' },
+    { label: 'Chats', path: '/chat', icon: <Globe className="w-5 h-5" />, category: 'Main' },
     { label: 'Protocols', path: '/protocols', icon: <Activity className="w-5 h-5" />, category: 'Main' },
     { label: 'Knowledge Base', path: '/notes', icon: <StickyNote className="w-5 h-5" />, category: 'Main' },
     { label: 'Schedule', path: '/reminders', icon: <Bell className="w-5 h-5" />, category: 'Main' },
