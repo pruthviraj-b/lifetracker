@@ -501,7 +501,7 @@ export class AIAssistant {
                 };
             }
             return {
-                messages: [createMessage(handler.buildSummary(pending.action, pending.data, pending.target), this.buildConfirmActions())],
+                messages: [createMessage(handler.buildSummary(pending.action, pending.data, pending.target || undefined), this.buildConfirmActions())],
                 session: { ...session, pending }
             };
         }
