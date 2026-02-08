@@ -19,7 +19,7 @@ import {
     toTimeOfDay
 } from './chatUtils';
 
-const habitKeywords = ['habit', 'ritual', 'routine'];
+const habitKeywords = ['habit', 'habbit', 'hibbit', 'ritual', 'routine'];
 
 const mapCategory = (category?: string) => {
     const lowered = (category || '').toLowerCase();

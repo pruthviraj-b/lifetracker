@@ -1,14 +1,11 @@
+import { LibraryService } from '../services/library.service';
 import { ActionResult, AssistantContext, ChatHandler, TargetMatch } from './chatTypes';
 import {
     DIVIDER,
     EMOJI,
     FlowField,
     formatDetailsBlock,
-    formatHeader,
-    loadLocalData,
-    addLocalItem,
-    removeLocalItem,
-    findLocalItemByName
+    formatHeader
 } from './chatUtils';
 
 const parseInput = (text: string) => ({
@@ -45,20 +42,22 @@ const buildSummary = (action: string, data: Record<string, any>) => {
 };
 
 const findTarget = async (name: string, ctx: AssistantContext) => {
-    const data = loadLocalData(ctx.userId);
-    const match = findLocalItemByName(data.library, name);
+    const items = await LibraryService.getItems(ctx.userId);
+    const normalized = name.toLowerCase();
+    const match = items.find(item => item.title.toLowerCase().includes(normalized));
     if (!match) return null;
     return { id: match.id, name: match.title, item: match };
 };
 
 const createLibraryItem = async (data: Record<string, any>, ctx: AssistantContext): Promise<ActionResult> => {
-    const item = addLocalItem(ctx.userId, 'library', {
+    if (!ctx.userId) return { message: `${EMOJI.warning} Please sign in to save resources.` };
+    const item = await LibraryService.createItem({
         title: data.title,
         url: data.url,
-        category: data.category || 'General'
-    });
+        category: data.category || 'general'
+    }, ctx.userId);
     const details = [
-        { label: 'Category', value: item.category },
+        { label: 'Category', value: item.category || 'general' },
         { label: 'Link', value: item.url || 'None' }
     ];
     return {
@@ -71,20 +70,21 @@ const createLibraryItem = async (data: Record<string, any>, ctx: AssistantContex
 };
 
 const removeLibraryItem = async (target: TargetMatch, ctx: AssistantContext): Promise<ActionResult> => {
-    const removed = removeLocalItem(ctx.userId, 'library', target.id!);
+    if (!target.id) return { message: `${EMOJI.warning} Item not found.` };
+    await LibraryService.deleteItem(target.id);
     return {
         message: `${EMOJI.success} DELETED!\n${DIVIDER}\n\n${target.name} removed from library.`,
         actions: [
             { id: 'library-undo', label: 'Undo delete', value: 'undo delete', kind: 'reply', variant: 'secondary' }
         ],
-        deleted: { type: 'library', data: removed }
+        deleted: { type: 'library', data: target.item }
     };
 };
 
 const viewLibrary = async (_target: TargetMatch | null, ctx: AssistantContext): Promise<ActionResult> => {
-    const data = loadLocalData(ctx.userId);
-    if (!data.library.length) return { message: `${EMOJI.info} No library items yet.` };
-    const list = data.library.slice(0, 8).map((item: any) => `- ${item.title}${item.url ? ` (${item.url})` : ''}`).join('\n');
+    const items = await LibraryService.getItems(ctx.userId);
+    if (!items.length) return { message: `${EMOJI.info} No library items yet.` };
+    const list = items.slice(0, 8).map((item: any) => `- ${item.title}${item.url ? ` (${item.url})` : ''}`).join('\n');
     return {
         message: `\uD83D\uDCD6 LIBRARY\n${DIVIDER}\n\n${list}`,
         actions: [
@@ -94,7 +94,12 @@ const viewLibrary = async (_target: TargetMatch | null, ctx: AssistantContext): 
 };
 
 const restoreLibraryItem = async (data: any, ctx: AssistantContext): Promise<ActionResult> => {
-    const item = addLocalItem(ctx.userId, 'library', data);
+    if (!ctx.userId) return { message: `${EMOJI.warning} Please sign in to restore.` };
+    const item = await LibraryService.createItem({
+        title: data.title,
+        url: data.url,
+        category: data.category
+    }, ctx.userId);
     return {
         message: `${EMOJI.success} RESTORED\n${DIVIDER}\n\n${item.title} restored.`,
         entity: { type: 'library', id: item.id, name: item.title }

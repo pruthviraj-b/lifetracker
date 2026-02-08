@@ -10,6 +10,12 @@
   overflow: hidden;
 }
 
+.chat-shell--embedded {
+  height: auto;
+  max-height: none;
+  min-height: 620px;
+}
+
 .chat-header {
   display: flex;
   align-items: center;

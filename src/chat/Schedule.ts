@@ -1,3 +1,4 @@
+import { ScheduleService } from '../services/schedule.service';
 import { ActionResult, AssistantContext, ChatHandler, TargetMatch } from './chatTypes';
 import {
     DIVIDER,
@@ -7,13 +8,8 @@ import {
     formatDateLabel,
     formatDetailsBlock,
     formatHeader,
-    loadLocalData,
     parseDate,
-    parseTime,
-    addLocalItem,
-    updateLocalItem,
-    removeLocalItem,
-    findLocalItemByName
+    parseTime
 } from './chatUtils';
 
 const parseInput = (text: string) => {
@@ -97,21 +93,23 @@ const buildSummary = (action: string, data: Record<string, any>, target?: Target
 };
 
 const findTarget = async (name: string, ctx: AssistantContext) => {
-    const data = loadLocalData(ctx.userId);
-    const match = findLocalItemByName(data.schedule, name);
+    const events = await ScheduleService.getEvents(ctx.userId);
+    const normalized = name.toLowerCase();
+    const match = events.find(event => event.title.toLowerCase().includes(normalized));
     if (!match) return null;
     return { id: match.id, name: match.title, item: match };
 };
 
 const createEvent = async (data: Record<string, any>, ctx: AssistantContext): Promise<ActionResult> => {
-    const event = addLocalItem(ctx.userId, 'schedule', {
+    if (!ctx.userId) return { message: `${EMOJI.warning} Please sign in to add events.` };
+    const event = await ScheduleService.createEvent({
         title: data.title,
-        date: data.date,
-        time24: data.time24,
+        eventDate: data.date,
+        eventTime: data.time24,
         timeLabel: data.timeLabel
-    });
+    }, ctx.userId);
     const details = [
-        { label: 'Date', value: event.date ? formatDateLabel(event.date) : 'Not set' },
+        { label: 'Date', value: event.eventDate ? formatDateLabel(event.eventDate) : 'Not set' },
         { label: 'Time', value: event.timeLabel || 'Not set' }
     ];
     return {
@@ -124,34 +122,42 @@ const createEvent = async (data: Record<string, any>, ctx: AssistantContext): Pr
 };
 
 const updateEvent = async (target: TargetMatch, updates: Record<string, any>, ctx: AssistantContext): Promise<ActionResult> => {
-    const updated = updateLocalItem(ctx.userId, 'schedule', target.id!, updates);
+    if (!target.id) return { message: `${EMOJI.warning} Event not found.` };
+    await ScheduleService.updateEvent(target.id, {
+        title: updates.title,
+        eventDate: updates.date,
+        eventTime: updates.time24,
+        timeLabel: updates.timeLabel
+    });
+    const updatedTitle = updates.title || target.name;
     return {
-        message: `${EMOJI.success} UPDATED!\n${DIVIDER}\n\n${updated?.title || target.name} updated.`,
+        message: `${EMOJI.success} UPDATED!\n${DIVIDER}\n\n${updatedTitle} updated.`,
         actions: [
             { id: 'schedule-view', label: 'View schedule', value: 'show my schedule', kind: 'reply', variant: 'secondary' }
         ],
-        entity: { type: 'schedule', id: target.id, name: updated?.title || target.name }
+        entity: { type: 'schedule', id: target.id, name: updatedTitle }
     };
 };
 
 const removeEvent = async (target: TargetMatch, ctx: AssistantContext): Promise<ActionResult> => {
-    const removed = removeLocalItem(ctx.userId, 'schedule', target.id!);
+    if (!target.id) return { message: `${EMOJI.warning} Event not found.` };
+    await ScheduleService.deleteEvent(target.id);
     return {
         message: `${EMOJI.success} DELETED!\n${DIVIDER}\n\n${target.name} removed from schedule.`,
         actions: [
             { id: 'schedule-undo', label: 'Undo delete', value: 'undo delete', kind: 'reply', variant: 'secondary' }
         ],
-        deleted: { type: 'schedule', data: removed }
+        deleted: { type: 'schedule', data: target.item }
     };
 };
 
 const viewSchedule = async (_target: TargetMatch | null, ctx: AssistantContext): Promise<ActionResult> => {
-    const data = loadLocalData(ctx.userId);
-    if (!data.schedule.length) {
+    const events = await ScheduleService.getEvents(ctx.userId);
+    if (!events.length) {
         return { message: `${EMOJI.info} No scheduled events yet.` };
     }
-    const list = data.schedule.slice(0, 8).map((event: any) => {
-        const when = event.date ? formatDateLabel(event.date) : 'Date';
+    const list = events.slice(0, 8).map((event: any) => {
+        const when = event.eventDate ? formatDateLabel(event.eventDate) : 'Date';
         const time = event.timeLabel || 'Time';
         return `- ${event.title} (${when} ${time})`;
     }).join('\n');
@@ -165,7 +171,13 @@ const viewSchedule = async (_target: TargetMatch | null, ctx: AssistantContext):
 };
 
 const restoreEvent = async (data: any, ctx: AssistantContext): Promise<ActionResult> => {
-    const event = addLocalItem(ctx.userId, 'schedule', data);
+    if (!ctx.userId) return { message: `${EMOJI.warning} Please sign in to restore.` };
+    const event = await ScheduleService.createEvent({
+        title: data.title,
+        eventDate: data.eventDate || data.date,
+        eventTime: data.eventTime || data.time24,
+        timeLabel: data.timeLabel
+    }, ctx.userId);
     return {
         message: `${EMOJI.success} RESTORED\n${DIVIDER}\n\n${event.title} restored.`,
         entity: { type: 'schedule', id: event.id, name: event.title }

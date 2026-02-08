@@ -1,3 +1,4 @@
+import { ProtocolService } from '../services/protocol.service';
 import { ActionResult, AssistantContext, ChatHandler, TargetMatch } from './chatTypes';
 import {
     DIVIDER,
@@ -5,12 +6,7 @@ import {
     FlowField,
     extractName,
     formatDetailsBlock,
-    formatHeader,
-    loadLocalData,
-    addLocalItem,
-    removeLocalItem,
-    updateLocalItem,
-    findLocalItemByName
+    formatHeader
 } from './chatUtils';
 
 const parseSteps = (text: string) => {
@@ -91,18 +87,19 @@ const buildSummary = (action: string, data: Record<string, any>, target?: Target
 };
 
 const findTarget = async (name: string, ctx: AssistantContext) => {
-    const data = loadLocalData(ctx.userId);
-    const match = findLocalItemByName(data.protocols, name);
+    const protocols = await ProtocolService.getProtocols(ctx.userId);
+    const normalized = name.toLowerCase();
+    const match = protocols.find(protocol => protocol.title.toLowerCase().includes(normalized));
     if (!match) return null;
     return { id: match.id, name: match.title, item: match };
 };
 
 const createProtocol = async (data: Record<string, any>, ctx: AssistantContext): Promise<ActionResult> => {
-    const protocol = addLocalItem(ctx.userId, 'protocols', {
+    if (!ctx.userId) return { message: `${EMOJI.warning} Please sign in to create protocols.` };
+    const protocol = await ProtocolService.createProtocol({
         title: data.title,
-        steps: data.steps || [],
-        totalMinutes: (data.steps || []).reduce((sum: number, step: any) => sum + (step.minutes || 0), 0)
-    });
+        steps: data.steps || []
+    }, ctx.userId);
 
     const details = [
         { label: 'Steps', value: (protocol.steps || []).length.toString() },
@@ -120,24 +117,27 @@ const createProtocol = async (data: Record<string, any>, ctx: AssistantContext):
 };
 
 const updateProtocol = async (target: TargetMatch, updates: Record<string, any>, ctx: AssistantContext): Promise<ActionResult> => {
-    const updated = updateLocalItem(ctx.userId, 'protocols', target.id!, updates);
+    if (!target.id) return { message: `${EMOJI.warning} Protocol not found.` };
+    await ProtocolService.updateProtocol(target.id, updates);
+    const updatedTitle = updates.title || target.name;
     return {
-        message: `${EMOJI.success} UPDATED!\n${DIVIDER}\n\n${updated?.title || target.name} updated.`,
+        message: `${EMOJI.success} UPDATED!\n${DIVIDER}\n\n${updatedTitle} updated.`,
         actions: [
-            { id: 'protocol-view', label: 'View', value: `show protocol ${updated?.title || target.name}`, kind: 'reply', variant: 'secondary' }
+            { id: 'protocol-view', label: 'View', value: `show protocol ${updatedTitle}`, kind: 'reply', variant: 'secondary' }
         ],
-        entity: { type: 'protocol', id: target.id, name: updated?.title || target.name }
+        entity: { type: 'protocol', id: target.id, name: updatedTitle }
     };
 };
 
 const removeProtocol = async (target: TargetMatch, ctx: AssistantContext): Promise<ActionResult> => {
-    const removed = removeLocalItem(ctx.userId, 'protocols', target.id!);
+    if (!target.id) return { message: `${EMOJI.warning} Protocol not found.` };
+    await ProtocolService.deleteProtocol(target.id);
     return {
         message: `${EMOJI.success} DELETED!\n${DIVIDER}\n\n${target.name} protocol deleted.`,
         actions: [
             { id: 'protocol-undo', label: 'Undo delete', value: 'undo delete', kind: 'reply', variant: 'secondary' }
         ],
-        deleted: { type: 'protocol', data: removed }
+        deleted: { type: 'protocol', data: target.item }
     };
 };
 
@@ -151,11 +151,11 @@ const viewProtocol = async (target: TargetMatch | null, ctx: AssistantContext): 
             ]
         };
     }
-    const data = loadLocalData(ctx.userId);
-    if (!data.protocols.length) {
+    const protocols = await ProtocolService.getProtocols(ctx.userId);
+    if (!protocols.length) {
         return { message: `${EMOJI.info} No protocols yet.` };
     }
-    const list = data.protocols.slice(0, 6).map((protocol: any) => `- ${protocol.title}`).join('\n');
+    const list = protocols.slice(0, 6).map((protocol: any) => `- ${protocol.title}`).join('\n');
     return {
         message: `\uD83D\uDCCA PROTOCOLS\n${DIVIDER}\n\n${list}`,
         actions: [
@@ -165,7 +165,11 @@ const viewProtocol = async (target: TargetMatch | null, ctx: AssistantContext): 
 };
 
 const restoreProtocol = async (data: any, ctx: AssistantContext): Promise<ActionResult> => {
-    const protocol = addLocalItem(ctx.userId, 'protocols', data);
+    if (!ctx.userId) return { message: `${EMOJI.warning} Please sign in to restore.` };
+    const protocol = await ProtocolService.createProtocol({
+        title: data.title,
+        steps: data.steps || []
+    }, ctx.userId);
     return {
         message: `${EMOJI.success} RESTORED\n${DIVIDER}\n\n${protocol.title} restored.`,
         entity: { type: 'protocol', id: protocol.id, name: protocol.title }

@@ -1,13 +1,12 @@
 import { DataService } from '../services/data.service';
+import { MetricsService } from '../services/metrics.service';
 import { ActionResult, AssistantContext, ChatHandler, TargetMatch } from './chatTypes';
 import {
     DIVIDER,
     EMOJI,
     FlowField,
     formatDetailsBlock,
-    formatHeader,
-    loadLocalData,
-    addLocalItem
+    formatHeader
 } from './chatUtils';
 
 const parseMetricInput = (text: string) => {
@@ -49,16 +48,17 @@ const buildSummary = (action: string, data: Record<string, any>) => {
 };
 
 const createMetric = async (data: Record<string, any>, ctx: AssistantContext): Promise<ActionResult> => {
-    const entry = addLocalItem(ctx.userId, 'metrics', {
+    if (!ctx.userId) return { message: `${EMOJI.warning} Please sign in to log metrics.` };
+    const entry = await MetricsService.createLog({
         metric: data.metric,
         value: data.value,
         unit: data.unit || 'units',
-        date: new Date().toISOString().split('T')[0]
-    });
+        logDate: new Date().toISOString().split('T')[0]
+    }, ctx.userId);
     const details = [
         { label: 'Metric', value: entry.metric },
-        { label: 'Value', value: `${entry.value} ${entry.unit}` },
-        { label: 'Date', value: entry.date }
+        { label: 'Value', value: `${entry.value ?? ''} ${entry.unit || ''}`.trim() },
+        { label: 'Date', value: entry.logDate || '' }
     ];
     return {
         message: `${EMOJI.success} LOGGED!\n${DIVIDER}\n\n${formatDetailsBlock('METRIC SAVED', details)}`,
@@ -71,9 +71,9 @@ const createMetric = async (data: Record<string, any>, ctx: AssistantContext): P
 };
 
 const viewMetrics = async (_target: TargetMatch | null, ctx: AssistantContext): Promise<ActionResult> => {
-    const data = loadLocalData(ctx.userId);
-    if (!data.metrics.length) return { message: `${EMOJI.info} No metrics logged yet.` };
-    const list = data.metrics.slice(0, 8).map((entry: any) => `- ${entry.metric}: ${entry.value} ${entry.unit}`).join('\n');
+    const logs = await MetricsService.getLogs(ctx.userId);
+    if (!logs.length) return { message: `${EMOJI.info} No metrics logged yet.` };
+    const list = logs.slice(0, 8).map((entry: any) => `- ${entry.metric}: ${entry.value ?? ''} ${entry.unit || ''}`.trim()).join('\n');
     return {
         message: `\uD83D\uDCCA METRICS\n${DIVIDER}\n\n${list}`,
         actions: [

@@ -12,6 +12,7 @@ import {
     Plus, ChevronRight, Globe, BookOpen, Search
 } from 'lucide-react';
 import { AdvancedSearch } from '../components/ui/AdvancedSearch';
+import { ChatComponent } from '../components/chat/ChatComponent';
 import { WidgetGrid } from '../components/dashboard/WidgetGrid';
 import { HabitService } from '../services/habit.service';
 import { ReminderService } from '../services/reminder.service';
@@ -173,34 +174,11 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
                 {/* Buttons removed: Use CMD+K for search */}
             </div>
 
-            {/* 2. Authentic Large Input - matching Image 1 */}
-            <div className="w-full max-w-3xl space-y-4">
-                <div className="claude-input-container relative min-h-[100px] md:min-h-[160px] flex flex-col">
-                    <textarea
-                        className="w-full bg-transparent resize-none outline-none text-xs md:text-lg text-foreground/80 placeholder:text-muted-foreground/60 p-2"
-                        placeholder="How can I help you today?"
-                        rows={2}
-                        onClick={() => setIsSearchOpen(true)}
-                        readOnly
-                    />
-                    <div className="mt-auto flex items-center justify-between">
-                        <button className="p-1 md:p-2 hover:bg-secondary rounded-lg transition-colors overflow-hidden group">
-                            <Plus className="w-5 h-5 md:w-6 md:h-6 text-foreground/40 group-hover:text-primary transition-colors" />
-                        </button>
-                        <div className="flex items-center gap-3 md:gap-4">
-                            <div className="flex items-center gap-1.5 md:gap-2 text-[8px] md:text-[10px] font-bold text-primary px-2 md:px-3 py-1 md:py-1.5 bg-primary/5 border border-primary/10 rounded-lg cursor-default">
-                                <span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 bg-primary"></span>
-                                </span>
-                                RITU CORE
-                            </div>
-                            {/* Chat button removed - Use CMD+K */}
-                        </div>
-                    </div>
-                </div>
+            {/* 2. Chat-First Command Center */}
+            <div className="w-full max-w-4xl space-y-4">
+                <ChatComponent embedded />
 
-                {/* 3. Authentic Action Pills - matching Image 1 */}
+                {/* Quick navigation pills */}
                 <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2 no-scrollbar px-1 md:px-0 scroll-smooth">
                     <div className="flex items-center gap-2">
                         {[
@@ -220,7 +198,6 @@ const CentralHub = ({ navigate, isWild, user }: { navigate: any, isWild: boolean
                         ))}
                     </div>
 
-                    {/* Search button aligned to the right */}
                     <div className="flex items-center">
                         <button
                             onClick={() => setIsSearchOpen(true)}

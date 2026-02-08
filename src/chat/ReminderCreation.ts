@@ -15,7 +15,7 @@ import {
     parseYesNo
 } from './chatUtils';
 
-const reminderKeywords = ['reminder', 'alert', 'notify'];
+const reminderKeywords = ['reminder', 'alert', 'notify', 'remind'];
 
 const parseInput = (text: string) => {
     const name = extractName(text, reminderKeywords);

@@ -1,14 +1,11 @@
+import { RecallService } from '../services/recall.service';
 import { ActionResult, AssistantContext, ChatHandler, TargetMatch } from './chatTypes';
 import {
     DIVIDER,
     EMOJI,
     FlowField,
     formatDetailsBlock,
-    formatHeader,
-    loadLocalData,
-    addLocalItem,
-    removeLocalItem,
-    findLocalItemByName
+    formatHeader
 } from './chatUtils';
 
 const parseInput = (text: string) => ({
@@ -38,20 +35,22 @@ const buildSummary = (action: string, data: Record<string, any>) => {
 };
 
 const findTarget = async (name: string, ctx: AssistantContext) => {
-    const data = loadLocalData(ctx.userId);
-    const match = findLocalItemByName(data.recall, name);
+    const entries = await RecallService.getEntries(ctx.userId);
+    const normalized = name.toLowerCase();
+    const match = entries.find(entry => entry.content.toLowerCase().includes(normalized));
     if (!match) return null;
-    return { id: match.id, name: match.title || match.content?.slice(0, 24), item: match };
+    return { id: match.id, name: match.content.slice(0, 24), item: match };
 };
 
 const createRecall = async (data: Record<string, any>, ctx: AssistantContext): Promise<ActionResult> => {
-    const memory = addLocalItem(ctx.userId, 'recall', {
+    if (!ctx.userId) return { message: `${EMOJI.warning} Please sign in to save memories.` };
+    const memory = await RecallService.createEntry({
         content: data.content,
-        category: data.category || 'General'
-    });
+        category: data.category || 'general'
+    }, ctx.userId);
     const details = [
         { label: 'Saved', value: 'Yes' },
-        { label: 'Category', value: memory.category }
+        { label: 'Category', value: memory.category || 'general' }
     ];
     return {
         message: `${EMOJI.success} REMEMBERED!\n${DIVIDER}\n\n${formatDetailsBlock('MEMORY SAVED', details)}`,
@@ -63,20 +62,21 @@ const createRecall = async (data: Record<string, any>, ctx: AssistantContext): P
 };
 
 const removeRecall = async (target: TargetMatch, ctx: AssistantContext): Promise<ActionResult> => {
-    const removed = removeLocalItem(ctx.userId, 'recall', target.id!);
+    if (!target.id) return { message: `${EMOJI.warning} Memory not found.` };
+    await RecallService.deleteEntry(target.id);
     return {
         message: `${EMOJI.success} DELETED!\n${DIVIDER}\n\nMemory removed.`,
         actions: [
             { id: 'recall-undo', label: 'Undo delete', value: 'undo delete', kind: 'reply', variant: 'secondary' }
         ],
-        deleted: { type: 'recall', data: removed }
+        deleted: { type: 'recall', data: target.item }
     };
 };
 
 const viewRecall = async (_target: TargetMatch | null, ctx: AssistantContext): Promise<ActionResult> => {
-    const data = loadLocalData(ctx.userId);
-    if (!data.recall.length) return { message: `${EMOJI.info} No memories yet.` };
-    const list = data.recall.slice(0, 6).map((entry: any) => `- ${entry.content}`).join('\n');
+    const entries = await RecallService.getEntries(ctx.userId);
+    if (!entries.length) return { message: `${EMOJI.info} No memories yet.` };
+    const list = entries.slice(0, 6).map((entry: any) => `- ${entry.content}`).join('\n');
     return {
         message: `\uD83D\uDCCA JOURNAL\n${DIVIDER}\n\n${list}`,
         actions: [
@@ -86,7 +86,11 @@ const viewRecall = async (_target: TargetMatch | null, ctx: AssistantContext): P
 };
 
 const restoreRecall = async (data: any, ctx: AssistantContext): Promise<ActionResult> => {
-    const memory = addLocalItem(ctx.userId, 'recall', data);
+    if (!ctx.userId) return { message: `${EMOJI.warning} Please sign in to restore.` };
+    const memory = await RecallService.createEntry({
+        content: data.content,
+        category: data.category
+    }, ctx.userId);
     return {
         message: `${EMOJI.success} RESTORED\n${DIVIDER}\n\nMemory restored.`,
         entity: { type: 'recall', id: memory.id, name: memory.content?.slice(0, 24) }

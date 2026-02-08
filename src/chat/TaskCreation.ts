@@ -1,3 +1,4 @@
+import { TaskService } from '../services/task.service';
 import { ActionResult, AssistantContext, ChatHandler, TargetMatch } from './chatTypes';
 import {
     DIVIDER,
@@ -8,13 +9,7 @@ import {
     formatDateLabel,
     formatDetailsBlock,
     formatHeader,
-    loadLocalData,
-    parseDate,
-    updateLocalData,
-    addLocalItem,
-    removeLocalItem,
-    updateLocalItem,
-    findLocalItemByName
+    parseDate
 } from './chatUtils';
 
 const parseInput = (text: string) => {
@@ -104,20 +99,21 @@ const buildSummary = (action: string, data: Record<string, any>, target?: Target
 };
 
 const findTarget = async (name: string, ctx: AssistantContext) => {
-    const data = loadLocalData(ctx.userId);
-    const match = findLocalItemByName(data.tasks, name);
+    const tasks = await TaskService.getTasks(ctx.userId);
+    const normalized = name.toLowerCase();
+    const match = tasks.find(task => task.title.toLowerCase().includes(normalized));
     if (!match) return null;
     return { id: match.id, name: match.title, item: match };
 };
 
 const createTask = async (data: Record<string, any>, ctx: AssistantContext): Promise<ActionResult> => {
-    const task = addLocalItem(ctx.userId, 'tasks', {
+    if (!ctx.userId) return { message: `${EMOJI.warning} Please sign in to create tasks.` };
+    const task = await TaskService.createTask({
         title: data.title,
         dueDate: data.dueDate,
         priority: data.priority || 'medium',
-        notes: data.notes,
-        completed: false
-    });
+        notes: data.notes
+    }, ctx.userId);
 
     const details = [
         { label: 'Due', value: task.dueDate ? formatDateLabel(task.dueDate) : 'Not set' },
@@ -136,20 +132,21 @@ const createTask = async (data: Record<string, any>, ctx: AssistantContext): Pro
 };
 
 const updateTask = async (target: TargetMatch, updates: Record<string, any>, ctx: AssistantContext): Promise<ActionResult> => {
-    const updated = updateLocalItem(ctx.userId, 'tasks', target.id!, {
-        ...updates
-    });
+    if (!target.id) return { message: `${EMOJI.warning} Task not found.` };
+    await TaskService.updateTask(target.id, updates);
+    const updatedTitle = updates.title || target.name;
     return {
-        message: `${EMOJI.success} UPDATED!\n${DIVIDER}\n\n${updated?.title || target.name} updated.`,
+        message: `${EMOJI.success} UPDATED!\n${DIVIDER}\n\n${updatedTitle} updated.`,
         actions: [
             { id: 'task-view', label: 'View tasks', value: 'show tasks', kind: 'reply', variant: 'secondary' }
         ],
-        entity: { type: 'task', id: target.id, name: updated?.title || target.name }
+        entity: { type: 'task', id: target.id, name: updatedTitle }
     };
 };
 
 const completeTask = async (target: TargetMatch, ctx: AssistantContext): Promise<ActionResult> => {
-    updateLocalItem(ctx.userId, 'tasks', target.id!, { completed: true, completedAt: new Date().toISOString() });
+    if (!target.id) return { message: `${EMOJI.warning} Task not found.` };
+    await TaskService.updateTask(target.id, { status: 'completed', completedAt: new Date().toISOString() } as any);
     return {
         message: `${EMOJI.success} COMPLETED!\n${DIVIDER}\n\n${target.name} marked complete.`,
         actions: [
@@ -160,24 +157,25 @@ const completeTask = async (target: TargetMatch, ctx: AssistantContext): Promise
 };
 
 const removeTask = async (target: TargetMatch, ctx: AssistantContext): Promise<ActionResult> => {
-    const removed = removeLocalItem(ctx.userId, 'tasks', target.id!);
+    if (!target.id) return { message: `${EMOJI.warning} Task not found.` };
+    await TaskService.deleteTask(target.id);
     return {
         message: `${EMOJI.success} DELETED!\n${DIVIDER}\n\n${target.name} deleted.`,
         actions: [
             { id: 'task-undo', label: 'Undo delete', value: 'undo delete', kind: 'reply', variant: 'secondary' }
         ],
-        deleted: { type: 'task', data: removed }
+        deleted: { type: 'task', data: target.item }
     };
 };
 
 const viewTasks = async (_target: TargetMatch | null, ctx: AssistantContext): Promise<ActionResult> => {
-    const data = loadLocalData(ctx.userId);
-    if (!data.tasks.length) {
+    const tasks = await TaskService.getTasks(ctx.userId);
+    if (!tasks.length) {
         return { message: `${EMOJI.info} No tasks yet.` };
     }
-    const list = data.tasks
+    const list = tasks
         .slice(0, 8)
-        .map(task => `${task.completed ? '[x]' : '[ ]'} ${task.title}${task.dueDate ? ` (due ${formatDateLabel(task.dueDate)})` : ''}`)
+        .map(task => `${task.status === 'completed' ? '[x]' : '[ ]'} ${task.title}${task.dueDate ? ` (due ${formatDateLabel(task.dueDate)})` : ''}`)
         .join('\n');
     return {
         message: `\uD83D\uDCCA TASK LIST\n${DIVIDER}\n\n${list}`,
@@ -188,7 +186,13 @@ const viewTasks = async (_target: TargetMatch | null, ctx: AssistantContext): Pr
 };
 
 const restoreTask = async (data: any, ctx: AssistantContext): Promise<ActionResult> => {
-    const task = addLocalItem(ctx.userId, 'tasks', data);
+    if (!ctx.userId) return { message: `${EMOJI.warning} Please sign in to restore.` };
+    const task = await TaskService.createTask({
+        title: data.title,
+        dueDate: data.dueDate,
+        priority: data.priority,
+        notes: data.notes
+    }, ctx.userId);
     return {
         message: `${EMOJI.success} RESTORED\n${DIVIDER}\n\n${task.title} restored.`,
         entity: { type: 'task', id: task.id, name: task.title }

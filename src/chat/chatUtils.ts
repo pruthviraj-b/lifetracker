@@ -78,7 +78,7 @@ const BRANCH = '\u251C\u2500';
 const END = '\u2514\u2500';
 
 const ACTION_KEYWORDS: Record<ActionType, string[]> = {
-    create: ['create', 'add', 'new', 'start', 'make', 'set up', 'setup', 'build', 'log', 'remind', 'schedule', 'plan', 'track'],
+    create: ['create', 'add', 'new', 'start', 'make', 'set', 'set up', 'setup', 'build', 'log', 'remind', 'schedule', 'plan', 'track'],
     edit: ['edit', 'change', 'update', 'rename', 'adjust', 'modify'],
     complete: ['complete', 'done', 'finish', 'mark', 'check', 'tick'],
     delete: ['delete', 'remove', 'clear', 'erase', 'cancel'],
@@ -92,8 +92,8 @@ const ACTION_KEYWORDS: Record<ActionType, string[]> = {
 };
 
 const ENTITY_KEYWORDS: Record<EntityType, string[]> = {
-    habit: ['habit', 'ritual', 'routine'],
-    reminder: ['reminder', 'alert', 'notify', 'notification', 'remind'],
+    habit: ['habit', 'habbit', 'hibbit', 'ritual', 'routine'],
+    reminder: ['reminder', 'alert', 'notify', 'notification', 'remind', 'reminder'],
     task: ['task', 'todo', 'to-do'],
     protocol: ['protocol', 'steps', 'routine protocol'],
     knowledge: ['knowledge', 'note', 'notes', 'fact', 'guide'],
@@ -184,6 +184,7 @@ export const extractName = (text: string, keywords: string[] = []): string | nul
         if (!token || STOP_WORDS.has(token)) return false;
         if (keywords.includes(token)) return false;
         if (ACTION_WORDS.includes(token)) return false;
+        if (/^\d+$/.test(token)) return false;
         return true;
     });
 
@@ -213,6 +214,18 @@ export const parseTime = (text: string): ParsedTime | null => {
     if (time24Match) {
         const time24 = `${String(time24Match[1]).padStart(2, '0')}:${time24Match[2]}`;
         return { time24, label: formatTimeLabel(time24), timeOfDay: toTimeOfDay(time24) };
+    }
+
+    // Bare hour (e.g., "8" or "at 8")
+    const trimmed = lowered.trim();
+    const shouldParseBareHour = /^\d{1,2}$/.test(trimmed) || lowered.includes(' at ') || lowered.startsWith('at ');
+    const bareHourMatch = shouldParseBareHour ? lowered.match(/\b(\d{1,2})\b/) : null;
+    if (bareHourMatch) {
+        const hourNum = parseInt(bareHourMatch[1], 10);
+        if (!Number.isNaN(hourNum) && hourNum >= 0 && hourNum <= 23) {
+            const time24 = `${String(hourNum).padStart(2, '0')}:00`;
+            return { time24, label: formatTimeLabel(time24), timeOfDay: toTimeOfDay(time24) };
+        }
     }
 
     return null;

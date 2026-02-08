@@ -1,14 +1,11 @@
+import { NetworkService } from '../services/network.service';
 import { ActionResult, AssistantContext, ChatHandler, TargetMatch } from './chatTypes';
 import {
     DIVIDER,
     EMOJI,
     FlowField,
     formatDetailsBlock,
-    formatHeader,
-    loadLocalData,
-    addLocalItem,
-    removeLocalItem,
-    findLocalItemByName
+    formatHeader
 } from './chatUtils';
 
 const parseInput = (text: string) => ({
@@ -45,20 +42,22 @@ const buildSummary = (action: string, data: Record<string, any>) => {
 };
 
 const findTarget = async (name: string, ctx: AssistantContext) => {
-    const data = loadLocalData(ctx.userId);
-    const match = findLocalItemByName(data.network, name);
+    const connections = await NetworkService.getConnections(ctx.userId);
+    const normalized = name.toLowerCase();
+    const match = connections.find(connection => connection.name.toLowerCase().includes(normalized));
     if (!match) return null;
     return { id: match.id, name: match.name, item: match };
 };
 
 const createConnection = async (data: Record<string, any>, ctx: AssistantContext): Promise<ActionResult> => {
-    const contact = addLocalItem(ctx.userId, 'network', {
+    if (!ctx.userId) return { message: `${EMOJI.warning} Please sign in to add connections.` };
+    const contact = await NetworkService.createConnection({
         name: data.name,
-        relationship: data.relationship || 'Friend',
+        relationship: data.relationship || 'friend',
         sharedHabits: data.sharedHabits || ''
-    });
+    }, ctx.userId);
     const details = [
-        { label: 'Relationship', value: contact.relationship },
+        { label: 'Relationship', value: contact.relationship || 'friend' },
         { label: 'Shared', value: contact.sharedHabits || 'None' }
     ];
     return {
@@ -71,20 +70,21 @@ const createConnection = async (data: Record<string, any>, ctx: AssistantContext
 };
 
 const removeConnection = async (target: TargetMatch, ctx: AssistantContext): Promise<ActionResult> => {
-    const removed = removeLocalItem(ctx.userId, 'network', target.id!);
+    if (!target.id) return { message: `${EMOJI.warning} Connection not found.` };
+    await NetworkService.deleteConnection(target.id);
     return {
         message: `${EMOJI.success} DELETED!\n${DIVIDER}\n\n${target.name} removed from network.`,
         actions: [
             { id: 'network-undo', label: 'Undo delete', value: 'undo delete', kind: 'reply', variant: 'secondary' }
         ],
-        deleted: { type: 'network', data: removed }
+        deleted: { type: 'network', data: target.item }
     };
 };
 
 const viewNetwork = async (_target: TargetMatch | null, ctx: AssistantContext): Promise<ActionResult> => {
-    const data = loadLocalData(ctx.userId);
-    if (!data.network.length) return { message: `${EMOJI.info} No connections yet.` };
-    const list = data.network.slice(0, 8).map((contact: any) => `- ${contact.name} (${contact.relationship})`).join('\n');
+    const connections = await NetworkService.getConnections(ctx.userId);
+    if (!connections.length) return { message: `${EMOJI.info} No connections yet.` };
+    const list = connections.slice(0, 8).map((contact: any) => `- ${contact.name} (${contact.relationship || 'friend'})`).join('\n');
     return {
         message: `\uD83D\uDC65 NETWORK\n${DIVIDER}\n\n${list}`,
         actions: [
@@ -94,7 +94,12 @@ const viewNetwork = async (_target: TargetMatch | null, ctx: AssistantContext): 
 };
 
 const restoreConnection = async (data: any, ctx: AssistantContext): Promise<ActionResult> => {
-    const contact = addLocalItem(ctx.userId, 'network', data);
+    if (!ctx.userId) return { message: `${EMOJI.warning} Please sign in to restore.` };
+    const contact = await NetworkService.createConnection({
+        name: data.name,
+        relationship: data.relationship,
+        sharedHabits: data.sharedHabits
+    }, ctx.userId);
     return {
         message: `${EMOJI.success} RESTORED\n${DIVIDER}\n\n${contact.name} restored.`,
         entity: { type: 'network', id: contact.id, name: contact.name }

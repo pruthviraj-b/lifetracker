@@ -29,7 +29,11 @@ const loadSession = (userId?: string): ChatSessionState => {
     }
 };
 
-export const ChatComponent: React.FC = () => {
+interface ChatComponentProps {
+    embedded?: boolean;
+}
+
+export const ChatComponent: React.FC<ChatComponentProps> = ({ embedded = false }) => {
     const { user } = useAuth();
     const assistantRef = useRef(new AIAssistant());
     const [messages, setMessages] = useState<ChatMessageType[]>(() => loadHistory(user?.id));
@@ -106,7 +110,7 @@ export const ChatComponent: React.FC = () => {
     };
 
     return (
-        <div className="chat-shell">
+        <div className={`chat-shell${embedded ? ' chat-shell--embedded' : ''}`}>
             <div className="chat-header">
                 <div>
                     <div className="chat-title">RITU Chat Assistant</div>

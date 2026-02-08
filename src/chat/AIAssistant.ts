@@ -395,6 +395,9 @@ export class AIAssistant {
         const pending = session.pending!;
         const handler = HANDLERS[pending.entity];
         if (!handler) return { messages: [createMessage(this.buildHelpMessage())], session: { ...session, pending: null } };
+        if (normalizeText(text).includes('cancel')) {
+            return { messages: [createMessage('Okay, canceled.')], session: { ...session, pending: null } };
+        }
 
         if (pending.stage === 'resolve-target') {
             const target = await handler.findTarget?.(text, ctx);
@@ -501,7 +504,7 @@ export class AIAssistant {
                 };
             }
             return {
-                messages: [createMessage(handler.buildSummary(pending.action, pending.data, pending.target || undefined), this.buildConfirmActions())],
+                messages: [createMessage(handler.buildSummary(pending.action, pending.data, pending.target ?? undefined), this.buildConfirmActions())],
                 session: { ...session, pending }
             };
         }
@@ -597,6 +600,24 @@ export class AIAssistant {
         for (let i = 0; i < fields.length; i += 1) {
             const field = fields[i];
             if (field.optional) continue;
+            if (field.key === 'time') {
+                const hasTime = data.time24 || data.timeLabel || data.timeOfDay || data.time;
+                if (!hasTime) return i;
+                continue;
+            }
+            if (field.key === 'frequency') {
+                const hasFrequency = data.frequency || data.frequencyLabel;
+                if (!hasFrequency) return i;
+                continue;
+            }
+            if (field.key === 'title') {
+                if (!data.title) return i;
+                continue;
+            }
+            if (field.key === 'name') {
+                if (!data.name && !data.title) return i;
+                continue;
+            }
             if (data[field.key] === undefined || data[field.key] === null || data[field.key] === '') {
                 return i;
             }
