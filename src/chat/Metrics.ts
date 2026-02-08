@@ -7,8 +7,7 @@ import {
     formatDetailsBlock,
     formatHeader,
     loadLocalData,
-    addLocalItem,
-    findLocalItemByName
+    addLocalItem
 } from './chatUtils';
 
 const parseMetricInput = (text: string) => {
@@ -83,6 +82,8 @@ const viewMetrics = async (_target: TargetMatch | null, ctx: AssistantContext): 
     };
 };
 
+const listMetrics = async (ctx: AssistantContext): Promise<ActionResult> => viewMetrics(null, ctx);
+
 const exportMetrics = async (): Promise<ActionResult> => {
     await DataService.downloadExport();
     return { message: `${EMOJI.success} Export started. Your data download should begin shortly.` };
@@ -96,7 +97,7 @@ export const Metrics: ChatHandler = {
     buildSummary,
     create: createMetric,
     view: viewMetrics,
-    list: viewMetrics
+    list: listMetrics
 };
 
 export const MetricsExporter = {

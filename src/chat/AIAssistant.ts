@@ -175,7 +175,7 @@ export class AIAssistant {
         };
 
         return {
-            messages: [createMessage(handler.buildSummary('confirm', data), this.buildConfirmActions())],
+            messages: [createMessage(handler.buildSummary('create', data), this.buildConfirmActions())],
             session: { ...session, pending }
         };
     }
@@ -206,7 +206,7 @@ export class AIAssistant {
                 data
             };
             return {
-                messages: [createMessage(handler.buildSummary('confirm', data), this.buildConfirmActions())],
+                messages: [createMessage(handler.buildSummary('edit', data), this.buildConfirmActions())],
                 session: { ...session, pending }
             };
         }
@@ -236,7 +236,7 @@ export class AIAssistant {
                 target
             };
             return {
-                messages: [createMessage(handler.buildSummary('confirm', updates, target), this.buildConfirmActions())],
+                messages: [createMessage(handler.buildSummary('edit', updates, target), this.buildConfirmActions())],
                 session: { ...session, pending }
             };
         }
@@ -455,7 +455,7 @@ export class AIAssistant {
                 pending.stage = 'confirm';
                 pending.data = updates;
                 return {
-                    messages: [createMessage(handler.buildSummary('confirm', updates, pending.target!), this.buildConfirmActions())],
+                    messages: [createMessage(handler.buildSummary('edit', updates, pending.target!), this.buildConfirmActions())],
                     session: { ...session, pending }
                 };
             }
@@ -471,7 +471,7 @@ export class AIAssistant {
             pending.data = { ...pending.data, ...(parsed || {}) };
             pending.stage = 'confirm';
             return {
-                messages: [createMessage(handler.buildSummary('confirm', pending.data, pending.target!), this.buildConfirmActions())],
+                messages: [createMessage(handler.buildSummary('edit', pending.data, pending.target!), this.buildConfirmActions())],
                 session: { ...session, pending }
             };
         }
@@ -501,7 +501,7 @@ export class AIAssistant {
                 };
             }
             return {
-                messages: [createMessage(handler.buildSummary('confirm', pending.data, pending.target), this.buildConfirmActions())],
+                messages: [createMessage(handler.buildSummary(pending.action, pending.data, pending.target), this.buildConfirmActions())],
                 session: { ...session, pending }
             };
         }
